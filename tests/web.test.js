@@ -112,15 +112,16 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
 
   // ---- Indicadores
   await go('indicadores');
-  assert(await p.locator('.kpi.nodata').count() >= 7, 'sem lançamentos: indicadores aparecem como "sem dados"');
+  assert(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos: indicadores aparecem como "sem dados"');
   await p.click('[data-act=indNew]'); await p.waitForTimeout(200);
   await submit();
   assert(await p.locator('.modal-wrap.open .form-error:not([hidden])').count() === 1, 'exige ao menos um indicador');
-  await fill('osRecebidas', '10'); await fill('osConcluidas', '8'); await fill('retrabalhos', '1'); await submit();
-  const kv = await p.locator('.kpi').first().locator('xpath=following-sibling::div[1]').locator('.kpi-v').textContent();
-  assert(kv.trim() === '8', 'KPI de O.S. concluídas = 8');
+  assert(await p.locator('.modal-wrap.open [name^=os]').count() === 0, 'formulário de lançamento sem campos de O.S.');
+  await fill('manutencoes', '8'); await fill('retrabalhos', '1'); await submit();
+  const kv = await p.locator('.kpi', { hasText: 'Manutenções' }).locator('.kpi-v').textContent();
+  assert(kv.trim() === '8', 'KPI de manutenções = 8');
   assert((await p.locator('.kpi', { hasText: 'Pontos de câmera' }).locator('.kpi-s').textContent()).includes('Sem dados'), 'campo não preenchido continua "sem dados" (não vira zero)');
-  assert((await p.locator('.kpi', { hasText: 'Taxa de conclusão' }).locator('.kpi-v').textContent()).trim() === '80%', 'taxa de conclusão 80%');
+  assert(!(await p.textContent('#view')).includes('O.S.'), 'tela de Indicadores sem nenhuma menção a O.S.');
   await p.selectOption('select[data-k=gran]', 'semanal'); await p.waitForTimeout(150);
   assert(await p.locator('svg.chart rect[fill]').count() >= 1, 'gráfico semanal renderizado');
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act=indXlsx]')]);

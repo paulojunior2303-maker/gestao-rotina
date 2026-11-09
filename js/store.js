@@ -3,15 +3,14 @@
 const STORAGE_KEY = 'gestao-rotina-wibicam:v1';
 
 const METRICS = [
-  { key: 'osRecebidas', label: 'O.S. recebidas' },
-  { key: 'osConcluidas', label: 'O.S. concluídas' },
-  { key: 'osPendentes', label: 'O.S. pendentes', snapshot: true },
-  { key: 'osAtrasadas', label: 'O.S. atrasadas', snapshot: true },
   { key: 'pontosCamera', label: 'Pontos de câmera instalados' },
   { key: 'manutencoes', label: 'Manutenções realizadas' },
   { key: 'retrabalhos', label: 'Retrabalhos' },
 ];
 const GOAL_METRICS = [...METRICS.filter(m => !m.snapshot), { key: 'tarefasConcluidas', label: 'Tarefas concluídas' }, { key: 'projetosConcluidos', label: 'Projetos concluídos' }];
+/* Indicadores de O.S. foram retirados do app (v1.2). Lançamentos e metas antigos continuam guardados. */
+const LEGACY_METRICS = { osRecebidas: 'O.S. recebidas', osConcluidas: 'O.S. concluídas', osPendentes: 'O.S. pendentes', osAtrasadas: 'O.S. atrasadas' };
+const metricLabel = key => (GOAL_METRICS.find(m => m.key === key) || {}).label || (LEGACY_METRICS[key] ? LEGACY_METRICS[key] + ' (descontinuado)' : key);
 const PROJECT_STATUS = {
   planejamento: { label: 'Planejamento', color: '#94a3b8' },
   andamento: { label: 'Em andamento', color: '#2563eb' },
@@ -52,6 +51,7 @@ const Store = {
         workStart: '08:00', workEnd: '18:00', breakStart: '12:00', breakEnd: '13:00',
         workDays: [1, 2, 3, 4, 5],
         alertDays: 2,
+        theme: 'claro',   // claro | escuro | auto (segue o aparelho)
         categories: [
           { id: 'demandas', name: 'Demandas', color: '#64748b' },
           { id: 'equipe', name: 'Equipe', color: '#7c3aed' },
@@ -181,10 +181,10 @@ const Store = {
       if (!D.isWorkday(k)) continue;
       n++;
       for (const tec of [t1, t2]) {
-        S.indicators.push({ id: U.uid(), demo: true, date: k, technician: tec.name, notes: '', values: { osRecebidas: rnd(3, 7), osConcluidas: rnd(2, 6), osPendentes: rnd(0, 4), osAtrasadas: rnd(0, 2), pontosCamera: rnd(0, 8), manutencoes: rnd(0, 3), retrabalhos: rnd(0, 1) } });
+        S.indicators.push({ id: U.uid(), demo: true, date: k, technician: tec.name, notes: '', values: { pontosCamera: rnd(0, 8), manutencoes: rnd(0, 3), retrabalhos: rnd(0, 1) } });
       }
     }
-    S.settings.goals.push({ id: U.uid(), demo: true, name: '[Exemplo] O.S. concluídas na semana', metric: 'osConcluidas', period: 'semanal', target: 40, direction: 'min' });
+    S.settings.goals.push({ id: U.uid(), demo: true, name: '[Exemplo] Pontos de câmera na semana', metric: 'pontosCamera', period: 'semanal', target: 30, direction: 'min' });
     return true;
   },
   removeDemo() {

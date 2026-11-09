@@ -194,9 +194,10 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[7] Indicadores e relatórios');
   await go('indicadores');
-  check(await p.locator('.kpi.nodata').count() >= 7, 'sem lançamentos → "sem dados"');
-  await tap('[data-act=indNew]'); await fill('osRecebidas', '12'); await fill('osConcluidas', '9'); await save();
-  check((await p.locator('.kpi', { hasText: 'Taxa de conclusão' }).locator('.kpi-v').textContent()).trim() === '75%', 'lançar dados atualiza KPIs (75%)');
+  check(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos → "sem dados"');
+  await tap('[data-act=indNew]'); await fill('pontosCamera', '12'); await fill('manutencoes', '9'); await save();
+  check((await p.locator('.kpi', { hasText: 'Pontos de câmera' }).locator('.kpi-v').textContent()).trim() === '12', 'lançar dados atualiza KPIs (12 pontos de câmera)');
+  check(!(await p.textContent('#view')).includes('O.S.'), 'Indicadores sem campos de O.S.');
   await overflow('10-indicadores');
   await tap('[data-act=indXlsx]'); await W(400);
   check(calls.some(c => c[0] === 'share' && c[1].files[0].endsWith('.xlsx')), 'Excel → menu Compartilhar do Android');

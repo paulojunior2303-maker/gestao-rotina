@@ -121,7 +121,7 @@ Views.dashboard = {
       </div>
       <div class="card">
         <div class="card-h"><h3>${U.icon('target')} Resultados e metas</h3><a class="link" href="#indicadores">Indicadores</a></div>
-        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || GOAL_METRICS.find(m => m.key === g.metric)?.label)}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--blue)')}<small class="muted">${st.val === null ? 'Nenhum dado lançado' : `${U.fmtNum(st.val)} ${g.direction === 'max' ? '(máx.' : '(meta'} ${U.fmtNum(st.target)}) · ${g.period}`}</small></div>`).join('')
+        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--blue)')}<small class="muted">${st.val === null ? 'Nenhum dado lançado' : `${U.fmtNum(st.val)} ${g.direction === 'max' ? '(máx.' : '(meta'} ${U.fmtNum(st.target)}) · ${g.period}`}</small></div>`).join('')
           : H.empty('Nenhuma meta configurada.', '<a class="btn sm" href="#config">Configurar metas</a>')}
       </div>
       <div class="card">

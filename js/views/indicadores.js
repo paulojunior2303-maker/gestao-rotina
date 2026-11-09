@@ -2,7 +2,7 @@
 /* Indicadores e relatórios — dados lançados manualmente; sem dados = "sem dados" */
 const Ind = {
   range() {
-    const f = App.ui.indF = App.ui.indF || { period: 'mes', from: '', to: '', metric: 'osConcluidas', gran: 'diario' };
+    const f = App.ui.indF = App.ui.indF || { period: 'mes', from: '', to: '', metric: 'pontosCamera', gran: 'diario' };
     const t = U.today();
     if (f.period === 'semana') { const ws = U.weekStart(t); return [ws, U.addDays(ws, 6), 'Semana atual']; }
     if (f.period === 'mes') { const mk = U.monthKey(t); return [U.monthStart(mk), U.monthEnd(mk), U.fmtMonth(mk)]; }
@@ -23,7 +23,7 @@ const Ind = {
     return names.map(n => {
       const recs = D.records(from, to).filter(r => r.technician === n);
       const v = m => D.metricValue(m, from, to, r => r.technician === n);
-      return { name: n, days: new Set(recs.map(r => r.date)).size, osConcluidas: v('osConcluidas'), pontosCamera: v('pontosCamera'), manutencoes: v('manutencoes'), retrabalhos: v('retrabalhos') };
+      return { name: n, days: new Set(recs.map(r => r.date)).size, pontosCamera: v('pontosCamera'), manutencoes: v('manutencoes'), retrabalhos: v('retrabalhos') };
     });
   },
   form(r) {
@@ -32,7 +32,7 @@ const Ind = {
     UI.form({
       title: isNew ? 'Lançar dados de indicadores' : 'Editar lançamento', wide: true,
       fields: [
-        { type: 'html', html: '<p class="muted small">Preencha apenas o que você tem. Campos em branco ficam como <strong>sem dados</strong> (não são tratados como zero). Para O.S. pendentes/atrasadas, informe a posição no dia.</p>' },
+        { type: 'html', html: '<p class="muted small">Preencha apenas o que você tem. Campos em branco ficam como <strong>sem dados</strong> (não são tratados como zero).</p>' },
         { name: 'date', label: 'Data', type: 'date', required: true, value: r.date, half: true },
         { name: 'technician', label: 'Técnico', type: 'select', options: H.techOptions(r.technician).map(([v, l]) => [v, v ? l : 'Equipe (geral)']), value: r.technician, half: true, hint: D.techNames().length ? '' : 'Cadastre técnicos em Configurações para lançar produtividade individual.' },
         ...METRICS.map(m => ({ name: m.key, label: m.label, type: 'number', min: 0, step: 1, value: r.values[m.key], half: true })),
@@ -56,7 +56,7 @@ Views.indicadores = {
     const f = App.ui.indF;
     const recs = D.records(from, to).sort((a, b) => b.date.localeCompare(a.date) || (a.technician || '').localeCompare(b.technician || ''));
     const val = m => D.metricValue(m, from, to);
-    const rec = val('osRecebidas'), con = val('osConcluidas'), ret = val('retrabalhos');
+    const man = val('manutencoes'), ret = val('retrabalhos');
     const projDone = D.metricValue('projetosConcluidos', from, to);
     const projAnd = S.projects.filter(p => p.status === 'andamento').length;
     const goals = S.settings.goals.map(g => ({ g, st: D.goalStatus(g, to < U.today() ? to : U.today()) }));
@@ -69,11 +69,11 @@ Views.indicadores = {
     };
 
     const b = Ind.buckets(from, to, f.gran);
-    const metricMeta = METRICS.find(m => m.key === f.metric) || METRICS[1];
+    const metricMeta = METRICS.find(m => m.key === f.metric) || METRICS[0];
     const series1 = [{ name: metricMeta.label, color: '#2563eb', values: b.map(x => D.metricValue(metricMeta.key, x.from, x.to)) }];
     const series2 = [
-      { name: 'O.S. recebidas', color: '#94a3b8', values: b.map(x => D.metricValue('osRecebidas', x.from, x.to)) },
-      { name: 'O.S. concluídas', color: '#16a34a', values: b.map(x => D.metricValue('osConcluidas', x.from, x.to)) },
+      { name: 'Manutenções', color: '#16a34a', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
+      { name: 'Retrabalhos', color: '#dc2626', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
     ];
     const techs = Ind.techRows(from, to);
     const techWithData = techs.filter(r => r.days);
@@ -93,8 +93,6 @@ Views.indicadores = {
 
     <section class="kpis kpis-ind">
       ${METRICS.map(kpi).join('')}
-      <div class="kpi ${rec && con !== null ? '' : 'nodata'}"><span class="kpi-l">Taxa de conclusão de O.S.</span><strong class="kpi-v">${rec && con !== null ? Math.round(con / rec * 100) + '%' : '—'}</strong><span class="kpi-s">${rec && con !== null ? 'concluídas ÷ recebidas' : 'Sem dados'}</span></div>
-      <div class="kpi ${con && ret !== null ? '' : 'nodata'}"><span class="kpi-l">Índice de retrabalho</span><strong class="kpi-v">${con && ret !== null ? (ret / con * 100).toFixed(1).replace('.', ',') + '%' : '—'}</strong><span class="kpi-s">${con && ret !== null ? 'retrabalhos ÷ O.S. concluídas' : 'Sem dados'}</span></div>
       <div class="kpi"><span class="kpi-l">Projetos concluídos</span><strong class="kpi-v">${projDone}</strong><span class="kpi-s">no período</span></div>
       <div class="kpi"><span class="kpi-l">Projetos em andamento</span><strong class="kpi-v">${projAnd}</strong><span class="kpi-s">situação atual</span></div>
       <div class="kpi ${goalsWithData.length ? '' : 'nodata'}"><span class="kpi-l">Metas alcançadas</span><strong class="kpi-v">${goals.length ? `${goalsWithData.filter(x => x.st.achieved).length}/${goals.length}` : '—'}</strong><span class="kpi-s">${goals.length ? (goalsWithData.length ? 'período vigente de cada meta' : 'Sem dados') : 'Nenhuma meta configurada'}</span></div>
@@ -111,7 +109,7 @@ Views.indicadores = {
         ${metricMeta.snapshot ? '<p class="muted small">Indicador de posição: cada barra mostra o último valor registrado no intervalo.</p>' : ''}
       </div>
       <div class="card">
-        <div class="card-h"><h3>O.S. recebidas × concluídas</h3><span class="muted small">${{ diario: 'Diário', semanal: 'Semanal', mensal: 'Mensal' }[f.gran]}</span></div>
+        <div class="card-h"><h3>Manutenções × Retrabalhos</h3><span class="muted small">${{ diario: 'Diário', semanal: 'Semanal', mensal: 'Mensal' }[f.gran]}</span></div>
         ${Charts.bars({ labels: b.map(x => x.label), series: series2 })}
       </div>
     </section>
@@ -119,20 +117,20 @@ Views.indicadores = {
     <section class="grid-2">
       <div class="card">
         <div class="card-h"><h3>${U.icon('user')} Produtividade por técnico</h3></div>
-        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.osConcluidas, color: '#16a34a' })), ' O.S.')}
-          <div class="table-wrap"><table class="table"><thead><tr><th>Técnico</th><th>Dias</th><th>O.S. concl.</th><th>Pontos câm.</th><th>Manut.</th><th>Retrab.</th></tr></thead>
-          <tbody>${techWithData.map(r => `<tr><td>${U.esc(r.name)}</td><td>${r.days}</td><td>${U.fmtNum(r.osConcluidas)}</td><td>${U.fmtNum(r.pontosCamera)}</td><td>${U.fmtNum(r.manutencoes)}</td><td>${U.fmtNum(r.retrabalhos)}</td></tr>`).join('')}</tbody></table></div>`
+        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: '#2563eb' })), ' pontos')}
+          <div class="table-wrap"><table class="table"><thead><tr><th>Técnico</th><th>Dias</th><th>Pontos câm.</th><th>Manut.</th><th>Retrab.</th></tr></thead>
+          <tbody>${techWithData.map(r => `<tr><td>${U.esc(r.name)}</td><td>${r.days}</td><td>${U.fmtNum(r.pontosCamera)}</td><td>${U.fmtNum(r.manutencoes)}</td><td>${U.fmtNum(r.retrabalhos)}</td></tr>`).join('')}</tbody></table></div>`
           : H.empty(D.techNames().length ? 'Nenhum lançamento por técnico no período.' : 'Cadastre os técnicos em Configurações e lance os dados por técnico para ver a produtividade individual.')}
       </div>
       <div class="card">
         <div class="card-h"><h3>${U.icon('target')} Metas</h3><a class="link" href="#config">Configurar</a></div>
-        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || GOAL_METRICS.find(m => m.key === g.metric)?.label)}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Não alcançada</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--yellow)')}<small class="muted">${st.val === null ? 'Sem dados' : U.fmtNum(st.val)} / ${g.direction === 'max' ? 'máx. ' : ''}${U.fmtNum(st.target)} · ${g.period} (${U.fmtShort(st.from)}–${U.fmtShort(st.to)})</small></div>`).join('') : H.empty('Nenhuma meta configurada.')}
+        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Não alcançada</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--yellow)')}<small class="muted">${st.val === null ? 'Sem dados' : U.fmtNum(st.val)} / ${g.direction === 'max' ? 'máx. ' : ''}${U.fmtNum(st.target)} · ${g.period} (${U.fmtShort(st.from)}–${U.fmtShort(st.to)})</small></div>`).join('') : H.empty('Nenhuma meta configurada.')}
       </div>
     </section>
 
     <div class="card">
       <div class="card-h"><h3>Lançamentos do período</h3><span class="muted small">Totais somam todos os lançamentos. Se lançar por técnico, não repita os mesmos números como "Equipe (geral)".</span></div>
-      ${recs.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Técnico</th>${METRICS.map(m => `<th title="${m.label}">${m.label.replace('O.S. ', 'O.S. ').replace('Pontos de câmera instalados', 'Pontos câm.').replace('Manutenções realizadas', 'Manut.')}</th>`).join('')}<th></th></tr></thead>
+      ${recs.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Técnico</th>${METRICS.map(m => `<th title="${m.label}">${m.label.replace('Pontos de câmera instalados', 'Pontos câm.').replace('Manutenções realizadas', 'Manut.')}</th>`).join('')}<th></th></tr></thead>
         <tbody>${recs.map(r => `<tr><td>${U.fmtDate(r.date)}</td><td>${U.esc(r.technician || 'Equipe (geral)')}${H.demo(r)}</td>${METRICS.map(m => `<td>${r.values[m.key] === null || r.values[m.key] === undefined ? '<span class="muted">—</span>' : r.values[m.key]}</td>`).join('')}<td class="nowrap"><button class="icon-btn xs" data-act="indEdit" data-id="${r.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="indDel" data-id="${r.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>`
         : H.empty('Nenhum dado lançado neste período.', '<button class="btn sm primary" data-act="indNew">Lançar dados</button>')}
     </div>`;

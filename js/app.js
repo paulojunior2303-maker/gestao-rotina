@@ -30,6 +30,7 @@ const App = {
   },
 
   render(opts = {}) {
+    Theme.apply();
     const view = Views[this.route];
     const root = document.getElementById('view');
     let focus = null;
@@ -57,6 +58,7 @@ const App = {
   async init() {
     if (Native.available()) { await Native.restore(); Native.init(); document.body.classList.add('native'); }
     Store.load();
+    Theme.init();
     if (Cloud.available()) {
       document.getElementById('view').innerHTML = '<div class="loading"><span class="spinner"></span> Carregando seus dados…</div>';
       this.renderNav();
@@ -118,6 +120,28 @@ const App = {
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },
   openMenu() { document.body.classList.add('menu-open'); },
   closeMenu() { document.body.classList.remove('menu-open'); },
+};
+
+/* Tema claro/escuro (Configurações → Aparência) */
+const Theme = {
+  mq: window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null,
+  current() {
+    const t = (S && S.settings && S.settings.theme) || 'claro';
+    return t === 'escuro' || (t === 'auto' && this.mq && this.mq.matches) ? 'dark' : 'light';
+  },
+  apply() {
+    const t = this.current();
+    if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', t === 'dark' ? '#070d18' : '#0f1b2d');
+  },
+  init() {
+    this.apply();
+    if (this.mq) {
+      const onChange = () => { if (S.settings.theme === 'auto') this.apply(); };
+      if (this.mq.addEventListener) this.mq.addEventListener('change', onChange); else if (this.mq.addListener) this.mq.addListener(onChange);
+    }
+  },
 };
 
 /* Salva e redesenha a tela atual */

@@ -10,7 +10,15 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ['metas', 'Metas'], ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ['metas', 'Metas'], ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+
+    ${sec('aparencia', 'Aparência', 'Escolha o visual do app. O modo escuro cansa menos a vista à noite e em ambientes com pouca luz.', `
+      <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
+        ['claro', 'Claro', 'Fundo branco'],
+        ['escuro', 'Escuro', 'Fundo escuro'],
+        ['auto', 'Automático', 'Segue o tema do aparelho'],
+      ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'claro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'claro') === v}" data-act="themeSet" data-v="${v}">
+          <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
@@ -47,7 +55,7 @@ Views.config = {
       <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome do técnico…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
 
     ${sec('metas', 'Metas', 'Comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
-      ${st.goals.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Meta</th><th>Indicador</th><th>Período</th><th>Alvo</th><th></th></tr></thead><tbody>${st.goals.map(g => `<tr><td>${U.esc(g.name || '—')}${H.demo(g)}</td><td>${GOAL_METRICS.find(m => m.key === g.metric)?.label || g.metric}</td><td>${g.period}</td><td>${g.direction === 'max' ? 'no máximo' : 'no mínimo'} ${g.target}</td><td class="nowrap"><button class="icon-btn xs" data-act="goalEdit" data-id="${g.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="goalDel" data-id="${g.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nenhuma meta cadastrada.</p>'}
+      ${st.goals.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Meta</th><th>Indicador</th><th>Período</th><th>Alvo</th><th></th></tr></thead><tbody>${st.goals.map(g => `<tr><td>${U.esc(g.name || '—')}${H.demo(g)}</td><td>${metricLabel(g.metric)}</td><td>${g.period}</td><td>${g.direction === 'max' ? 'no máximo' : 'no mínimo'} ${g.target}</td><td class="nowrap"><button class="icon-btn xs" data-act="goalEdit" data-id="${g.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="goalDel" data-id="${g.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nenhuma meta cadastrada.</p>'}
       <div class="row-actions"><button class="btn sm" data-act="goalNew">${U.icon('plus', 15)} Nova meta</button></div>`)}
 
     ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos ${Guide.whereData()} (~${lsSize} KB). Cada versão (app Android, site, link do Claude) guarda os seus próprios dados.`, `
@@ -104,7 +112,7 @@ const Routine = {
 const Goals = {
   form(g) {
     const isNew = !g;
-    g = g || { metric: 'osConcluidas', period: 'semanal', direction: 'min', target: null };
+    g = g || { metric: 'pontosCamera', period: 'semanal', direction: 'min', target: null };
     UI.form({
       title: isNew ? 'Nova meta' : 'Editar meta',
       fields: [
@@ -163,6 +171,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
   xferOut() { Transfer.openExport(); },
   xferIn() { Transfer.openImport(); },
   demoLoad() { Store.loadDemo(); commit(); UI.toast('Dados de demonstração carregados (marcados como EXEMPLO).'); },

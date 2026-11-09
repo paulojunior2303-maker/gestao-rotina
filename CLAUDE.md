@@ -23,6 +23,8 @@ e diga o que mudou e como testar no celular.
 - Layout precisa caber em 393 px de largura (Redmi Note 12 do usuário), com o botão Salvar sempre visível.
 - Mudou o formato do estado? Mantenha compatibilidade em `Store.migrate` e em `Cloud.split/join` (limite de 256 KB por documento).
 - Interface simples: o usuário não quer um sistema que dê mais trabalho do que economiza.
+- Indicadores de **O.S. foram removidos** a pedido do usuário (v1.2). Não reintroduzir. Dados antigos ficam em `LEGACY_METRICS`.
+- **Tema claro/escuro**: use sempre as variáveis de cor de `:root` / `:root[data-theme="dark"]` em `css/styles.css`, nunca cores fixas. `tests/theme.test.js` verifica o contraste.
 
 ## Testes (rodar antes de todo commit)
 ```bash

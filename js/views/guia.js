@@ -216,16 +216,17 @@ Views.guia = {
 
     ${sec('indicadores', 'chart', 'Indicadores e relatórios', li([
       '<strong>Lançar dados</strong>: informe por dia, para a equipe ou por técnico. Preencha só o que tiver.',
-      'Campo vazio = <strong>“sem dados”</strong> (nunca vira zero). O.S. pendentes e atrasadas são a posição do dia; os demais indicadores somam no período.',
+      'Indicadores: <strong>pontos de câmera instalados, manutenções e retrabalhos</strong>, somados no período. Campo vazio = <strong>“sem dados”</strong> (nunca vira zero).',
       'Troque o período (Semana, Mês, Ano, Personalizado) e o gráfico (Diário, Semanal, Mensal).',
       Native.available() ? '<strong>Excel</strong> e <strong>backup</strong> abrem o menu Compartilhar (Drive, Arquivos, WhatsApp…). <strong>PDF</strong> abre a impressão: escolha “Salvar como PDF”.' : '<strong>Excel</strong> gera a planilha; <strong>PDF</strong> gera o relatório para imprimir ou “Salvar como PDF”.',
     ]))}
 
     ${sec('config', 'settings', 'Configurações', li([
+      '<strong>Aparência</strong>: modo <strong>claro</strong>, <strong>escuro</strong> ou <strong>automático</strong> (segue o tema do celular).',
       '<strong>Jornada</strong>: horários, intervalo, dias de trabalho e antecedência dos alertas de prazo.',
       '<strong>Rotina padrão</strong>: blocos de horário recorrentes (dias da semana ou um dia do mês).',
       '<strong>Categorias</strong>, <strong>Prioridades e status</strong>: nomes e cores.',
-      '<strong>Técnicos</strong> e <strong>Metas</strong> (ex.: O.S. concluídas por semana, retrabalhos no máximo X).',
+      '<strong>Técnicos</strong> e <strong>Metas</strong> (ex.: pontos de câmera por semana, retrabalhos no máximo X).',
     ]))}
 
     ${sec('dados', 'download', 'Seus dados e backup', li([
