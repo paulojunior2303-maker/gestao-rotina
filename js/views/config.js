@@ -50,10 +50,17 @@ Views.config = {
       ${st.goals.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Meta</th><th>Indicador</th><th>Período</th><th>Alvo</th><th></th></tr></thead><tbody>${st.goals.map(g => `<tr><td>${U.esc(g.name || '—')}${H.demo(g)}</td><td>${GOAL_METRICS.find(m => m.key === g.metric)?.label || g.metric}</td><td>${g.period}</td><td>${g.direction === 'max' ? 'no máximo' : 'no mínimo'} ${g.target}</td><td class="nowrap"><button class="icon-btn xs" data-act="goalEdit" data-id="${g.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="goalDel" data-id="${g.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nenhuma meta cadastrada.</p>'}
       <div class="row-actions"><button class="btn sm" data-act="goalNew">${U.icon('plus', 15)} Nova meta</button></div>`)}
 
-    ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos neste navegador (LocalStorage, ~${lsSize} KB). Limpar os dados do navegador apaga as informações — faça backups periódicos.`, `
+    ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos ${Guide.whereData()} (~${lsSize} KB). Cada versão (app Android, site, link do Claude) guarda os seus próprios dados.`, `
+      <h4>Levar dados para outra versão ou aparelho</h4>
+      <p class="muted small">Gera um <strong>código de texto</strong> com todos os seus dados. Mande para você mesmo (WhatsApp, e-mail, Keep) e cole na outra versão.</p>
       <div class="row-actions wrap">
-        <button class="btn" data-act="dataExport">${U.icon('download', 15)} Exportar backup (JSON)</button>
-        <label class="btn">${U.icon('upload', 15)} Importar backup<input type="file" accept=".json,application/json" data-change="dataImport" hidden></label>
+        <button class="btn primary" data-act="xferOut">${U.icon('arrow', 15)} Enviar meus dados</button>
+        <button class="btn" data-act="xferIn">${U.icon('download', 15)} Receber dados</button>
+      </div>
+      <h4>Backup em arquivo</h4>
+      <div class="row-actions wrap">
+        <button class="btn" data-act="dataExport">${U.icon('download', 15)} Exportar backup (arquivo)</button>
+        <label class="btn">${U.icon('upload', 15)} Importar backup<input type="file" data-change="dataImport" hidden></label>
       </div>
       <h4>Dados de demonstração</h4>
       <p class="muted small">Exemplos marcados com “[Exemplo]” e o selo EXEMPLO, para conhecer o aplicativo. Não representam sua operação.</p>
@@ -153,13 +160,11 @@ Object.assign(Actions, {
   dataExport() { U.download(`backup-gestao-rotina_${U.today()}.json`, new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); UI.toast('Backup exportado.'); },
   dataImport(_, el) {
     const file = el.files[0]; if (!file) return;
-    file.text().then(txt => {
-      let data; try { data = JSON.parse(txt); } catch (e) { return UI.toast('Arquivo inválido.', 'error'); }
-      if (!data || !data.settings || !Array.isArray(data.tasks)) return UI.toast('O arquivo não parece ser um backup deste aplicativo.', 'error');
-      UI.confirm('Importar este backup? Os dados atuais serão substituídos.', () => { Store.replace(data); App.render(); UI.toast('Backup importado.'); }, { okLabel: 'Importar' });
-    });
+    file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  xferOut() { Transfer.openExport(); },
+  xferIn() { Transfer.openImport(); },
   demoLoad() { Store.loadDemo(); commit(); UI.toast('Dados de demonstração carregados (marcados como EXEMPLO).'); },
   demoRemove() { UI.confirm('Remover todos os dados de demonstração? Seus dados reais não serão afetados.', () => { Store.removeDemo(); commit(); UI.toast('Dados de demonstração removidos.'); }, { okLabel: 'Remover' }); },
   dataReset() { UI.confirm('Apagar <strong>todos</strong> os dados e voltar às configurações iniciais? Essa ação não pode ser desfeita. Considere exportar um backup antes.', () => { Store.replace(Store.defaults()); App.render(); UI.toast('Dados apagados.'); }, { danger: true, okLabel: 'Apagar tudo' }); },
