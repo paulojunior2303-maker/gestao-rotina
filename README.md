@@ -6,6 +6,8 @@ e guarda os dados no **LocalStorage** do navegador.
 
 **Versão online:** https://paulojunior2303-maker.github.io/gestao-rotina/ (GitHub Pages: abra no navegador e use “Instalar app”).
 
+**App Android:** [baixar o APK mais recente](https://github.com/paulojunior2303-maker/gestao-rotina/releases/latest/download/GestaoRotina.apk). Ele é gerado automaticamente; veja `android-app/LEIA-ME.md`.
+
 ## Como executar
 
 **Opção 1 — arquivo único (mais simples)**

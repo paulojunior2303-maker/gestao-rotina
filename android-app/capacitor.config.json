@@ -1,0 +1,10 @@
+{
+  "appId": "app.gestaorotina.lideranca",
+  "appName": "Gestão de Rotina",
+  "webDir": "www",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}

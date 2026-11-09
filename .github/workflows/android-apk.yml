@@ -1,0 +1,107 @@
+# Gera o APK Android assinado a cada mudança no app e publica numa Release.
+# Secrets necessários (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+name: APK Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'icon.svg'
+      - 'build.py'
+      - 'android-app/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      # 1.0.2 = versionCode 3; cada execução gera um número maior para instalar por cima
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versão
+        run: |
+          CODE=$((3 + VERSION_CODE))
+          NAME="1.1.${VERSION_CODE}"
+          echo "APP_VERSION_CODE=$CODE" >> "$GITHUB_ENV"
+          echo "APP_VERSION_NAME=$NAME" >> "$GITHUB_ENV"
+          echo "Versão $NAME (code $CODE)"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: android-app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" > /dev/null
+
+      - name: Gerar o app web (arquivo único)
+        run: |
+          python3 build.py
+          mkdir -p android-app/www
+          cp dist/gestao-rotina.html android-app/www/index.html
+
+      - name: Capacitor
+        working-directory: android-app
+        run: |
+          npm ci
+          npx cap sync android
+
+      - name: Chave de assinatura
+        working-directory: android-app
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KS_B64" ]; then echo "::error::Secret ANDROID_KEYSTORE_BASE64 não configurado"; exit 1; fi
+          mkdir -p keystore
+          echo "$KS_B64" | base64 -d > keystore/gestao-rotina.jks
+          printf 'storeFile=gestao-rotina.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KS_PASS" "$KEY_ALIAS" "$KEY_PASS" > keystore/keystore.properties
+
+      - name: Compilar APK
+        working-directory: android-app/android
+        run: ./gradlew assembleRelease --no-daemon -PappVersionCode=$APP_VERSION_CODE -PappVersionName=$APP_VERSION_NAME
+
+      - name: Conferir assinatura
+        run: |
+          APK=android-app/android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK" | grep "SHA-256"
+          mv "$APK" "GestaoRotina-$APP_VERSION_NAME.apk"
+          cp "GestaoRotina-$APP_VERSION_NAME.apk" GestaoRotina.apk
+          rm -rf android-app/keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GestaoRotina-${{ env.APP_VERSION_NAME }}
+          path: GestaoRotina-${{ env.APP_VERSION_NAME }}.apk
+
+      - name: Publicar Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$APP_VERSION_NAME" "GestaoRotina-$APP_VERSION_NAME.apk" GestaoRotina.apk \
+            --title "Gestão de Rotina $APP_VERSION_NAME" \
+            --notes "APK gerado automaticamente a partir de ${GITHUB_SHA::7}. Instale por cima da versão atual (os dados são mantidos)." \
+            --latest
