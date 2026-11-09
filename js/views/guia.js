@@ -11,48 +11,48 @@ const Guide = {
   /* Ilustrações: miniaturas dos componentes reais do app (não clicáveis) */
   mock: {
     nav: () => `<div class="tour-mock tm-nav">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['tasks', 'Tarefas'], ['alert', 'Imprevistos'], ['menu', 'Menu']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 18)}<small>${l}</small></span>`).join('')}</div>`,
-    agenda: () => `<div class="tour-mock"><div class="blk" style="--c:#0284c7"><div class="blk-time"><strong>09:00</strong><span>10:30</span></div>
-      <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><div class="blk-meta">${H.chip('Operacional', '#0284c7')} ${H.status('pendente')}</div></div>
+    agenda: () => `<div class="tour-mock"><div class="blk" style="--c:#7b3fe4"><div class="blk-time"><strong>09:00</strong><span>10:30</span></div>
+      <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><div class="blk-meta">${H.chip('Operacional', '#7b3fe4')} ${H.status('pendente')}</div></div>
       <div class="blk-actions"><span class="icon-btn ok">${U.icon('check', 16)}</span><span class="icon-btn info">${U.icon('play', 14)}</span><span class="icon-btn">${U.icon('more', 16)}</span></div></div>
       <div class="tm-legend"><span>${U.icon('check', 13)} Concluir</span><span>${U.icon('play', 11)} Iniciar</span><span>${U.icon('more', 13)} Adiar, mover, excluir</span></div></div>`,
-    task: () => `<div class="tour-mock"><div class="task dl-row-soon" style="--c:#d97706"><label class="tk-check"><span></span></label><div class="tk-body"><div class="tk-title">Cobrar relatório da equipe</div>
+    task: () => `<div class="tour-mock"><div class="task dl-row-soon" style="--c:#e3a043"><label class="tk-check"><span></span></label><div class="tk-body"><div class="tk-title">Cobrar relatório da equipe</div>
       <div class="tk-meta">${H.prio('alta')} <span class="muted">${U.icon('user', 13)} Carlos</span> <span class="dl dl-today">${U.icon('clock', 13)} Vence hoje</span></div></div></div>
       <div class="tm-legend"><span>Toque no quadrado para concluir</span><span>Toque no texto para editar</span></div></div>`,
     occ: () => `<div class="tour-mock"><div class="occ card prio-border-urgente"><div class="occ-h"><h3>Câmeras offline no cliente</h3><span class="grow"></span>${H.prio('urgente')}</div>
       <div class="occ-actions"><span class="btn sm">${U.icon('calendar', 15)} Encaixar na agenda</span><span class="btn sm ghost ok-text">${U.icon('check', 15)} Resolver</span></div></div></div>`,
     dash: () => `<div class="tour-mock tm-kpis"><div class="kpi k-green"><span class="kpi-l">Progresso do dia</span><strong class="kpi-v">45%</strong></div><div class="kpi k-red"><span class="kpi-l">Atrasadas</span><strong class="kpi-v">2</strong></div><div class="kpi k-yellow"><span class="kpi-l">Imprevistos</span><strong class="kpi-v">1</strong></div></div>`,
-    plan: () => `<div class="tour-mock tm-grid">${[['week', 'Semanal', 'Checklist por dia'], ['calendar', 'Mensal', '4 ciclos + calendário'], ['kanban', 'Projetos', 'Etapas e Kanban'], ['chart', 'Indicadores', 'Gráficos, Excel, PDF']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
+    plan: () => `<div class="tour-mock tm-grid">${[['week', 'Semanal', 'O que garantir em cada dia'], ['calendar', 'Mensal', '4 semanas e calendário'], ['kanban', 'Projetos', 'Etapas e Kanban'], ['info', 'Guia de uso', 'Tudo explicado']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
     data: () => `<div class="tour-mock tm-data"><span class="btn sm primary">${U.icon('arrow', 15)} Enviar meus dados</span><span class="btn sm">${U.icon('download', 15)} Receber dados</span></div>`,
   },
 
   slides() {
     const m = this.mock;
     return [
-      { icon: 'dashboard', color: '#2563eb', title: 'Bem-vindo ao seu centro de controle',
+      { icon: 'dashboard', color: 'var(--primary)', title: 'Bem-vindo ao seu centro de controle',
         text: 'Em poucos toques você vê o que fazer hoje, o que está atrasado, o que cobrar da equipe e quais projetos precisam de atenção.',
         mock: m.nav(),
-        points: ['Use a <strong>barra inferior</strong> para as telas do dia a dia.', '<strong>Menu</strong> abre o planejamento, projetos, indicadores, configurações e este guia.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
-      { icon: 'dashboard', color: '#0f1b2d', title: 'Início: o resumo do seu dia',
+        points: ['Use a <strong>barra inferior</strong> para as telas do dia a dia.', '<strong>Menu</strong> abre o planejamento, projetos, configurações e este guia.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
+      { icon: 'dashboard', color: 'var(--primary)', title: 'Início: o resumo do seu dia',
         text: 'A primeira tela mostra a situação geral, atualizada automaticamente.',
         mock: m.dash(),
         points: ['<strong>O que fazer hoje</strong>: próximas atividades da agenda.', '<strong>O que resolver</strong>: urgentes, alta prioridade e atrasados.', '<strong>O que cobrar da equipe</strong>: itens com responsável definido.', 'Toque nos cartões para abrir a lista correspondente.'] },
-      { icon: 'clock', color: '#0284c7', title: 'Agenda: seu dia por horário',
+      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: seu dia por horário',
         text: 'Sua rotina já vem montada (08:00–18:00). Marque o andamento ao longo do dia.',
         mock: m.agenda(),
         points: ['Toque na atividade para mudar horário, prioridade ou observações.', 'Use <strong>‹ ›</strong> no topo para ver outros dias.', '<strong>Reorganizar</strong> move as atrasadas para o próximo dia útil.', '<strong>Horário fixo</strong> só impede que a atividade seja empurrada; ela continua contando no progresso.'] },
-      { icon: 'alert', color: '#dc2626', title: 'Imprevistos: o urgente sem bagunçar o dia',
+      { icon: 'alert', color: 'var(--primary)', title: 'Imprevistos: o urgente sem bagunçar o dia',
         text: 'Registre demandas que exigem atenção imediata pelo botão <strong>Imprevisto</strong>.',
         mock: m.occ(),
         points: ['<strong>Encaixar na agenda</strong> reserva um horário e empurra as atividades seguintes, sem mexer no intervalo.', 'Defina um <strong>responsável</strong> para acompanhar em “O que cobrar”.', '<strong>Resolver</strong> encerra o imprevisto e conclui o horário reservado.'] },
-      { icon: 'tasks', color: '#d97706', title: 'Tarefas com prazo e alertas',
+      { icon: 'tasks', color: 'var(--primary)', title: 'Tarefas com prazo e alertas',
         text: 'Cadastre pendências com prazo, prioridade e, se delegar, o responsável.',
         mock: m.task(),
         points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', 'Os contadores no topo funcionam como filtros (Abertas, Atrasadas, Concluídas…).'] },
-      { icon: 'week', color: '#7c3aed', title: 'Planejamento, projetos e resultados',
+      { icon: 'week', color: 'var(--primary)', title: 'Planejamento, projetos e resultados',
         text: 'No <strong>Menu</strong> ficam as visões de médio prazo.',
         mock: m.plan(),
-        points: ['<strong>Semanal</strong>: foco de cada dia (segunda = planejamento… sexta = resultados).', '<strong>Projetos</strong>: marque as etapas e o percentual é calculado sozinho.', '<strong>Indicadores</strong>: toque em <strong>Lançar dados</strong>. Campo vazio aparece como “sem dados”, nunca como zero.'] },
-      { icon: 'download', color: '#16a34a', title: 'Seus dados', final: true,
+        points: ['<strong>Semanal</strong>: uma lista do que você quer garantir em cada dia da semana. Ela se repete toda semana.', '<strong>Mensal</strong>: o mesmo, dividido nas 4 semanas do mês, mais um calendário com prazos e compromissos.', '<strong>Projetos</strong>: marque as etapas e o percentual é calculado sozinho.', 'Os dois planejamentos começam <strong>em branco</strong>: o Guia de uso mostra como montar.'] },
+      { icon: 'download', color: 'var(--primary)', title: 'Seus dados', final: true,
         text: `Tudo o que você cadastra fica salvo ${this.whereData()}.`,
         mock: m.data(),
         points: ['Para passar os dados entre o app, o site e o link do Claude: Configurações → Dados → <strong>Enviar meus dados</strong> / <strong>Receber dados</strong>.', 'Faça um <strong>backup</strong> de vez em quando: Configurações → Exportar backup.', Native.available() ? 'Desinstalar o app apaga os dados; o backup permite restaurá-los.' : 'O backup também serve para levar os dados a outro aparelho.', 'Em <strong>Configurações</strong> você ajusta jornada, rotina, categorias, técnicos e metas.'] },
@@ -140,8 +140,15 @@ const Tutorial = {
 
 Views.guia = {
   title: 'Guia de uso', icon: 'info', nav: 'Guia de uso',
+  mount(root) {
+    const id = App.ui.guideSec; if (!id) return;
+    App.ui.guideSec = null;
+    const el = root.querySelector('#g-' + id);
+    if (el) setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
+  },
   render() {
-    const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${open ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
+    const want = App.ui.guideSec;
+    const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${(want ? want === id : open) ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
     return `
     <div class="card guide-hero">
@@ -154,11 +161,12 @@ Views.guia = {
       <li><strong>Configurações → Rotina padrão</strong>: ajuste os blocos de horário do seu dia. Eles montam a agenda de cada dia útil.</li>
       <li><strong>Configurações → Técnicos</strong>: cadastre a equipe para usar como responsáveis e na produtividade individual.</li>
       <li><strong>Tarefas</strong> e <strong>Projetos</strong>: cadastre as pendências e obras em andamento.</li>
+      <li>Opcional: monte seu <strong>Planejamento semanal</strong> (o que garantir em cada dia). Veja como no tema abaixo.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
     ${sec('nav', 'menu', 'Navegação no celular', li([
       '<strong>Barra inferior</strong>: Início, Agenda, Tarefas, Imprevistos e Menu.',
-      '<strong>Menu</strong> (ou ☰ no topo): Planejamento semanal e mensal, Projetos, Indicadores, Configurações e este Guia.',
+      `<strong>Menu</strong> (ou ☰ no topo): Planejamento semanal e mensal, Projetos${S.settings.showIndicadores ? ', Indicadores' : ''}, Configurações e este Guia.`,
       'Os <strong>números em vermelho</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
@@ -171,7 +179,8 @@ Views.guia = {
       '<strong>O que fazer hoje</strong>: a atividade atual (marcada “Agora”) e as próximas.',
       '<strong>O que resolver</strong>: imprevistos abertos, tarefas urgentes, de alta prioridade ou atrasadas.',
       '<strong>O que cobrar da equipe</strong>: tarefas, imprevistos e pendências de projeto com responsável definido.',
-      '<strong>Resumo da semana</strong>, <strong>Metas</strong> e <strong>Próximos 7 dias</strong> (prazos e compromissos).',
+      'A <strong>linha do tempo</strong> abaixo da data mostra o dia inteiro: blocos roxos estão concluídos, o claro é o que acontece agora e os vermelhos estão atrasados. Toque nela para abrir a agenda.',
+      `<strong>Resumo da semana</strong>${S.settings.showIndicadores ? ', <strong>Metas</strong>' : ''} e <strong>Próximos 7 dias</strong> (prazos e compromissos).`,
     ]))}
 
     ${sec('agenda', 'clock', 'Cronograma diário (Agenda)', `${li([
@@ -200,12 +209,41 @@ Views.guia = {
       'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada.',
     ]))}
 
-    ${sec('semanal', 'week', 'Planejamento semanal e mensal', li([
-      '<strong>Semanal</strong>: cada dia útil tem um foco de gestão e um checklist. Marque os itens ao longo da semana.',
-      'O lápis edita o foco ou o item. <strong>+ Adicionar item</strong> inclui novos. O modelo vale para todas as semanas; as marcações são de cada semana.',
-      '<strong>Mensal</strong>: 4 ciclos (Diagnóstico, Equipe, Projetos, Consolidação) com checklist por mês. O ciclo atual fica destacado.',
-      'No <strong>calendário</strong>, os pontos coloridos indicam compromissos, prazos de tarefas, projetos e imprevistos. Toque no dia para ver detalhes ou criar um compromisso.',
-    ]))}
+    ${sec('semanal', 'week', 'Planejamento semanal', `
+      <p><strong>Para que serve:</strong> é a lista do que você quer garantir em cada dia da semana, e que se repete toda semana. Ajuda a não esquecer as rotinas de gestão, como revisar pendências na segunda ou fechar resultados na sexta.</p>
+      <p><strong>Como montar (uma vez só):</strong></p>
+      <ol>
+        <li>Abra <strong>Menu → Planejamento semanal</strong>. A tela começa em branco, com um quadro para cada dia útil.</li>
+        <li>Toque no <strong>lápis</strong> de um dia e escreva o <strong>foco</strong>, um tema curto (ex.: “Planejamento”). É opcional.</li>
+        <li>Toque em <strong>Adicionar item</strong> e escreva o que precisa ser feito nesse dia. Repita para cada item.</li>
+      </ol>
+      <p><strong>No dia a dia:</strong></p>
+      ${li([
+        'Marque cada item quando fizer. O anel no topo mostra quanto da semana já foi cumprido.',
+        'O foco do dia também aparece no <strong>Início</strong> e na <strong>Agenda</strong>.',
+        'Na semana seguinte a lista volta desmarcada. As marcações antigas ficam guardadas: use <strong>‹ ›</strong> para ver outras semanas.',
+        'Para mudar ou excluir um item, toque no lápis ao lado dele.',
+      ])}
+      <p class="guide-note"><strong>Exemplo:</strong> Segunda, foco “Planejamento”, itens “Revisar pendências da semana passada” e “Distribuir atividades da equipe”. Sexta, foco “Resultados”, item “Preparar a próxima semana”.</p>
+      <p class="guide-note"><strong>Tarefas ou planejamento?</strong> Use <strong>Tarefas</strong> para algo que acontece uma vez e tem prazo. Use o <strong>planejamento semanal</strong> para o que se repete toda semana.</p>`)}
+
+    ${sec('mensal', 'calendar', 'Planejamento mensal', `
+      <p><strong>Para que serve:</strong> é a mesma ideia do semanal, em escala de mês. O mês é dividido em <strong>4 semanas</strong>: dias 1 a 7, 8 a 14, 15 a 21 e 22 até o fim. Cada uma pode ter um foco e uma lista de entregas.</p>
+      <p><strong>Como montar (uma vez só):</strong></p>
+      <ol>
+        <li>Abra <strong>Menu → Planejamento mensal</strong>. Os 4 quadros começam em branco.</li>
+        <li>Toque no <strong>lápis</strong> de uma semana e escreva o foco dela (ex.: “Diagnóstico”). É opcional.</li>
+        <li>Toque em <strong>Adicionar item</strong> para listar as entregas daquele período.</li>
+      </ol>
+      <p><strong>No dia a dia:</strong></p>
+      ${li([
+        'A semana em que você está fica destacada. Marque os itens conforme forem concluídos.',
+        'No mês seguinte a lista volta desmarcada. Use <strong>‹ ›</strong> para ver outros meses.',
+        'O <strong>calendário</strong> abaixo reúne compromissos e prazos de tarefas, projetos e imprevistos. No celular, cada cor de ponto é um tipo.',
+        'Toque em um dia do calendário para ver o que há nele, criar um compromisso ou abrir a agenda daquele dia.',
+        '<strong>Novo compromisso</strong> registra reuniões e visitas. Se quiser, ele já entra na agenda do dia.',
+      ])}
+      <p class="guide-note"><strong>Exemplo:</strong> Semana 1, foco “Diagnóstico”, item “Levantar pendências do mês anterior”. Semana 4, foco “Fechamento”, itens “Avaliar resultados” e “Planejar o mês seguinte”.</p>`)}
 
     ${sec('projetos', 'kanban', 'Projetos', li([
       '<strong>+ Novo projeto</strong>: cliente, responsável, datas, status e etapas (uma por linha).',
@@ -214,19 +252,19 @@ Views.guia = {
       '<strong>Linha do tempo</strong>: barras do início ao prazo, com a linha vermelha marcando hoje.',
     ]))}
 
-    ${sec('indicadores', 'chart', 'Indicadores e relatórios', li([
+    ${S.settings.showIndicadores ? sec('indicadores', 'chart', 'Indicadores e relatórios', li([
       '<strong>Lançar dados</strong>: informe por dia, para a equipe ou por técnico. Preencha só o que tiver.',
       'Indicadores: <strong>pontos de câmera instalados, manutenções e retrabalhos</strong>, somados no período. Campo vazio = <strong>“sem dados”</strong> (nunca vira zero).',
       'Troque o período (Semana, Mês, Ano, Personalizado) e o gráfico (Diário, Semanal, Mensal).',
       Native.available() ? '<strong>Excel</strong> e <strong>backup</strong> abrem o menu Compartilhar (Drive, Arquivos, WhatsApp…). <strong>PDF</strong> abre a impressão: escolha “Salvar como PDF”.' : '<strong>Excel</strong> gera a planilha; <strong>PDF</strong> gera o relatório para imprimir ou “Salvar como PDF”.',
-    ]))}
+    ])) : ''}
 
     ${sec('config', 'settings', 'Configurações', li([
-      '<strong>Aparência</strong>: modo <strong>claro</strong>, <strong>escuro</strong> ou <strong>automático</strong> (segue o tema do celular).',
+      '<strong>Aparência</strong>: modo <strong>escuro</strong>, <strong>claro</strong> ou <strong>automático</strong> (segue o tema do celular). Ali também dá para <strong>mostrar ou ocultar a tela Indicadores</strong> no menu.',
       '<strong>Jornada</strong>: horários, intervalo, dias de trabalho e antecedência dos alertas de prazo.',
       '<strong>Rotina padrão</strong>: blocos de horário recorrentes (dias da semana ou um dia do mês).',
       '<strong>Categorias</strong>, <strong>Prioridades e status</strong>: nomes e cores.',
-      '<strong>Técnicos</strong> e <strong>Metas</strong> (ex.: pontos de câmera por semana, retrabalhos no máximo X).',
+      S.settings.showIndicadores ? '<strong>Técnicos</strong> e <strong>Metas</strong> (ex.: pontos de câmera por semana, retrabalhos no máximo X).' : '<strong>Técnicos</strong>: a equipe, usada como responsável em tarefas, imprevistos e projetos.',
     ]))}
 
     ${sec('dados', 'download', 'Seus dados e backup', li([
@@ -239,7 +277,8 @@ Views.guia = {
 
     ${sec('faq', 'info', 'Dúvidas frequentes', `<dl class="faq">
       <dt>Concluí uma atividade, mas o progresso não mudou.</dt><dd>Só o <strong>Intervalo</strong> e atividades <strong>canceladas</strong> ficam fora do progresso. Confira se a atividade não está com status Cancelada.</dd>
-      <dt>Por que um indicador aparece como “sem dados”?</dt><dd>Porque nada foi lançado para ele no período escolhido. O app não inventa nem assume zero.</dd>
+      <dt>Qual a diferença entre Tarefas e Planejamento semanal?</dt><dd>Tarefa é algo que acontece uma vez e tem prazo. O planejamento semanal é a lista que se repete toda semana, dia a dia.</dd>
+      ${S.settings.showIndicadores ? '<dt>Por que um indicador aparece como “sem dados”?</dt><dd>Porque nada foi lançado para ele no período escolhido. O app não inventa nem assume zero.</dd>' : ''}
       <dt>Uma atividade aparece “Fora do expediente”.</dt><dd>Ela termina depois do horário de saída (geralmente após deslocar o dia). Use ⋯ → Mover para o próximo dia útil.</dd>
       <dt>Como faço para que uma mudança valha para todos os dias?</dt><dd>Edite em Configurações → Rotina padrão, ou marque “Aplicar também à rotina padrão” ao editar uma atividade da agenda.</dd>
       <dt>Como levo meus dados do app para a web (ou para outro celular)?</dt><dd>Configurações → Dados → <strong>Enviar meus dados</strong>, copie o código e mande para você mesmo. Na outra versão: Configurações → Dados → <strong>Receber dados</strong>, cole e confirme. Os dados da versão de destino são substituídos.</dd>
@@ -249,4 +288,5 @@ Views.guia = {
 
 Object.assign(Actions, {
   tourOpen() { Tutorial.open(0); },
+  guideOpen({ id }) { App.ui.guideSec = id; App.go('guia'); },
 });

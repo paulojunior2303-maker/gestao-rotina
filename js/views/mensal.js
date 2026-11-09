@@ -1,7 +1,7 @@
 'use strict';
 /* Planejamento mensal — 4 ciclos + calendário com prazos e compromissos */
 const cycleOf = k => { const d = U.parse(k).getDate(); return d <= 7 ? 1 : d <= 14 ? 2 : d <= 21 ? 3 : 4; };
-const CYCLE_COLORS = ['#0284c7', '#7c3aed', '#0d9488', '#d97706'];
+const CYCLE_COLORS = ['var(--cy1)', 'var(--cy2)', 'var(--cy3)', 'var(--cy4)'];
 
 const Month = {
   itemsOn(k) {
@@ -27,11 +27,11 @@ Views.mensal = {
       const dn = c.items.filter(x => chk[x.id]).length;
       const p = c.items.length ? Math.round(dn / c.items.length * 100) : null;
       const range = [[1, 7], [8, 14], [15, 21], [22, Number(U.monthEnd(mk).slice(8))]][i];
-      return `<div class="cycle card ${curCycle === c.n ? 'is-current' : ''}" style="--cc:${CYCLE_COLORS[i]}">
-        <div class="wk-h"><div><small>Semana ${c.n} · dias ${range[0]}–${range[1]}</small><h3>${U.esc(c.title)}</h3></div>
-        <button class="icon-btn" data-act="mcEdit" data-n="${c.n}" title="Editar ciclo">${U.icon('edit', 15)}</button></div>
-        ${H.bar(p, 'var(--cc)')}<small class="muted">${c.items.length ? `${dn}/${c.items.length}` : 'Sem itens'}${curCycle === c.n ? ' · <strong>ciclo atual</strong>' : ''}</small>
-        <ul class="checklist">${c.items.map(x => `<li><label class="check"><input type="checkbox" data-change="mcCheck" data-id="${x.id}" ${chk[x.id] ? 'checked' : ''}><span>${U.esc(x.text)}</span></label><button class="icon-btn xs" data-act="mcItemEdit" data-n="${c.n}" data-id="${x.id}">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
+      return `<div class="cycle card ${curCycle === c.n ? 'is-current' : ''} ${!c.title && !c.items.length ? 'is-empty' : ''}" style="--cc:${CYCLE_COLORS[i]}">
+        <div class="wk-h"><div><small>Semana ${c.n}, dias ${range[0]} a ${range[1]}${curCycle === c.n ? ' · agora' : ''}</small><h3>${c.title ? U.esc(c.title) : '<span class="muted">Sem foco definido</span>'}</h3></div>
+        <button class="icon-btn" data-act="mcEdit" data-n="${c.n}" title="${c.title ? 'Editar foco' : 'Definir foco'}" aria-label="${c.title ? 'Editar foco' : 'Definir foco'}">${U.icon('edit', 15)}</button></div>
+        ${c.items.length ? `${H.bar(p, 'var(--cc)')}<small class="muted">${dn}/${c.items.length} concluídos</small>` : ''}
+        <ul class="checklist">${c.items.map(x => `<li><label class="check"><input type="checkbox" data-change="mcCheck" data-id="${x.id}" ${chk[x.id] ? 'checked' : ''}><span>${U.esc(x.text)}</span></label><button class="icon-btn xs" data-act="mcItemEdit" data-n="${c.n}" data-id="${x.id}" title="Editar item">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
         <button class="btn sm ghost add-item" data-act="mcItemAdd" data-n="${c.n}">${U.icon('plus', 15)} Adicionar item</button>
       </div>`;
     }).join('');
@@ -55,11 +55,15 @@ Views.mensal = {
     }).join('');
 
     return `
+    <div class="plan-intro">
+      <p>O mês é dividido em <strong>4 semanas</strong>. Dê um foco a cada uma e liste as entregas do período. A lista se repete todo mês; as marcações valem só para o mês exibido. Abaixo, o calendário reúne prazos e compromissos.</p>
+      <button class="link" data-act="guideOpen" data-id="mensal">Como funciona</button>
+    </div>
     <div class="toolbar">
       <div class="date-nav">
-        <button class="icon-btn" data-act="mShift" data-n="-1">${U.icon('left')}</button>
+        <button class="icon-btn" data-act="mShift" data-n="-1" aria-label="Mês anterior">${U.icon('left')}</button>
         <strong class="range-lbl">${U.fmtMonth(mk)}</strong>
-        <button class="icon-btn" data-act="mShift" data-n="1">${U.icon('right')}</button>
+        <button class="icon-btn" data-act="mShift" data-n="1" aria-label="Próximo mês">${U.icon('right')}</button>
         ${mk !== U.monthKey(t) ? '<button class="btn sm ghost" data-act="mShift" data-n="0">Mês atual</button>' : ''}
       </div>
       <span class="grow"></span>
@@ -70,7 +74,7 @@ Views.mensal = {
       <div class="card-h"><h3>${U.icon('calendar')} Calendário</h3>
         <div class="legend"><span><i class="t-evento"></i>Compromisso</span><span><i class="t-tarefa"></i>Tarefa</span><span><i class="t-projeto"></i>Projeto</span><span><i class="t-imprevisto"></i>Imprevisto</span></div></div>
       <div class="cal">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => `<div class="cal-wd">${d}</div>`).join('')}${cal}</div>
-      <p class="muted small mt">A faixa colorida no topo de cada dia indica o ciclo do mês. Clique em um dia para ver detalhes, adicionar compromissos ou abrir a agenda.</p>
+      <p class="muted small mt">A faixa no topo de cada dia indica a semana do mês. Toque em um dia para ver detalhes, criar um compromisso ou abrir a agenda.</p>
     </div>`;
   },
 };
@@ -110,11 +114,11 @@ Object.assign(Actions, {
   },
   mcEdit({ n }) {
     const c = S.monthly.cycles.find(x => x.n === Number(n));
-    UI.form({ title: `Ciclo da semana ${n}`, fields: [{ name: 'title', label: 'Foco do ciclo', required: true, value: c.title }], onSubmit(v) { c.title = v.title; commit(); } });
+    UI.form({ title: `Foco da semana ${n} do mês`, fields: [{ name: 'title', label: 'Foco', value: c.title, placeholder: 'Ex.: Diagnóstico, Equipe, Fechamento…', hint: 'Um tema para essa parte do mês. Pode deixar em branco.' }], onSubmit(v) { c.title = v.title; commit(); } });
   },
   mcItemAdd({ n }) {
     const c = S.monthly.cycles.find(x => x.n === Number(n));
-    UI.form({ title: `Novo item — Semana ${n}`, fields: [{ name: 'text', label: 'Item', required: true }], onSubmit(v) { c.items.push({ id: U.uid(), text: v.text }); commit(); } });
+    UI.form({ title: `Novo item da semana ${n}`, fields: [{ name: 'text', label: 'Item', required: true, placeholder: 'Ex.: Fechar relatório do mês' }], onSubmit(v) { c.items.push({ id: U.uid(), text: v.text }); commit(); } });
   },
   mcItemEdit({ n, id }) {
     const c = S.monthly.cycles.find(x => x.n === Number(n)); const it = c.items.find(i => i.id === id);
@@ -132,7 +136,7 @@ Object.assign(Actions, {
     const m = UI.modal({
       title: U.fmtLong(k),
       body: `
-        <p class="muted">${D.isWorkday(k) ? `Dia útil · Ciclo ${cycleOf(k)}: ${U.esc(S.monthly.cycles[cycleOf(k) - 1]?.title || '')}` : 'Dia não útil'}</p>
+        <p class="muted">${D.isWorkday(k) ? `Dia útil, semana ${cycleOf(k)} do mês${S.monthly.cycles[cycleOf(k) - 1]?.title ? ': ' + U.esc(S.monthly.cycles[cycleOf(k) - 1].title) : ''}` : 'Dia não útil'}</p>
         <h4>Prazos e compromissos</h4>
         ${items.length ? `<ul class="list">${items.map(i => `<li class="li"><span class="li-time">${i.time || '—'}</span><span class="li-main"><span class="cal-it-dot t-${i.type}"></span>${U.esc(i.label)}${H.demo(i)}</span><small class="muted">${Month.TYPE[i.type]}${i.done ? ' · concluído' : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small>${i.type === 'evento' ? `<button class="icon-btn xs" data-act="evEdit" data-id="${i.id}">${U.icon('edit', 13)}</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted">Nada programado.</p>'}
         <h4>Agenda</h4>

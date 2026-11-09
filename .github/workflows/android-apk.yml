@@ -9,6 +9,7 @@ on:
     paths:
       - 'index.html'
       - 'css/**'
+      - 'fonts/**'
       - 'js/**'
       - 'icon.svg'
       - 'build.py'

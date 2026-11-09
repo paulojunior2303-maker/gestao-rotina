@@ -12,11 +12,11 @@ const GOAL_METRICS = [...METRICS.filter(m => !m.snapshot), { key: 'tarefasConclu
 const LEGACY_METRICS = { osRecebidas: 'O.S. recebidas', osConcluidas: 'O.S. concluídas', osPendentes: 'O.S. pendentes', osAtrasadas: 'O.S. atrasadas' };
 const metricLabel = key => (GOAL_METRICS.find(m => m.key === key) || {}).label || (LEGACY_METRICS[key] ? LEGACY_METRICS[key] + ' (descontinuado)' : key);
 const PROJECT_STATUS = {
-  planejamento: { label: 'Planejamento', color: '#94a3b8' },
-  andamento: { label: 'Em andamento', color: '#2563eb' },
-  pausado: { label: 'Pausado', color: '#d97706' },
-  concluido: { label: 'Concluído', color: '#16a34a' },
-  cancelado: { label: 'Cancelado', color: '#6b7280' },
+  planejamento: { label: 'Planejamento', color: '#8e87a3' },
+  andamento: { label: 'Em andamento', color: '#9461f5' },
+  pausado: { label: 'Pausado', color: '#e3a043' },
+  concluido: { label: 'Concluído', color: '#3dbe8b' },
+  cancelado: { label: 'Cancelado', color: '#615b70' },
 };
 const PRIORITY_RANK = { urgente: 0, alta: 1, media: 2, baixa: 3 };
 const OPEN = s => s === 'pendente' || s === 'andamento';
@@ -44,38 +44,38 @@ const Store = {
       ['17:40', '18:00', 'Fechamento do expediente', 'administrativo'],
     ].map(([start, end, title, category, fixed]) => ({ id: id(), start, end, title, category, priority: 'media', notes: '', fixed: !!fixed, freq: 'semanal', days: [1, 2, 3, 4, 5], monthDay: 1 }));
 
-    const items = arr => arr.map(text => ({ id: id(), text }));
     return {
       version: 1,
       settings: {
         workStart: '08:00', workEnd: '18:00', breakStart: '12:00', breakEnd: '13:00',
         workDays: [1, 2, 3, 4, 5],
         alertDays: 2,
-        theme: 'claro',   // claro | escuro | auto (segue o aparelho)
+        theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
+        showIndicadores: false,   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
-          { id: 'demandas', name: 'Demandas', color: '#64748b' },
-          { id: 'equipe', name: 'Equipe', color: '#7c3aed' },
-          { id: 'operacional', name: 'Operacional', color: '#0284c7' },
-          { id: 'administrativo', name: 'Administrativo', color: '#475569' },
-          { id: 'pendencias', name: 'Pendências', color: '#d97706' },
-          { id: 'intervalo', name: 'Intervalo', color: '#cbd5e1' },
-          { id: 'projetos', name: 'Projetos', color: '#2563eb' },
-          { id: 'estrategico', name: 'Estratégico', color: '#0d9488' },
-          { id: 'indicadores', name: 'Indicadores', color: '#4f46e5' },
-          { id: 'imprevistos', name: 'Imprevistos', color: '#dc2626' },
-          { id: 'campo', name: 'Visita em campo', color: '#65a30d' },
+          { id: 'demandas', name: 'Demandas', color: '#8e87a3' },
+          { id: 'equipe', name: 'Equipe', color: '#b08cf5' },
+          { id: 'operacional', name: 'Operacional', color: '#7b3fe4' },
+          { id: 'administrativo', name: 'Administrativo', color: '#6f6a82' },
+          { id: 'pendencias', name: 'Pendências', color: '#e3a043' },
+          { id: 'intervalo', name: 'Intervalo', color: '#4b4559' },
+          { id: 'projetos', name: 'Projetos', color: '#6c8ef0' },
+          { id: 'estrategico', name: 'Estratégico', color: '#3fb5a8' },
+          { id: 'indicadores', name: 'Indicadores', color: '#c77deb' },
+          { id: 'imprevistos', name: 'Imprevistos', color: '#ee5a6f' },
+          { id: 'campo', name: 'Visita em campo', color: '#86bf6a' },
         ],
         priorities: {
-          baixa: { label: 'Baixa', color: '#94a3b8' },
-          media: { label: 'Média', color: '#2563eb' },
-          alta: { label: 'Alta', color: '#d97706' },
-          urgente: { label: 'Urgente', color: '#dc2626' },
+          baixa: { label: 'Baixa', color: '#8e87a3' },
+          media: { label: 'Média', color: '#9b7bea' },
+          alta: { label: 'Alta', color: '#e3a043' },
+          urgente: { label: 'Urgente', color: '#ee5a6f' },
         },
         statuses: {
-          pendente: { label: 'Pendente', color: '#94a3b8' },
-          andamento: { label: 'Em andamento', color: '#2563eb' },
-          concluida: { label: 'Concluída', color: '#16a34a' },
-          cancelada: { label: 'Cancelada', color: '#6b7280' },
+          pendente: { label: 'Pendente', color: '#8e87a3' },
+          andamento: { label: 'Em andamento', color: '#9461f5' },
+          concluida: { label: 'Concluída', color: '#3dbe8b' },
+          cancelada: { label: 'Cancelada', color: '#615b70' },
         },
         technicians: [],
         goals: [],
@@ -83,22 +83,11 @@ const Store = {
       routine,
       days: {},
       weekly: {
-        focus: [
-          { day: 1, title: 'Planejamento', items: items(['Analisar pendências anteriores', 'Distribuir atividades', 'Definir prioridades', 'Verificar disponibilidade da equipe', 'Estabelecer metas semanais']) },
-          { day: 2, title: 'Operação', items: items(['Acompanhar instalações', 'Acompanhar manutenções', 'Monitorar produtividade', 'Verificar gargalos operacionais']) },
-          { day: 3, title: 'Gestão de pessoas', items: items(['Avaliar desempenho dos técnicos', 'Identificar dificuldades', 'Realizar feedbacks', 'Planejar treinamentos']) },
-          { day: 4, title: 'Projetos e estratégia', items: items(['Acompanhar projetos', 'Conferir prazos e entregas', 'Planejar melhorias', 'Avaliar novas demandas']) },
-          { day: 5, title: 'Resultados', items: items(['Consolidar indicadores', 'Conferir O.S. concluídas e pendentes', 'Avaliar resultados', 'Registrar problemas', 'Preparar a próxima semana']) },
-        ],
+        focus: [],   // em branco: o usuário define o foco e o checklist de cada dia
         checks: {},
       },
       monthly: {
-        cycles: [
-          { n: 1, title: 'Diagnóstico', items: items(['Levantamento de indicadores', 'Análise de produtividade', 'Levantamento de pendências', 'Definição de objetivos']) },
-          { n: 2, title: 'Equipe e estrutura', items: items(['Avaliação da equipe', 'Treinamentos', 'Materiais e equipamentos', 'Necessidades operacionais']) },
-          { n: 3, title: 'Projetos e qualidade', items: items(['Acompanhamento de projetos', 'Análise de prazos', 'Avaliação de qualidade', 'Propostas de melhoria']) },
-          { n: 4, title: 'Consolidação', items: items(['Fechamento dos indicadores', 'Avaliação de metas', 'Registro de problemas recorrentes', 'Planejamento do mês seguinte']) },
-        ],
+        cycles: [1, 2, 3, 4].map(n => ({ n, title: '', items: [] })),   // em branco
         checks: {},
       },
       tasks: [],
@@ -106,7 +95,7 @@ const Store = {
       occurrences: [],
       events: [],
       indicators: [],
-      meta: {},   // ex.: tutorialSeen
+      meta: { v2: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -124,9 +113,46 @@ const Store = {
 
   migrate(s) {
     const d = this.defaults();
+    const needV2 = !(s.meta && s.meta.v2);
+    if (needV2 && s.settings && !s.settings.theme) s.settings.theme = 'claro';   // dados antigos sem tema = claro
     for (const k of Object.keys(d)) if (s[k] === undefined) s[k] = d[k];
     for (const k of Object.keys(d.settings)) if (s.settings[k] === undefined) s.settings[k] = d.settings[k];
+    if (needV2) { this.migrateV2(s); s.meta = { ...(s.meta || {}), v2: true }; }
     return s;
+  },
+
+  /* v2 (novo visual): planejamento semanal/mensal em branco, nova paleta e tema escuro como padrão.
+     Só mexe no que ainda está igual ao modelo original; nada criado pelo usuário é apagado. */
+  migrateV2(s) {
+    const oldWeek = { 1: ['Planejamento', ['Analisar pendências anteriores', 'Distribuir atividades', 'Definir prioridades', 'Verificar disponibilidade da equipe', 'Estabelecer metas semanais']],
+      2: ['Operação', ['Acompanhar instalações', 'Acompanhar manutenções', 'Monitorar produtividade', 'Verificar gargalos operacionais']],
+      3: ['Gestão de pessoas', ['Avaliar desempenho dos técnicos', 'Identificar dificuldades', 'Realizar feedbacks', 'Planejar treinamentos']],
+      4: ['Projetos e estratégia', ['Acompanhar projetos', 'Conferir prazos e entregas', 'Planejar melhorias', 'Avaliar novas demandas']],
+      5: ['Resultados', ['Consolidar indicadores', 'Conferir O.S. concluídas e pendentes', 'Avaliar resultados', 'Registrar problemas', 'Preparar a próxima semana']] };
+    const oldCycles = [['Diagnóstico', ['Levantamento de indicadores', 'Análise de produtividade', 'Levantamento de pendências', 'Definição de objetivos']],
+      ['Equipe e estrutura', ['Avaliação da equipe', 'Treinamentos', 'Materiais e equipamentos', 'Necessidades operacionais']],
+      ['Projetos e qualidade', ['Acompanhamento de projetos', 'Análise de prazos', 'Avaliação de qualidade', 'Propostas de melhoria']],
+      ['Consolidação', ['Fechamento dos indicadores', 'Avaliação de metas', 'Registro de problemas recorrentes', 'Planejamento do mês seguinte']]];
+    if (s.weekly && Array.isArray(s.weekly.focus)) {
+      s.weekly.focus = s.weekly.focus.map(f => {
+        const old = oldWeek[f.day]; if (!old) return f;
+        const items = (f.items || []).filter(i => !old[1].includes(i.text));
+        return { ...f, items, title: f.title === old[0] ? '' : f.title };
+      }).filter(f => f.title || f.items.length);
+    }
+    if (s.monthly && Array.isArray(s.monthly.cycles)) {
+      s.monthly.cycles = s.monthly.cycles.map((c, i) => {
+        const old = oldCycles[i]; if (!old) return c;
+        return { ...c, title: c.title === old[0] ? '' : c.title, items: (c.items || []).filter(x => !old[1].includes(x.text)) };
+      });
+    }
+    const map = { '#64748b': '#8e87a3', '#7c3aed': '#b08cf5', '#0284c7': '#7b3fe4', '#475569': '#6f6a82', '#d97706': '#e3a043', '#cbd5e1': '#4b4559', '#2563eb': '#6c8ef0',
+      '#0d9488': '#3fb5a8', '#4f46e5': '#c77deb', '#dc2626': '#ee5a6f', '#65a30d': '#86bf6a', '#94a3b8': '#8e87a3', '#16a34a': '#3dbe8b', '#6b7280': '#615b70' };
+    const st = s.settings || {};
+    (st.categories || []).forEach(c => { if (map[c.color]) c.color = map[c.color]; });
+    const dp = this.defaults().settings;
+    for (const grp of ['priorities', 'statuses']) for (const [k, v] of Object.entries(st[grp] || {})) if (v && map[v.color] && dp[grp][k]) v.color = dp[grp][k].color;
+    if (st.theme === 'claro') st.theme = 'escuro';   // o novo visual nasce escuro; o claro continua disponível
   },
 
   save({ cloud = true } = {}) {
@@ -159,7 +185,7 @@ const Store = {
     const t = U.today(), now = new Date().toISOString();
     const tk = (title, category, priority, status, due, extra = {}) => ({ id: U.uid(), demo: true, title: '[Exemplo] ' + title, description: 'Registro de demonstração — pode ser removido em Configurações.', category, priority, status, createdAt: now, startDate: t, dueDate: due, dueTime: '', notes: '', completedAt: status === 'concluida' ? now : null, ...extra });
     S.tasks.push(
-      tk('Revisar O.S. pendentes da semana', 'pendencias', 'alta', 'pendente', U.addDays(t, 1)),
+      tk('Revisar pendências da semana', 'pendencias', 'alta', 'pendente', U.addDays(t, 1)),
       tk('Conferir estoque de câmeras e NVRs', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
       tk('Enviar relatório semanal', 'indicadores', 'urgente', 'pendente', U.addDays(t, -1)),
       tk('Agendar treinamento de configuração de NVR', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
@@ -198,9 +224,9 @@ let S = null;
 
 /* ---------- Regras de domínio ---------- */
 const D = {
-  cat(id) { return S.settings.categories.find(c => c.id === id) || { id: '', name: 'Sem categoria', color: '#94a3b8' }; },
-  prio(p) { return S.settings.priorities[p] || { label: '—', color: '#94a3b8' }; },
-  status(s) { return S.settings.statuses[s] || { label: '—', color: '#94a3b8' }; },
+  cat(id) { return S.settings.categories.find(c => c.id === id) || { id: '', name: 'Sem categoria', color: '#8e87a3' }; },
+  prio(p) { return S.settings.priorities[p] || { label: '—', color: '#8e87a3' }; },
+  status(s) { return S.settings.statuses[s] || { label: '—', color: '#8e87a3' }; },
   techNames() { return S.settings.technicians.map(t => t.name); },
 
   isWorkday(k) { return S.settings.workDays.includes(U.weekday(k)); },

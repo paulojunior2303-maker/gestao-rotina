@@ -32,7 +32,7 @@ const Charts = (() => {
         const x = cx - (bw * series.length) / 2 + j * bw;
         if (v === null || v === undefined) { g += `<rect x="${x + 1}" y="${y(0) - 2}" width="${bw - 2}" height="2" class="nodata"><title>${U.esc(l)} — ${U.esc(s.name)}: sem dados</title></rect>`; return; }
         const h = Math.max(1, y(0) - y(v));
-        g += `<rect x="${x + 1}" y="${y(0) - h}" width="${bw - 2}" height="${h}" rx="3" fill="${s.color}"><title>${U.esc(l)} — ${U.esc(s.name)}: ${U.fmtNum(v)}${unit}</title></rect>`;
+        g += `<rect x="${x + 1}" y="${y(0) - h}" width="${bw - 2}" height="${h}" rx="3" style="fill:${s.color}"><title>${U.esc(l)} — ${U.esc(s.name)}: ${U.fmtNum(v)}${unit}</title></rect>`;
         if (labels.length <= 12) g += `<text x="${x + bw / 2}" y="${y(0) - h - 4}" class="val" text-anchor="middle">${U.fmtNum(v)}</text>`;
       });
     });
@@ -40,12 +40,12 @@ const Charts = (() => {
     return `<div class="chart-scroll"><svg class="chart" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="xMinYMid meet">${g}</svg></div>${legend}`;
   }
 
-  function ring(pct, { size = 92, stroke = 9, color = 'var(--blue)', label } = {}) {
+  function ring(pct, { size = 92, stroke = 8, color = 'var(--accent)', label } = {}) {
     const r = (size - stroke) / 2, c = 2 * Math.PI * r;
     const val = pct === null || pct === undefined ? 0 : pct;
     return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
       <circle cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" class="ring-bg" fill="none"/>
-      ${val > 0 ? `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" fill="none" stroke="${color}" stroke-linecap="round"
+      ${val > 0 ? `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${stroke}" fill="none" style="stroke:${color}" class="ring-fg" stroke-linecap="round"
         stroke-dasharray="${c * val / 100} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/>` : ''}
       <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" class="ring-txt">${label ?? (pct === null || pct === undefined ? '—' : pct + '%')}</text></svg>`;
   }
@@ -55,7 +55,7 @@ const Charts = (() => {
     const vals = rows.map(r => r.value).filter(v => v !== null);
     if (!vals.length) return `<div class="chart-empty">${U.icon('chart', 22)}<span>Sem dados no período</span></div>`;
     const max = Math.max(...vals, 1);
-    return `<div class="hbars">${rows.map(r => `<div class="hb-row"><span class="hb-l" title="${U.esc(r.label)}">${U.esc(r.label)}</span><div class="hb-track"><span style="width:${r.value === null ? 0 : r.value / max * 100}%;background:${r.color || 'var(--blue)'}"></span></div><span class="hb-v">${r.value === null ? 'sem dados' : U.fmtNum(r.value) + unit}</span></div>`).join('')}</div>`;
+    return `<div class="hbars">${rows.map(r => `<div class="hb-row"><span class="hb-l" title="${U.esc(r.label)}">${U.esc(r.label)}</span><div class="hb-track"><span style="width:${r.value === null ? 0 : r.value / max * 100}%;background:${r.color || 'var(--accent)'}"></span></div><span class="hb-v">${r.value === null ? 'sem dados' : U.fmtNum(r.value) + unit}</span></div>`).join('')}</div>`;
   }
 
   return { bars, ring, hbars };

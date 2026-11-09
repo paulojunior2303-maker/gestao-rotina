@@ -12,7 +12,7 @@ Views.projetos = {
       return `<div class="pj-card ${D.projectLate(p) ? 'late' : ''}" draggable="true" data-pid="${p.id}" data-act="pjOpen" data-id="${p.id}">
         <div class="pj-name">${U.esc(p.name)}${H.demo(p)}</div>
         ${p.client ? `<div class="muted small">${U.esc(p.client)}</div>` : ''}
-        <div class="pm-b">${H.bar(pct, p.status === 'concluido' ? 'var(--green)' : D.projectLate(p) ? 'var(--red)' : 'var(--blue)')}<strong>${pct}%</strong></div>
+        <div class="pm-b">${H.bar(pct, p.status === 'concluido' ? 'var(--green)' : D.projectLate(p) ? 'var(--red)' : 'var(--accent)')}<strong>${pct}%</strong></div>
         <div class="pj-meta">
           ${p.responsible ? `<span>${U.icon('user', 13)} ${U.esc(p.responsible)}</span>` : ''}
           ${p.stages && p.stages.length ? `<span>${U.icon('tasks', 13)} ${p.stages.filter(s => s.done).length}/${p.stages.length}</span>` : ''}
@@ -136,7 +136,7 @@ const Projects = {
           <div><small>Status</small><select data-change="pjStatus" data-id="${p.id}">${UI.opts(Object.entries(PROJECT_STATUS).map(([k, v]) => [k, v.label]), p.status)}</select></div>
         </div>
         ${p.description ? `<p>${U.esc(p.description)}</p>` : ''}
-        <div class="pm-b big">${H.bar(pct, p.status === 'concluido' ? 'var(--green)' : 'var(--blue)')}<strong>${pct}%</strong></div>
+        <div class="pm-b big">${H.bar(pct, p.status === 'concluido' ? 'var(--green)' : 'var(--accent)')}<strong>${pct}%</strong></div>
         <small class="muted">${p.stages.length ? 'Calculado pelas etapas concluídas.' : 'Percentual manual (cadastre etapas para cálculo automático).'}</small>
 
         <h4>Etapas de execução</h4>

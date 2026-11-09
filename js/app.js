@@ -1,7 +1,13 @@
 'use strict';
 /* Inicialização, navegação e delegação de eventos */
-const NAV = ['dashboard', 'agenda', 'imprevistos', 'semanal', 'mensal', 'tarefas', 'projetos', 'indicadores', 'config', 'guia'];
+/* Menu lateral em grupos. "Indicadores" só aparece se ativado em Configurações → Aparência. */
+const NAV_GROUPS = [
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos']],
+  ['Planejamento', ['semanal', 'mensal', 'projetos', 'indicadores']],
+  ['Ajustes', ['config', 'guia']],
+];
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
+const routeVisible = id => id !== 'indicadores' || !!(S && S.settings && S.settings.showIndicadores);
 
 const App = {
   ui: {},
@@ -11,7 +17,7 @@ const App = {
   parseHash() {
     const h = location.hash.replace(/^#\/?/, '');
     const [path, qs] = h.split('?');
-    this.route = Views[path] ? path : 'dashboard';
+    this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
 
@@ -19,9 +25,9 @@ const App = {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}">${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('');
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}">${U.icon(Views[id].icon, 20)}<span>${id === 'dashboard' ? 'Início' : id === 'agenda' ? 'Agenda' : Views[id].nav}</span>${badge(id)}</a>`).join('')
-      + `<button data-act="openMenu" class="${BOTTOM.includes(this.route) ? '' : 'active'}">${U.icon('menu', 20)}<span>Menu</span></button>`;
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${id === 'dashboard' ? 'Início' : id === 'agenda' ? 'Agenda' : Views[id].nav}</span>${badge(id)}</a>`).join('')
+      + `<button data-act="openMenu" class="${BOTTOM.includes(this.route) ? '' : 'active'}"><span class="bn-ic">${U.icon('menu', 20)}</span><span>Menu</span></button>`;
     document.getElementById('storage-status').innerHTML =
       Cloud.state === 'on' ? '<span class="dot-ok"></span> Dados salvos na sua conta (privados)'
       : Cloud.state === 'connecting' ? '<span class="dot-wait"></span> Conectando…'
@@ -39,6 +45,7 @@ const App = {
     }
     const scroll = window.scrollY;
     document.getElementById('page-title').textContent = view.title;
+    if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
     document.title = `${view.title} · Gestão de Rotina`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
     const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
@@ -113,7 +120,9 @@ const App = {
       if (U.today() !== lastDay) { lastDay = U.today(); if (!busy) this.render(); }
     }, 5000);
 
+    document.body.classList.add('intro');
     this.render();
+    setTimeout(() => document.body.classList.remove('intro'), 1600);
     Tutorial.maybeShow();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
@@ -126,14 +135,14 @@ const App = {
 const Theme = {
   mq: window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null,
   current() {
-    const t = (S && S.settings && S.settings.theme) || 'claro';
+    const t = (S && S.settings && S.settings.theme) || 'escuro';
     return t === 'escuro' || (t === 'auto' && this.mq && this.mq.matches) ? 'dark' : 'light';
   },
   apply() {
     const t = this.current();
     if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#070d18' : '#0f1b2d');
+    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : '#f5f3f9');
   },
   init() {
     this.apply();

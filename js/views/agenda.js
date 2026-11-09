@@ -64,10 +64,10 @@ Views.agenda = {
     <div class="card day-head">
       <div>
         <h2>${U.fmtLong(k)}</h2>
-        <p class="muted">${D.isWorkday(k) ? (focus ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : 'Dia útil') : 'Dia não útil (folga) — você ainda pode adicionar atividades.'}${S.days[k] ? '' : (blocks.length ? ' · Rotina padrão' : '')}</p>
+        <p class="muted">${D.isWorkday(k) ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : 'Dia útil') : 'Dia não útil (folga). Você ainda pode adicionar atividades.'}${S.days[k] ? '' : (blocks.length ? ' · Rotina padrão' : '')}</p>
       </div>
       <div class="day-prog">
-        ${H.bar(prog.pct, 'var(--green)')}
+        ${blocks.length ? H.dayRail(k, { link: false }) : H.bar(prog.pct)}
         <div class="day-counts"><span>${prog.pct === null ? '—' : prog.pct + '%'} concluído</span><span class="c-green">${counts('concluida')} concluídas</span><span class="c-blue">${counts('andamento')} em andamento</span><span class="c-gray">${counts('pendente')} pendentes</span>${late.length ? `<span class="c-red">${late.length} atrasadas</span>` : ''}</div>
       </div>
     </div>

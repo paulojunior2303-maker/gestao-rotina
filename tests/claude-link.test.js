@@ -36,6 +36,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(store['data/users/u123/tasks'].items[0].title === 'Tarefa na nuvem', 'tarefa gravada no documento tasks');
   assert(Object.keys(store).some(k => k.includes('/days-2026-11')), 'agenda do dia gravada no documento do mês');
   // indicadores e exportações
+  await p.evaluate(() => { S.settings.showIndicadores = true; commit(); });
   await p.goto('http://localhost:8765/dist/gestao-rotina.html#indicadores'); await p.waitForTimeout(1200);
   await p.click('[data-act=indNew]'); await p.fill('.modal-wrap.open [name=pontosCamera]', '6'); await p.click('.modal-wrap.open [data-submit]'); await p.waitForTimeout(1200);
   assert(Object.keys(store).some(k => k.includes('/ind-2026-11')), 'indicadores gravados por mês');

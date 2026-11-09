@@ -62,18 +62,25 @@ Views.dashboard = {
 
     const kpi = (label, value, sub, cls = '', href = '', status = '') => `<a class="kpi ${cls}" ${href ? `href="${href}"` : ''} ${status ? `data-act="goTasks" data-status="${status}"` : ''}><span class="kpi-l">${label}</span><strong class="kpi-v">${value}</strong><span class="kpi-s">${sub}</span></a>`;
 
+    const dWd = U.WD[U.weekday(t)].replace('-feira', '');
+    const dDate = `${dWd}, ${U.parse(t).getDate()} de ${U.MONTHS[U.parse(t).getMonth()].toLowerCase()}`;
+    const showGoals = !!S.settings.showIndicadores;
+
     return `
-    <section class="hero card">
-      <div>
-        <p class="muted">${greet}!</p>
-        <h2 class="hero-date">${U.fmtLong(t)}</h2>
-        <p class="hero-focus">${workday ? (focus ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : 'Dia útil') : 'Hoje não é dia útil — bom descanso.'}</p>
+    <section class="today">
+      <div class="today-top">
+        <div class="today-txt">
+          <p class="today-greet">${greet}</p>
+          <h2 class="today-date">${dDate}</h2>
+          <p class="today-focus">${workday ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : `Expediente das ${S.settings.workStart} às ${S.settings.workEnd}`) : 'Hoje não é dia útil. Bom descanso.'}</p>
+        </div>
+        <div class="today-clock"><span id="dash-clock">${new Date().toLocaleTimeString('pt-BR')}</span>${workday && focus && focus.title ? `<small>Expediente ${S.settings.workStart}–${S.settings.workEnd}</small>` : ''}</div>
       </div>
-      <div class="hero-clock"><span id="dash-clock">${new Date().toLocaleTimeString('pt-BR')}</span><small>Expediente ${S.settings.workStart}–${S.settings.workEnd}</small></div>
+      ${blocks.length ? H.dayRail(t) : ''}
     </section>
 
     <section class="kpis">
-      <div class="kpi kpi-ring">${Charts.ring(prog.pct, { color: 'var(--green)' })}<div><span class="kpi-l">Progresso do dia</span><span class="kpi-s">${prog.total ? `${prog.done} de ${U.plural(prog.total, 'atividade')}` : 'Sem atividades hoje'}</span><a class="link" href="#agenda">Abrir agenda →</a></div></div>
+      <div class="kpi kpi-ring">${Charts.ring(prog.pct, { size: 76, stroke: 7 })}<div><span class="kpi-l">Progresso do dia</span><span class="kpi-s">${prog.total ? `${prog.done} de ${U.plural(prog.total, 'atividade')}` : 'Sem atividades hoje'}</span><a class="link" href="#agenda">Abrir agenda</a></div></div>
       ${kpi('Tarefas concluídas', doneTotal, `${doneWeek.length} nesta semana`, 'k-green', '#tarefas', 'concluida')}
       ${kpi('Tarefas pendentes', open.length, `${open.filter(x => x.status === 'andamento').length} em andamento`, 'k-gray', '#tarefas', 'abertas')}
       ${kpi('Atrasadas', lateTasks.length + lateBlocks.length, `${U.plural(lateTasks.length, 'tarefa')} · ${lateBlocks.length} na agenda`, (lateTasks.length + lateBlocks.length) ? 'k-red' : 'k-gray', '#tarefas', 'atrasadas')}
@@ -102,29 +109,29 @@ Views.dashboard = {
       </div>
       <div class="card">
         <div class="card-h"><h3>${U.icon('kanban')} Projetos em andamento</h3><a class="link" href="#projetos">Projetos</a></div>
-        ${projects.length ? projects.map(p => { const pct = D.projectProgress(p); const dl = D.deadline(p.dueDate, null, false); return `<div class="proj-mini"><div class="pm-h"><a href="#projetos" class="pm-n">${U.esc(p.name)}</a>${H.demo(p)}${H.pstatus(p.status)}</div><div class="pm-b">${H.bar(pct, D.projectLate(p) ? 'var(--red)' : 'var(--blue)')}<strong>${pct}%</strong></div><div class="pm-f"><small class="muted">${U.esc(p.client || '')}</small>${H.deadline(dl)}</div></div>`; }).join('')
+        ${projects.length ? projects.map(p => { const pct = D.projectProgress(p); const dl = D.deadline(p.dueDate, null, false); return `<div class="proj-mini"><div class="pm-h"><a href="#projetos" class="pm-n">${U.esc(p.name)}</a>${H.demo(p)}${H.pstatus(p.status)}</div><div class="pm-b">${H.bar(pct, D.projectLate(p) ? 'var(--red)' : 'var(--accent)')}<strong>${pct}%</strong></div><div class="pm-f"><small class="muted">${U.esc(p.client || '')}</small>${H.deadline(dl)}</div></div>`; }).join('')
           : H.empty('Nenhum projeto ativo cadastrado.', '<a class="btn sm" href="#projetos">Cadastrar projeto</a>')}
       </div>
     </section>
 
-    <section class="grid-3">
-      <div class="card">
+    <section class="${showGoals ? 'grid-3' : 'grid-2'} dash-foot">
+      <div class="card flat">
         <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#semanal">Semana</a></div>
         <div class="stat-row">
           <div><small>Checklist semanal</small><strong>${wPct === null ? '—' : wPct + '%'}</strong></div>
           <div><small>Tarefas concluídas</small><strong>${doneWeek.length}</strong></div>
           <div><small>Imprevistos na semana</small><strong>${S.occurrences.filter(o => o.date >= ws && o.date <= we).length}</strong></div>
         </div>
-        ${H.bar(wPct, 'var(--green)')}
+        ${H.bar(wPct)}
         <p class="muted small mt">Conclusão da agenda por dia</p>
-        ${dayVals.some(v => v !== null) ? Charts.bars({ labels: weekKeys.map(k => U.WD_SHORT[U.weekday(k)]), series: [{ name: 'Agenda concluída', color: '#16a34a', values: dayVals }], height: 150, unit: '%', maxValue: 100 }) : '<div class="chart-empty"><span>Sem dados ainda nesta semana</span></div>'}
+        ${dayVals.some(v => v !== null) ? Charts.bars({ labels: weekKeys.map(k => U.WD_SHORT[U.weekday(k)]), series: [{ name: 'Agenda concluída', color: 'var(--accent)', values: dayVals }], height: 150, unit: '%', maxValue: 100 }) : '<div class="chart-empty"><span>Sem dados ainda nesta semana</span></div>'}
       </div>
-      <div class="card">
+      ${showGoals ? `<div class="card flat">
         <div class="card-h"><h3>${U.icon('target')} Resultados e metas</h3><a class="link" href="#indicadores">Indicadores</a></div>
-        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--blue)')}<small class="muted">${st.val === null ? 'Nenhum dado lançado' : `${U.fmtNum(st.val)} ${g.direction === 'max' ? '(máx.' : '(meta'} ${U.fmtNum(st.target)}) · ${g.period}`}</small></div>`).join('')
+        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--accent)')}<small class="muted">${st.val === null ? 'Nenhum dado lançado' : `${U.fmtNum(st.val)} ${g.direction === 'max' ? '(máx.' : '(meta'} ${U.fmtNum(st.target)}) · ${g.period}`}</small></div>`).join('')
           : H.empty('Nenhuma meta configurada.', '<a class="btn sm" href="#config">Configurar metas</a>')}
-      </div>
-      <div class="card">
+      </div>` : ''}
+      <div class="card flat">
         <div class="card-h"><h3>${U.icon('calendar')} Próximos 7 dias</h3><a class="link" href="#mensal">Calendário</a></div>
         ${upcoming.length ? `<ul class="list">${upcoming.slice(0, 8).map(u => `<li class="li li-stack"><div class="li-top"><span class="li-time">${U.WD_SHORT[U.weekday(u.k)]} ${U.fmtShort(u.k)}</span><small class="muted">${u.type}</small></div><div class="li-txt">${U.esc(u.label)}${H.demo(u)}</div></li>`).join('')}</ul>${upcoming.length > 8 ? `<p class="muted small">+ ${upcoming.length - 8} itens</p>` : ''}`
           : H.empty('Nenhum prazo ou compromisso nos próximos 7 dias.')}

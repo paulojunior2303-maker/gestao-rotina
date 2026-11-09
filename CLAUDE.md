@@ -24,7 +24,14 @@ e diga o que mudou e como testar no celular.
 - Mudou o formato do estado? Mantenha compatibilidade em `Store.migrate` e em `Cloud.split/join` (limite de 256 KB por documento).
 - Interface simples: o usuário não quer um sistema que dê mais trabalho do que economiza.
 - Indicadores de **O.S. foram removidos** a pedido do usuário (v1.2). Não reintroduzir. Dados antigos ficam em `LEGACY_METRICS`.
-- **Tema claro/escuro**: use sempre as variáveis de cor de `:root` / `:root[data-theme="dark"]` em `css/styles.css`, nunca cores fixas. `tests/theme.test.js` verifica o contraste.
+- **Identidade visual v2** (roxo intenso, violeta, lilás, grafite e preto): tema **escuro é o padrão**, claro e automático continuam em Configurações → Aparência.
+  Use sempre as variáveis de `:root` / `:root[data-theme="dark"]` em `css/styles.css` (`--primary`, `--accent`, `--lilac`, `--surface*`, …), nunca cores fixas.
+  Tipografia: Geist (interface) e Bricolage Grotesque (títulos e números), em `fonts/` (OFL), embutidas no arquivo único pelo `build.py`.
+  A "régua do dia" (`H.dayRail`, em `js/ui.js`) é o elemento de assinatura: Dashboard e Agenda. `tests/theme.test.js` verifica o contraste.
+- **Indicadores fica oculto** por padrão (`settings.showIndicadores`, chave em Configurações → Aparência). Oculto também esconde Metas e o card de metas do Dashboard.
+- **Planejamento semanal e mensal começam em branco** (o usuário monta). Explicação detalhada no Guia de uso (`#g-semanal`, `#g-mensal`; botão “Como funciona” usa `guideOpen`).
+- `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
+- Ícones/splash do Android: `node android-app/tools/icons.js` (gera a partir da marca do anel).
 
 ## Testes (rodar antes de todo commit)
 ```bash

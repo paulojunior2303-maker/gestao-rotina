@@ -110,7 +110,14 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('[data-act=pjMode][data-v=timeline]'); await p.waitForTimeout(150);
   assert(await p.locator('.g-bar').count() === 1, 'linha do tempo exibe o projeto');
 
-  // ---- Indicadores
+  // ---- Indicadores (oculto por padrão; ativado em Configurações → Aparência)
+  assert(await p.locator('#nav a[href="#indicadores"]').count() === 0, 'Indicadores fica oculto no menu por padrão');
+  await go('indicadores');
+  assert(await p.textContent('#page-title') === 'Dashboard', 'endereço #indicadores oculto volta ao Dashboard');
+  await go('config');
+  assert(await p.locator('#cfg-metas').count() === 0, 'Metas ocultas junto com Indicadores');
+  await p.click('#cfg-aparencia .switch'); await p.waitForTimeout(250);
+  assert((await state()).settings.showIndicadores === true && await p.locator('#nav a[href="#indicadores"]').count() === 1, 'chave em Aparência mostra Indicadores no menu');
   await go('indicadores');
   assert(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos: indicadores aparecem como "sem dados"');
   await p.click('[data-act=indNew]'); await p.waitForTimeout(200);
@@ -123,19 +130,39 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert((await p.locator('.kpi', { hasText: 'Pontos de câmera' }).locator('.kpi-s').textContent()).includes('Sem dados'), 'campo não preenchido continua "sem dados" (não vira zero)');
   assert(!(await p.textContent('#view')).includes('O.S.'), 'tela de Indicadores sem nenhuma menção a O.S.');
   await p.selectOption('select[data-k=gran]', 'semanal'); await p.waitForTimeout(150);
-  assert(await p.locator('svg.chart rect[fill]').count() >= 1, 'gráfico semanal renderizado');
+  assert(await p.locator('svg.chart rect[style]').count() >= 1, 'gráfico semanal renderizado');
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act=indXlsx]')]);
   await dl.saveAs(OUT + '/relatorio.xlsx');
   console.log('ok - download Excel:', dl.suggestedFilename());
 
   // ---- Semanal / Mensal
   await go('semanal');
+  assert(await p.locator('input[data-change=wkCheck]').count() === 0 && await p.locator('.wk-col.is-empty').count() === 5, 'planejamento semanal começa em branco');
+  await p.click('[data-act=wkFocus][data-d="1"]'); await p.waitForTimeout(200); await fill('title', 'Planejamento'); await submit();
+  await p.click('[data-act=wkItemAdd][data-d="1"]'); await p.waitForTimeout(200); await fill('text', 'Distribuir atividades'); await submit();
+  assert((await p.locator('.wk-col').first().textContent()).includes('Planejamento'), 'definir foco do dia');
   await p.locator('input[data-change=wkCheck]').first().check(); await p.waitForTimeout(150);
   s = await state(); assert(Object.keys(Object.values(s.weekly.checks)[0]).length === 1, 'checklist semanal persiste');
+  await p.click('[data-act=guideOpen][data-id=semanal]'); await p.waitForTimeout(400);
+  assert(await p.textContent('#page-title') === 'Guia de uso' && await p.locator('#g-semanal[open]').count() === 1, '"Como funciona" abre o guia no tema certo');
   await go('mensal');
+  assert(await p.locator('.cycle.is-empty').count() === 4 && await p.locator('input[data-change=mcCheck]').count() === 0, 'planejamento mensal começa em branco');
   await p.click('[data-act=evNew]'); await p.waitForTimeout(200);
   await fill('title', 'Reunião com fornecedor'); await fill('date', '2026-11-20'); await fill('time', '10:00'); await submit();
   assert(await p.locator('.cal-it.t-evento', { hasText: 'Reunião com fornecedor' }).count() === 1, 'compromisso aparece no calendário');
+
+  // ---- Migração do visual v2: modelo antigo sai, itens do usuário ficam
+  const mig = await p.evaluate(() => {
+    const old = JSON.parse(JSON.stringify(S)); delete old.meta.v2; old.settings.theme = 'claro';
+    old.weekly.focus = [{ day: 1, title: 'Planejamento', items: [{ id: 'x1', text: 'Distribuir atividades' }, { id: 'x2', text: 'Meu item' }] }, { day: 2, title: 'Operação', items: [{ id: 'x3', text: 'Acompanhar instalações' }] }];
+    old.monthly.cycles[0] = { n: 1, title: 'Diagnóstico', items: [{ id: 'y1', text: 'Análise de produtividade' }] };
+    old.settings.categories.find(c => c.id === 'operacional').color = '#0284c7';
+    const m = Store.migrate(old);
+    return { focus: m.weekly.focus, c1: m.monthly.cycles[0], theme: m.settings.theme, op: m.settings.categories.find(c => c.id === 'operacional').color, v2: m.meta.v2 };
+  });
+  assert(mig.focus.length === 1 && mig.focus[0].items.length === 1 && mig.focus[0].items[0].text === 'Meu item' && mig.focus[0].title === '', 'migração: remove o modelo antigo e mantém o item criado pelo usuário');
+  assert(mig.c1.title === '' && mig.c1.items.length === 0, 'migração: ciclo mensal padrão fica em branco');
+  assert(mig.theme === 'escuro' && mig.op === '#7b3fe4' && mig.v2, 'migração: tema escuro e nova paleta de cores');
 
   // ---- Configurações
   await go('config');

@@ -3,6 +3,8 @@ import re, base64, pathlib
 root = pathlib.Path(__file__).parent
 html = (root / 'index.html').read_text(encoding='utf-8')
 css = (root / 'css/styles.css').read_text(encoding='utf-8')
+# Fontes embutidas (o arquivo único precisa funcionar sem internet, no APK e no link do Claude)
+css = re.sub(r"url\('\.\./fonts/([^']+)'\)", lambda m: "url(data:font/woff2;base64," + base64.b64encode((root / 'fonts' / m.group(1)).read_bytes()).decode() + ")", css)
 html = html.replace('<link rel="stylesheet" href="css/styles.css">', f'<style>\n{css}\n</style>')
 html = html.replace('<link rel="manifest" href="manifest.webmanifest">\n', '')
 icon = base64.b64encode((root / 'icon.svg').read_bytes()).decode()

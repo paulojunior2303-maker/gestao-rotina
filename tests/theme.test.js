@@ -11,19 +11,24 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   const bg = () => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
   await p.goto('http://localhost:8765/index.html'); await W(600);
   await p.locator('[data-tour=skip]').tap(); await W(300);
-  check(await theme() === 'light', 'padrão: modo claro');
+  check(await theme() === 'dark' && await bg() === 'rgb(14, 12, 19)', 'padrão do novo visual: modo escuro (grafite)');
+  const font = await p.evaluate(async () => { await document.fonts.ready; return [document.fonts.check('16px Geist'), document.fonts.check('16px "Bricolage Grotesque"')]; });
+  check(font[0] && font[1], 'fontes da identidade (Geist e Bricolage Grotesque) carregadas sem internet');
   await p.evaluate(() => location.hash = '#config'); await W(300);
-  check(await p.locator('#cfg-aparencia .theme-opt').count() === 3, 'Configurações → Aparência com 3 opções (Claro, Escuro, Automático)');
-  await p.locator('[data-act=themeSet][data-v=escuro]').tap(); await W(300);
-  check(await theme() === 'dark' && await bg() === 'rgb(11, 18, 32)', 'tocar em "Escuro" aplica o tema na hora');
-  check(await p.locator('.theme-opt.on[data-v=escuro]').count() === 1, 'opção escolhida fica marcada');
+  check(await p.locator('#cfg-aparencia .theme-opt').count() === 3, 'Configurações → Aparência com 3 opções (Escuro, Claro, Automático)');
+  await p.locator('[data-act=themeSet][data-v=claro]').tap(); await W(300);
+  check(await theme() === 'light' && await bg() === 'rgb(245, 243, 249)', 'tocar em "Claro" aplica o tema na hora');
+  check(await p.locator('.theme-opt.on[data-v=claro]').count() === 1, 'opção escolhida fica marcada');
   await p.reload(); await W(600);
-  check(await theme() === 'dark', 'tema escuro mantido ao reabrir o app');
+  check(await theme() === 'light', 'tema claro mantido ao reabrir o app');
+  await p.evaluate(() => location.hash = '#config'); await W(300);
+  await p.locator('[data-act=themeSet][data-v=escuro]').tap(); await W(300);
+  check(await theme() === 'dark', 'voltar para "Escuro"');
   // Contraste: texto principal sobre fundo dos cartões (WCAG AA ≥ 4.5)
   const lum = c => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
   const ratio = (a, c) => { const [x, y] = [lum(a), lum(c)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
   const screens = ['dashboard', 'agenda', 'imprevistos', 'semanal', 'mensal', 'tarefas', 'projetos', 'indicadores', 'config', 'guia'];
-  await p.evaluate(() => { Store.loadDemo(); commit(); });
+  await p.evaluate(() => { Store.loadDemo(); S.settings.showIndicadores = true; commit(); });
   for (const r of screens) {
     await p.evaluate(r => location.hash = '#' + r, r); await W(300);
     const res = await p.evaluate(() => {

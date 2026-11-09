@@ -160,14 +160,21 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[5] Planejamento semanal e mensal');
   await go('semanal');
+  check(await p.locator('input[data-change=wkCheck]').count() === 0, 'planejamento semanal começa em branco');
+  await overflow('06a-semanal-vazio');
+  await tap('[data-act=wkFocus][data-d="1"]'); await fill('title', 'Planejamento'); await save();
+  await tap('[data-act=wkItemAdd][data-d="1"]'); await fill('text', 'Revisar escala'); await save();
+  await tap('[data-act=wkItemAdd][data-d="1"]'); await fill('text', 'Distribuir atividades'); await save();
+  check(await p.locator('.checklist li', { hasText: 'Revisar escala' }).count() === 1, 'adicionar item ao foco do dia');
   await p.locator('input[data-change=wkCheck]').first().tap(); await W();
   check((await p.locator('.wk-summary').textContent()).includes('1 de'), 'marcar item do checklist atualiza o progresso semanal');
   await overflow('06-semanal');
-  await tap('[data-act=wkItemAdd][data-d="1"]'); await fill('text', 'Revisar escala'); await save();
-  check(await p.locator('.checklist li', { hasText: 'Revisar escala' }).count() === 1, 'adicionar item ao foco do dia');
   await go('mensal');
+  check(await p.locator('.cycle.is-empty').count() === 4, 'planejamento mensal começa em branco');
+  await tap('[data-act=mcItemAdd][data-n="1"]'); await fill('text', 'Levantar pendências'); await save();
+  await tap('[data-act=mcItemAdd][data-n="1"]'); await fill('text', 'Definir objetivos'); await save();
   await p.locator('input[data-change=mcCheck]').first().tap(); await W();
-  check((await p.locator('.cycle').first().textContent()).includes('1/4'), 'checklist do ciclo mensal');
+  check((await p.locator('.cycle').first().textContent()).includes('1/2'), 'checklist do ciclo mensal');
   await overflow('07-mensal');
   await p.locator('.cal-cell.today').tap(); await W(300);
   check(await p.locator(M).count() === 1, 'tocar no dia abre os detalhes');
@@ -193,6 +200,8 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await p.textContent('.view')).includes('Liberar acesso ao rack') || true, 'pendência aparece em "O que cobrar"');
 
   console.log('\n[7] Indicadores e relatórios');
+  check(await p.locator('#nav a[href="#indicadores"]').count() === 0, 'Indicadores oculto no menu por padrão');
+  await go('config'); await p.locator('#cfg-aparencia .switch').tap(); await W();
   await go('indicadores');
   check(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos → "sem dados"');
   await tap('[data-act=indNew]'); await fill('pontosCamera', '12'); await fill('manutencoes', '9'); await save();

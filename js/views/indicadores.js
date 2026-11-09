@@ -70,10 +70,10 @@ Views.indicadores = {
 
     const b = Ind.buckets(from, to, f.gran);
     const metricMeta = METRICS.find(m => m.key === f.metric) || METRICS[0];
-    const series1 = [{ name: metricMeta.label, color: '#2563eb', values: b.map(x => D.metricValue(metricMeta.key, x.from, x.to)) }];
+    const series1 = [{ name: metricMeta.label, color: 'var(--accent)', values: b.map(x => D.metricValue(metricMeta.key, x.from, x.to)) }];
     const series2 = [
-      { name: 'Manutenções', color: '#16a34a', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
-      { name: 'Retrabalhos', color: '#dc2626', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
+      { name: 'Manutenções', color: 'var(--lilac)', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
+      { name: 'Retrabalhos', color: 'var(--red)', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
     ];
     const techs = Ind.techRows(from, to);
     const techWithData = techs.filter(r => r.days);
@@ -117,7 +117,7 @@ Views.indicadores = {
     <section class="grid-2">
       <div class="card">
         <div class="card-h"><h3>${U.icon('user')} Produtividade por técnico</h3></div>
-        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: '#2563eb' })), ' pontos')}
+        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: 'var(--accent)' })), ' pontos')}
           <div class="table-wrap"><table class="table"><thead><tr><th>Técnico</th><th>Dias</th><th>Pontos câm.</th><th>Manut.</th><th>Retrab.</th></tr></thead>
           <tbody>${techWithData.map(r => `<tr><td>${U.esc(r.name)}</td><td>${r.days}</td><td>${U.fmtNum(r.pontosCamera)}</td><td>${U.fmtNum(r.manutencoes)}</td><td>${U.fmtNum(r.retrabalhos)}</td></tr>`).join('')}</tbody></table></div>`
           : H.empty(D.techNames().length ? 'Nenhum lançamento por técnico no período.' : 'Cadastre os técnicos em Configurações e lance os dados por técnico para ver a produtividade individual.')}

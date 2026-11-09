@@ -149,6 +149,24 @@ const UI = (() => {
     pstatus: s => { const x = PROJECT_STATUS[s] || PROJECT_STATUS.planejamento; return chip(x.label, x.color, 'dot'); },
     deadline: info => info ? `<span class="dl dl-${info.level}">${U.icon(info.level === 'late' ? 'alert' : 'clock', 13)} ${U.esc(info.label)}</span>` : '',
     bar: (pct, color, cls = '') => `<div class="bar ${cls}"><span style="width:${pct ?? 0}%;${color ? `background:${color}` : ''}"></span></div>`,
+    /* Régua do dia: os blocos da agenda numa linha do tempo, com o "agora" marcado */
+    dayRail(k, { link = true } = {}) {
+      const bl = D.dayBlocks(k).filter(b => b.status !== 'cancelada');
+      let a = U.toMin(S.settings.workStart), z = U.toMin(S.settings.workEnd);
+      bl.forEach(b => { a = Math.min(a, U.toMin(b.start)); z = Math.max(z, U.toMin(b.end)); });
+      if (!(z > a)) return '';
+      const pos = m => ((m - a) / (z - a) * 100).toFixed(2);
+      const t = U.today(), now = U.nowMin();
+      const segs = bl.map(b => {
+        const cls = D.isBreak(b) ? 's-break' : b.status === 'concluida' ? 's-done' : D.blockNow(b, k) ? 's-now' : D.blockLate(b, k) ? 's-late' : b.status === 'andamento' ? 's-run' : 's-pend';
+        return `<span class="seg ${cls}" style="left:${pos(U.toMin(b.start))}%;width:calc(${(pos(U.toMin(b.end)) - pos(U.toMin(b.start))).toFixed(2)}% - 2px)" title="${b.start}–${b.end} ${U.esc(b.title)}"></span>`;
+      }).join('');
+      const ticks = [];
+      for (let h = Math.ceil(a / 60); h * 60 <= z; h += (z - a) > 600 ? 2 : 1) ticks.push(`<span style="left:${pos(h * 60)}%">${U.pad(h)}h</span>`);
+      const nowM = k === t && now >= a && now <= z ? `<span class="rail-now" style="left:${pos(now)}%"></span>` : '';
+      const tag = link ? `a href="#agenda" data-act="goAgenda" data-d="${k}"` : 'div';
+      return `<${tag} class="rail" aria-label="Linha do tempo do dia"><span class="rail-track">${segs}${nowM}</span><span class="rail-ticks">${ticks.join('')}</span></${link ? 'a' : 'div'}>`;
+    },
     empty: (msg, action = '') => `<div class="empty">${U.icon('info', 22)}<p>${msg}</p>${action}</div>`,
     demo: x => x && x.demo ? '<span class="demo-badge">EXEMPLO</span>' : '',
     catOptions: () => S.settings.categories.map(c => [c.id, c.name]),

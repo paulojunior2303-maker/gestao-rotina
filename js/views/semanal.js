@@ -20,38 +20,42 @@ Views.semanal = {
       const p = items.length ? Math.round(dn / items.length * 100) : null;
       const dueTasks = S.tasks.filter(x => OPEN(x.status) && x.dueDate === k).length;
       const ag = D.progress(k);
-      return `<div class="wk-col card ${k === t ? 'is-today' : ''}">
+      const empty = !(f && f.title) && !items.length;
+      return `<div class="wk-col card ${k === t ? 'is-today' : ''} ${empty ? 'is-empty' : ''}">
         <div class="wk-h">
-          <div><small>${U.WD[d]} · ${U.fmtShort(k)}</small>
-          <h3>${f ? U.esc(f.title) : '<span class="muted">Sem foco definido</span>'}</h3></div>
-          <button class="icon-btn" data-act="wkFocus" data-d="${d}" title="Editar foco">${U.icon('edit', 15)}</button>
+          <div><small>${U.WD[d]}, ${U.fmtShort(k)}${k === t ? ' · hoje' : ''}</small>
+          <h3>${f && f.title ? U.esc(f.title) : '<span class="muted">Sem foco definido</span>'}</h3></div>
+          <button class="icon-btn" data-act="wkFocus" data-d="${d}" title="${f && f.title ? 'Editar foco' : 'Definir foco'}" aria-label="${f && f.title ? 'Editar foco' : 'Definir foco'}">${U.icon('edit', 15)}</button>
         </div>
-        ${H.bar(p, p === 100 ? 'var(--green)' : 'var(--blue)')}
-        <small class="muted">${items.length ? `${dn}/${items.length} concluídos` : 'Sem itens'}</small>
+        ${items.length ? `${H.bar(p, p === 100 ? 'var(--green)' : null)}<small class="muted">${dn} de ${items.length} concluídos</small>` : ''}
         <ul class="checklist">${items.map(i => `<li><label class="check"><input type="checkbox" data-change="wkCheck" data-id="${i.id}" ${chk[i.id] ? 'checked' : ''}><span>${U.esc(i.text)}</span></label><button class="icon-btn xs" data-act="wkItemEdit" data-d="${d}" data-id="${i.id}" title="Editar item">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
         <button class="btn sm ghost add-item" data-act="wkItemAdd" data-d="${d}">${U.icon('plus', 15)} Adicionar item</button>
         <div class="wk-foot">
-          <a href="#agenda" data-act="goAgenda" data-d="${k}" class="link small">Agenda: ${ag.pct === null ? '—' : ag.pct + '%'}</a>
+          <a href="#agenda" data-act="goAgenda" data-d="${k}" class="link small">Agenda do dia: ${ag.pct === null ? 'sem dados' : ag.pct + '%'}</a>
           ${dueTasks ? `<a href="#tarefas" class="small dl dl-soon">${U.plural(dueTasks, 'prazo')}</a>` : ''}
         </div>
       </div>`;
     };
 
     return `
+    <div class="plan-intro">
+      <p>Dê um <strong>foco</strong> a cada dia útil e liste o que não pode faltar. A lista se repete toda semana; as marcações valem só para a semana exibida.</p>
+      <button class="link" data-act="guideOpen" data-id="semanal">Como funciona</button>
+    </div>
     <div class="toolbar">
       <div class="date-nav">
-        <button class="icon-btn" data-act="wkShift" data-n="-7">${U.icon('left')}</button>
-        <strong class="range-lbl">Semana de ${U.fmtShort(ws)} a ${U.fmtShort(U.addDays(ws, 6))}</strong>
-        <button class="icon-btn" data-act="wkShift" data-n="7">${U.icon('right')}</button>
+        <button class="icon-btn" data-act="wkShift" data-n="-7" aria-label="Semana anterior">${U.icon('left')}</button>
+        <strong class="range-lbl">${U.fmtShort(ws)} a ${U.fmtShort(U.addDays(ws, 6))}</strong>
+        <button class="icon-btn" data-act="wkShift" data-n="7" aria-label="Próxima semana">${U.icon('right')}</button>
         ${ws !== U.weekStart(t) ? '<button class="btn sm ghost" data-act="wkShift" data-n="0">Semana atual</button>' : ''}
       </div>
     </div>
     <div class="card wk-summary">
-      <div>${Charts.ring(pct, { color: 'var(--green)', size: 76, stroke: 8 })}</div>
+      ${all.length ? `<div>${Charts.ring(pct, { size: 72, stroke: 7 })}</div>` : ''}
       <div class="grow">
-        <h3>Checklist semanal</h3>
-        <p class="muted">${all.length ? `${done} de ${U.plural(all.length, 'item', 'itens')} concluídos nesta semana.` : 'Nenhum item cadastrado.'} Os focos e itens são o modelo para todas as semanas; as marcações são registradas por semana.</p>
-        ${H.bar(pct, 'var(--green)')}
+        <h3>Checklist da semana</h3>
+        <p class="muted">${all.length ? `${done} de ${U.plural(all.length, 'item', 'itens')} concluídos nesta semana.` : 'Ainda não há itens. Comece tocando no lápis de um dia para definir o foco, depois em “Adicionar item”.'}</p>
+        ${all.length ? H.bar(pct) : ''}
       </div>
       ${Object.keys(chk).length ? `<button class="btn sm ghost" data-act="wkReset">${U.icon('undo', 15)} Desmarcar semana</button>` : ''}
     </div>
@@ -73,18 +77,23 @@ Object.assign(Actions, {
     let f = S.weekly.focus.find(x => x.day === d);
     UI.form({
       title: `Foco de ${U.WD[d]}`,
-      fields: [{ name: 'title', label: 'Foco de gestão', required: true, value: f ? f.title : '' }],
-      onSubmit(v) { if (!f) { f = { day: d, title: '', items: [] }; S.weekly.focus.push(f); } f.title = v.title; commit(); },
+      fields: [{ name: 'title', label: 'Foco do dia', value: f ? f.title : '', placeholder: 'Ex.: Planejamento, Operação, Equipe…', hint: 'Um tema curto que resume o que você prioriza nesse dia. Pode deixar em branco.' }],
+      onSubmit(v) {
+        if (!f) { f = { day: d, title: '', items: [] }; S.weekly.focus.push(f); }
+        f.title = v.title;
+        if (!f.title && !f.items.length) S.weekly.focus = S.weekly.focus.filter(x => x !== f);
+        commit();
+      },
     });
   },
   wkItemAdd({ d }) {
     d = Number(d);
     UI.form({
       title: `Novo item — ${U.WD[d]}`,
-      fields: [{ name: 'text', label: 'Item do checklist', required: true }],
+      fields: [{ name: 'text', label: 'Item do checklist', required: true, placeholder: 'Ex.: Conferir escala da equipe' }],
       onSubmit(v) {
         let f = S.weekly.focus.find(x => x.day === d);
-        if (!f) { f = { day: d, title: 'Foco do dia', items: [] }; S.weekly.focus.push(f); }
+        if (!f) { f = { day: d, title: '', items: [] }; S.weekly.focus.push(f); }
         f.items.push({ id: U.uid(), text: v.text }); commit();
       },
     });
@@ -94,7 +103,7 @@ Object.assign(Actions, {
     UI.form({
       title: 'Editar item',
       fields: [{ name: 'text', label: 'Item do checklist', required: true, value: it.text }],
-      extra: [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); f.items = f.items.filter(i => i.id !== id); commit(); UI.toast('Item excluído.'); } }],
+      extra: [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); f.items = f.items.filter(i => i.id !== id); if (!f.title && !f.items.length) S.weekly.focus = S.weekly.focus.filter(x => x !== f); commit(); UI.toast('Item excluído.'); } }],
       onSubmit(v) { it.text = v.text; commit(); },
     });
   },
