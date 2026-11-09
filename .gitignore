@@ -5,3 +5,4 @@ dist/
 *.jks
 *.keystore
 keystore.properties
+tests/output/
