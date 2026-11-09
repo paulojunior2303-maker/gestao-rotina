@@ -1,0 +1,7 @@
+# Arquivos gerados
+dist/
+*.apk
+# Chaves de assinatura do Android: NUNCA versionar
+*.jks
+*.keystore
+keystore.properties

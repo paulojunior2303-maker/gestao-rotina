@@ -1,0 +1,10 @@
+{
+  "name": "Gestão de Rotina — Liderança Operacional",
+  "short_name": "Gestão Rotina",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f5f8",
+  "theme_color": "#0f1b2d",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

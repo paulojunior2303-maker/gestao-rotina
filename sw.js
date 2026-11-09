@@ -1,0 +1,13 @@
+/* Service worker: permite uso offline quando o app é servido via http(s) */
+const CACHE = 'gestao-rotina-v1';
+const FILES = ['./', './index.html', './css/styles.css', './icon.svg', './manifest.webmanifest',
+  './js/utils.js', './js/store.js', './js/ui.js', './js/cloud.js', './js/native.js', './js/charts.js', './js/xlsx.js', './js/reports.js', './js/app.js',
+  './js/views/dashboard.js', './js/views/agenda.js', './js/views/imprevistos.js', './js/views/semanal.js', './js/views/mensal.js',
+  './js/views/tarefas.js', './js/views/projetos.js', './js/views/indicadores.js', './js/views/config.js', './js/views/guia.js'];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
+/* Rede primeiro (sempre a versão mais nova), cache como reserva offline */
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; }).catch(() => caches.match(e.request)));
+});
