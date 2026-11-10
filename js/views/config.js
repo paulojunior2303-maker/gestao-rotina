@@ -2,6 +2,7 @@
 /* Configurações — jornada, rotina, categorias, prioridades, status, técnicos, metas e dados */
 Views.config = {
   title: 'Configurações', icon: 'settings', nav: 'Configurações',
+  mount(root) { if (Native.available()) Reminders.fillStatus(root); },
   render() {
     const st = S.settings;
     const freqTxt = r => r.freq === 'mensal' ? `Mensal, dia ${r.monthDay}` : (r.days || []).length === 5 && [1, 2, 3, 4, 5].every(d => r.days.includes(d)) ? 'Seg a Sex' : (r.days || []).map(d => U.WD_SHORT[d]).join(', ') || '—';
@@ -10,7 +11,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['lembretes', 'Lembretes'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -21,6 +22,8 @@ Views.config = {
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento de pontos de câmera, manutenções e retrabalhos, metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>`)}
+
+    ${Reminders.section(sec)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">

@@ -15,9 +15,22 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await ctx.exposeBinding('__call', (_, name, arg) => { calls.push([name, arg]); });
   await ctx.addInitScript(() => {
     const listeners = {}; const files = JSON.parse(sessionStorage.getItem('__files') || '{}');
-    window.__fire = (ev) => (listeners[ev] || []).forEach(f => f({}));
+    window.__fire = (ev, data) => (listeners[ev] || []).forEach(f => f(data || {}));
+    window.__pending = [];
     window.Capacitor = { isNativePlatform: () => true, Plugins: {
-      App: { addListener: (ev, f) => { (listeners[ev] = listeners[ev] || []).push(f); }, exitApp: () => window.__call('exitApp') },
+      App: { addListener: (ev, f) => { (listeners[ev] = listeners[ev] || []).push(f); }, exitApp: () => window.__call('exitApp'), getInfo: async () => ({ version: '1.1.6' }) },
+      LocalNotifications: {
+        checkPermissions: async () => ({ display: sessionStorage.getItem('__perm') || 'prompt' }),
+        requestPermissions: async () => { sessionStorage.setItem('__perm', 'granted'); window.__call('reqPerm'); return { display: 'granted' }; },
+        getPending: async () => ({ notifications: window.__pending }),
+        cancel: async (o) => { window.__pending = window.__pending.filter(n => !o.notifications.some(x => x.id === n.id)); },
+        schedule: async (o) => { window.__pending = window.__pending.concat(o.notifications); window.__call('schedule', o.notifications.map(n => ({ id: n.id, title: n.title, body: n.body, at: +n.schedule.at, action: n.actionTypeId, extra: n.extra }))); },
+        createChannel: async () => {}, registerActionTypes: async (o) => window.__call('actionTypes', o),
+        addListener: (ev, f) => { (listeners[ev] = listeners[ev] || []).push(f); },
+        checkExactNotificationSetting: async () => ({ exact_alarm: 'denied' }),
+        changeExactNotificationSetting: async () => window.__call('exact'),
+      },
+      Sistema: { status: async () => ({ bateriaLiberada: false, fabricante: 'xiaomi' }), abrir: async (o) => window.__call('abrir', o) },
       Filesystem: {
         writeFile: async (o) => { files[o.directory + '/' + o.path] = o.data; sessionStorage.setItem('__files', JSON.stringify(files)); window.__call('writeFile', { path: o.path, dir: o.directory }); return { uri: 'file:///cache/' + o.path }; },
         readFile: async (o) => { const d = files[o.directory + '/' + o.path]; if (!d) throw new Error('not found'); return { data: d }; },
@@ -26,6 +39,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
       Printer: { print: async (o) => window.__call('print', { len: o.html.length }) },
     } };
   });
+  await ctx.route('https://api.github.com/**', r => r.fulfill({ json: { tag_name: 'v1.1.99' } }));
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   const URL = 'http://localhost:8765/android-app/www/index.html';
@@ -225,6 +239,55 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(!(await st()).tasks.some(t => t.demo) && (await st()).tasks.length === 1, 'remover demonstração mantém seus dados');
   await tap('[data-act=dataExport]'); await W(400);
   check(calls.some(c => c[0] === 'share' && c[1].files[0].endsWith('.json')), 'backup → menu Compartilhar');
+
+  console.log('\n[8b] Aviso de atualização, lembretes e reuniões');
+  await go('dashboard');
+  check(await p.locator('.update-banner').count() === 1 && (await p.locator('.update-banner a').getAttribute('href')).endsWith('/v1.1.99/GestaoRotina.apk'), 'aviso de versão nova (1.1.99) com link do APK');
+  await overflow('12-aviso-atualizacao');
+  await tap('.update-banner [data-act=updLater]'); check(await p.locator('.update-banner').count() === 0, '"Depois" esconde o aviso desta versão');
+  await go('config');
+  check(await p.locator('#cfg-lembretes [data-change=lemOn]').count() === 1, 'Configurações → Lembretes');
+  await p.locator('#cfg-lembretes .switch').first().tap(); await W(600);
+  check(calls.some(c => c[0] === 'reqPerm') && (await st()).settings.lembretes.on, 'ligar lembretes pede a permissão de notificações');
+  await W(400);
+  const stTxt = await p.locator('#lem-status').textContent();
+  check(stTxt.includes('Alarmes exatos desligados') && stTxt.includes('Inicialização automática'), 'mostra alarmes exatos, bateria e inicialização automática (Xiaomi)');
+  await overflow('13-lembretes');
+  await tap('#lem-status [data-tela=autostart]'); check(calls.some(c => c[0] === 'abrir' && c[1].tela === 'autostart'), 'abre a tela de inicialização automática do Xiaomi');
+  await tap('[data-act=lemTest]'); await W(300); check(calls.some(c => c[0] === 'schedule' && c[1].some(n => n.id === 999)), 'aviso de teste agendado');
+  calls.length = 0;
+  const amanha = await p.evaluate(() => U.addDays(U.today(), 1));
+  await go('tarefas'); await tap('[data-act=tkNew]'); await fill('title', 'Entregar relatório'); await fill('dueDate', amanha); await fill('dueTime', '10:00'); await save();
+  await W(1600);
+  let sch = calls.filter(c => c[0] === 'schedule').pop();
+  const tAviso = sch && sch[1].find(n => n.body.includes('Entregar relatório'));
+  check(!!tAviso && tAviso.action === 'TAREFA' && (await p.evaluate(t => new Date(t).toTimeString().slice(0, 5), tAviso.at)) === '09:45', 'tarefa com horário → aviso 15 min antes (09:45) com botão Feito');
+  check(sch[1].filter(n => n.body.includes('Entregar relatório')).length === 5, 'repetição a cada 30 min depois do prazo (até 2 h)');
+  const tid = (await st()).tasks.find(t => t.title === 'Entregar relatório').id;
+  await p.evaluate(x => __fire('localNotificationActionPerformed', { actionId: 'feito', notification: { extra: x } }), tAviso.extra); await W(1600);
+  check((await st()).tasks.find(t => t.id === tid).status === 'concluida', '"Feito" na notificação conclui a tarefa');
+  sch = calls.filter(c => c[0] === 'schedule').pop();
+  check(!sch || !sch[1].some(n => n.body.includes('Entregar relatório')), 'tarefa concluída sai dos avisos');
+  // Reunião com pauta → registrar → combinados viram tarefas
+  await go('mensal'); await tap('[data-act=evNew]');
+  await fill('title', 'Reunião de equipe'); await fill('date', today); await fill('time', '00:05'); await fill('pauta', 'Escala do sábado\nUso de EPI\nMetas do mês'); await save();
+  let ev = (await st()).events.find(e => e.title === 'Reunião de equipe');
+  check(ev && ev.pautas.length === 3, 'compromisso com pauta (3 assuntos)');
+  await go('dashboard');
+  check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() >= 1, 'reunião passada sem registro aparece em "O que resolver"');
+  await p.locator('.li-click', { hasText: 'Reunião de equipe' }).tap(); await W(300);
+  check(await p.locator(`${M} .pauta li`).count() === 3, 'abrir compromisso mostra a pauta');
+  await tap(`${M} [data-reg]`); await W(300);
+  await p.locator(`${M} [name^=p_]`).nth(2).uncheck();
+  await fill('combinados', 'Carlos monta a escala\nComprar luvas'); await p.locator(`${M} [name=mkTasks]`).check(); await save(); await W(300);
+  const s9 = await st(); ev = s9.events.find(e => e.title === 'Reunião de equipe');
+  check(ev.registro && ev.registro.tratadas.length === 2 && ev.registro.combinados.includes('luvas'), 'registro: 2 de 3 assuntos tratados e combinados guardados');
+  check(s9.tasks.some(t => t.title === 'Carlos monta a escala') && s9.tasks.some(t => t.title === 'Comprar luvas'), 'cada combinado virou uma tarefa');
+  check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() === 0, 'registrada, sai de "O que resolver"');
+  await p.locator('.li-click', { hasText: 'Reunião de equipe' }).tap(); await W(300);
+  check((await p.textContent(M)).includes('Registro da reunião'), 'compromisso mostra o registro da reunião');
+  await p.screenshot({ path: OUT + '/14-reuniao-registrada.png' });
+  await p.evaluate(() => __fire('backButton')); await W(300);
 
   console.log('\n[9] Botão voltar, persistência e recuperação');
   await tap('[data-act=tkNew]').catch(() => {});

@@ -26,6 +26,9 @@ Views.dashboard = {
     const prioItems = [
       ...openOcc.map(o => ({ kind: 'Imprevisto', title: o.title, prio: o.priority, info: D.deadline(o.dueDate, o.dueTime, false), link: '#imprevistos', demo: o.demo })),
       ...open.filter(x => ['urgente', 'alta'].includes(x.priority) || D.taskLate(x)).map(x => ({ kind: 'Tarefa', title: x.title, prio: x.priority, info: D.deadline(x.dueDate, x.dueTime, false), link: '#tarefas', demo: x.demo })),
+      // Reuniões com pauta que já aconteceram (últimos 7 dias) e ainda não foram registradas
+      ...S.events.filter(e => (e.pautas || []).length && !e.registro && e.date <= t && e.date >= U.addDays(t, -7) && (e.date < t || !e.time || U.toMin(e.time) <= nowM))
+        .map(e => ({ kind: 'Registrar reunião', title: e.title, prio: 'media', info: null, link: '#mensal', demo: e.demo, ev: e.id })),
     ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late')) || PRIORITY_RANK[a.prio] - PRIORITY_RANK[b.prio]).slice(0, 7);
 
     // O que cobrar da equipe
@@ -41,11 +44,11 @@ Views.dashboard = {
 
     // Próximos 7 dias
     const upcoming = [];
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 0; i <= 7; i++) {
       const k = U.addDays(t, i);
       S.tasks.filter(x => OPEN(x.status) && x.dueDate === k).forEach(x => upcoming.push({ k, label: x.title, type: 'Prazo de tarefa', demo: x.demo }));
       S.projects.filter(p => !['concluido', 'cancelado'].includes(p.status) && p.dueDate === k).forEach(p => upcoming.push({ k, label: p.name, type: 'Prazo de projeto', demo: p.demo }));
-      S.events.filter(e => e.date === k).forEach(e => upcoming.push({ k, label: e.title, type: 'Compromisso' + (e.time ? ' ' + e.time : ''), demo: e.demo }));
+      S.events.filter(e => e.date === k).forEach(e => upcoming.push({ k, label: e.title, type: 'Compromisso' + (e.time ? ' ' + e.time : '') + ((e.pautas || []).length ? `, ${U.plural(e.pautas.length, 'assunto')} na pauta` : ''), demo: e.demo, ev: e.id }));
       S.occurrences.filter(o => OPEN(o.status) && o.dueDate === k).forEach(o => upcoming.push({ k, label: o.title, type: 'Prazo de imprevisto', demo: o.demo }));
     }
 
@@ -67,6 +70,7 @@ Views.dashboard = {
     const showGoals = !!S.settings.showIndicadores;
 
     return `
+    ${Updater.banner()}
     <section class="today">
       <div class="today-top">
         <div class="today-txt">
@@ -96,7 +100,7 @@ Views.dashboard = {
       </div>
       <div class="card">
         <div class="card-h"><h3>${U.icon('alert')} O que resolver</h3><a class="link" href="#tarefas">Tarefas</a></div>
-        ${prioItems.length ? `<ul class="list">${prioItems.map(i => `<li class="li"><a href="${i.link}" class="li-main">${H.prio(i.prio)} <span>${U.esc(i.title)}</span>${H.demo(i)}</a><span class="li-side"><small class="muted">${i.kind}</small>${H.deadline(i.info)}</span></li>`).join('')}</ul>`
+        ${prioItems.length ? `<ul class="list">${prioItems.map(i => `<li class="li"><a href="${i.link}" class="li-main" ${i.ev ? `data-act="evView" data-id="${i.ev}"` : ''}>${i.ev ? H.chip('Reunião', '#9461f5') : H.prio(i.prio)} <span>${U.esc(i.title)}</span>${H.demo(i)}</a><span class="li-side"><small class="muted">${i.kind}</small>${H.deadline(i.info)}</span></li>`).join('')}</ul>`
           : H.empty('Nenhuma pendência urgente, de alta prioridade ou atrasada.')}
       </div>
     </section>
@@ -132,8 +136,8 @@ Views.dashboard = {
           : H.empty('Nenhuma meta configurada.', '<a class="btn sm" href="#config">Configurar metas</a>')}
       </div>` : ''}
       <div class="card flat">
-        <div class="card-h"><h3>${U.icon('calendar')} Próximos 7 dias</h3><a class="link" href="#mensal">Calendário</a></div>
-        ${upcoming.length ? `<ul class="list">${upcoming.slice(0, 8).map(u => `<li class="li li-stack"><div class="li-top"><span class="li-time">${U.WD_SHORT[U.weekday(u.k)]} ${U.fmtShort(u.k)}</span><small class="muted">${u.type}</small></div><div class="li-txt">${U.esc(u.label)}${H.demo(u)}</div></li>`).join('')}</ul>${upcoming.length > 8 ? `<p class="muted small">+ ${upcoming.length - 8} itens</p>` : ''}`
+        <div class="card-h"><h3>${U.icon('calendar')} Hoje e próximos 7 dias</h3><a class="link" href="#mensal">Calendário</a></div>
+        ${upcoming.length ? `<ul class="list">${upcoming.slice(0, 8).map(u => `<li class="li li-stack ${u.ev ? 'li-click' : ''}" ${u.ev ? `data-act="evView" data-id="${u.ev}"` : ''}><div class="li-top"><span class="li-time">${u.k === t ? 'Hoje' : `${U.WD_SHORT[U.weekday(u.k)]} ${U.fmtShort(u.k)}`}</span><small class="muted">${u.type}</small></div><div class="li-txt">${U.esc(u.label)}${H.demo(u)}</div></li>`).join('')}</ul>${upcoming.length > 8 ? `<p class="muted small">+ ${upcoming.length - 8} itens</p>` : ''}`
           : H.empty('Nenhum prazo ou compromisso nos próximos 7 dias.')}
       </div>
     </section>`;

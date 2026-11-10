@@ -47,7 +47,7 @@ const Guide = {
       { icon: 'tasks', color: 'var(--primary)', title: 'Tarefas com prazo e alertas',
         text: 'Cadastre pendências com prazo, prioridade e, se delegar, o responsável.',
         mock: m.task(),
-        points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', 'Os contadores no topo funcionam como filtros (Abertas, Atrasadas, Concluídas…).'] },
+        points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', 'Os contadores no topo funcionam como filtros (Abertas, Atrasadas, Concluídas…).', 'Com <strong>horário de prazo</strong>, o app pode te avisar na hora: ligue em Configurações → <strong>Lembretes</strong>.'] },
       { icon: 'week', color: 'var(--primary)', title: 'Planejamento, projetos e resultados',
         text: 'No <strong>Menu</strong> ficam as visões de médio prazo.',
         mock: m.plan(),
@@ -243,7 +243,25 @@ Views.guia = {
         'Toque em um dia do calendário para ver o que há nele, criar um compromisso ou abrir a agenda daquele dia.',
         '<strong>Novo compromisso</strong> registra reuniões e visitas. Se quiser, ele já entra na agenda do dia.',
       ])}
+      <p><strong>Reuniões com pauta:</strong></p>
+      <ol>
+        <li>Ao criar o compromisso, escreva a <strong>pauta</strong>: um assunto por linha.</li>
+        <li>Depois da reunião, abra o compromisso (pelo calendário ou pelo Início) e toque em <strong>Registrar reunião</strong>.</li>
+        <li>Marque os assuntos tratados e escreva <strong>o que foi combinado</strong>, um por linha. Se quiser, cada combinado vira uma tarefa.</li>
+      </ol>
+      <p class="guide-note">Reunião com pauta que já passou e ainda não foi registrada aparece em <strong>O que resolver</strong>, no Início, por até 7 dias.</p>
       <p class="guide-note"><strong>Exemplo:</strong> Semana 1, foco “Diagnóstico”, item “Levantar pendências do mês anterior”. Semana 4, foco “Fechamento”, itens “Avaliar resultados” e “Planejar o mês seguinte”.</p>`)}
+
+    ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
+      <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>
+      ${li([
+        '<strong>Tarefas e imprevistos</strong> com horário de prazo: aviso antes do prazo (você escolhe quanto) e, se quiser, repetição a cada 30 min depois que vencer, por até 2 h.',
+        '<strong>Compromissos</strong> com horário: aviso antes de começar, com a quantidade de assuntos da pauta.',
+        '<strong>Resumo do dia</strong>: no início do expediente, quantos prazos, compromissos e atrasos há no dia.',
+        'No aviso de tarefa, <strong>Feito</strong> conclui a tarefa sem abrir o app. <strong>Ciente</strong> ou <strong>Parar de avisar</strong> encerra as repetições daquele item.',
+        'Use <strong>Enviar aviso de teste</strong> para conferir se está funcionando.',
+      ])}
+      ${Native.available() ? '<p class="guide-note"><strong>Xiaomi / Redmi:</strong> para os avisos tocarem com o app fechado, deixe tudo verde em Configurações → Lembretes: notificações, alarmes exatos, bateria sem restrição e <strong>inicialização automática</strong> ligada.</p>' : ''}`)}
 
     ${sec('projetos', 'kanban', 'Projetos', li([
       '<strong>+ Novo projeto</strong>: cliente, responsável, datas, status e etapas (uma por linha).',
@@ -271,7 +289,7 @@ Views.guia = {
       `Os dados ficam salvos ${Guide.whereData()}.`,
       '<strong>Passar dados do celular para a web (ou o contrário):</strong> em Configurações → Dados, toque em <strong>Enviar meus dados</strong> → Copiar ou Enviar código. Mande o código para você mesmo (WhatsApp na conversa “Você”, e-mail ou Keep). Na outra versão, abra <strong>Receber dados</strong>, cole e confirme.',
       '<strong>Exportar backup (arquivo)</strong> gera um arquivo com tudo. Guarde no Drive ou envie para você mesmo. <strong>Importar backup</strong> restaura o arquivo (substitui os dados atuais).',
-      Native.available() ? '<strong>Atualizar o app</strong>: instale o novo APK por cima, sem desinstalar, e os dados são mantidos. Desinstalar apaga os dados.' : 'Para usar em outro aparelho, exporte aqui e importe lá.',
+      Native.available() ? '<strong>Atualizar o app</strong>: quando houver versão nova, aparece um aviso no Início com o botão <strong>Baixar</strong>. Instale por cima, sem desinstalar: os dados são mantidos. Desinstalar apaga os dados.' : 'Para usar em outro aparelho, exporte aqui e importe lá.',
       'Os <strong>dados de exemplo</strong> têm o selo EXEMPLO e podem ser removidos sem afetar os seus.',
     ]))}
 

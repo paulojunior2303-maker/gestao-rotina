@@ -124,6 +124,7 @@ const App = {
     this.render();
     setTimeout(() => document.body.classList.remove('intro'), 1600);
     Tutorial.maybeShow();
+    if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },

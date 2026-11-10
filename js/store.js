@@ -51,7 +51,8 @@ const Store = {
         workDays: [1, 2, 3, 4, 5],
         alertDays: 2,
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
-        showIndicadores: false,   // tela Indicadores oculta por padrão (Configurações → Aparência)
+        showIndicadores: false,
+        lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
           { id: 'demandas', name: 'Demandas', color: '#8e87a3' },
           { id: 'equipe', name: 'Equipe', color: '#b08cf5' },
@@ -161,6 +162,7 @@ const Store = {
       catch (e) { this.persistent = false; }
     }
     if (cloud) Cloud.schedule();
+    if (typeof Reminders !== 'undefined') Reminders.schedule();
     if (Native.available()) Native.persist();
     if (!this.persistent && Cloud.state !== 'on' && Cloud.state !== 'connecting' && !this.warned) {
       this.warned = true;

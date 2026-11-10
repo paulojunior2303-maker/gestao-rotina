@@ -31,6 +31,10 @@ e diga o que mudou e como testar no celular.
 - **Indicadores fica oculto** por padrão (`settings.showIndicadores`, chave em Configurações → Aparência). Oculto também esconde Metas e o card de metas do Dashboard.
 - **Planejamento semanal e mensal começam em branco** (o usuário monta). Explicação detalhada no Guia de uso (`#g-semanal`, `#g-mensal`; botão “Como funciona” usa `guideOpen`).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
+- **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
+  (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).
+- **Aviso de versão nova** (`Updater`): o APK compara `App.getInfo().version` com a última Release do GitHub.
+- **Compromissos** podem ter `pautas` e `registro` (tratadas + combinados; combinados podem virar tarefas).
 - Ícones/splash do Android: `node android-app/tools/icons.js` (gera a partir da marca do anel).
 
 ## Testes (rodar antes de todo commit)

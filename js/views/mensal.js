@@ -6,7 +6,7 @@ const CYCLE_COLORS = ['var(--cy1)', 'var(--cy2)', 'var(--cy3)', 'var(--cy4)'];
 const Month = {
   itemsOn(k) {
     const out = [];
-    S.events.filter(e => e.date === k).forEach(e => out.push({ type: 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo }));
+    S.events.filter(e => e.date === k).forEach(e => out.push({ type: 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro }));
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo }));
     S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo }));
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo }));
@@ -80,25 +80,77 @@ Views.mensal = {
 };
 
 const Events = {
+  /* Pauta guardada como lista; no formulário, um assunto por linha (mantém os ids dos que já existiam) */
+  pautaFromText(txt, old = []) {
+    return txt.split('\n').map(l => l.trim()).filter(Boolean).map(text => { const o = old.find(x => x.text === text); return { id: o ? o.id : U.uid(), text }; });
+  },
+  canRegister(e) { return e.date <= U.today(); },
   form(e, date) {
     const isNew = !e;
     e = e || { date: date || U.today() };
     UI.form({
       title: isNew ? 'Novo compromisso' : 'Editar compromisso',
       fields: [
-        { name: 'title', label: 'Compromisso', required: true, value: e.title },
+        { name: 'title', label: 'Compromisso', required: true, value: e.title, placeholder: 'Ex.: Reunião com a equipe' },
         { name: 'date', label: 'Data', type: 'date', required: true, value: e.date, half: true },
         { name: 'time', label: 'Horário', type: 'time', value: e.time, half: true },
+        { name: 'pauta', label: 'Pauta (opcional)', type: 'textarea', rows: 3, value: (e.pautas || []).map(x => x.text).join('\n'), placeholder: 'Um assunto por linha', hint: 'Assuntos para tratar. No dia, use “Registrar reunião” para marcar o que foi tratado e anotar o que foi combinado.' },
         { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: e.notes },
         ...(isNew ? [{ name: 'toAgenda', label: 'Adicionar também na agenda do dia (30 min)', type: 'checkbox', value: false }] : []),
       ],
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); S.events = S.events.filter(x => x.id !== e.id); commit(); UI.toast('Compromisso excluído.'); } }],
       validate: v => v.toAgenda && !v.time ? 'Informe o horário para adicionar à agenda.' : null,
       onSubmit(v) {
-        const { toAgenda, ...data } = v;
+        const { toAgenda, pauta, ...data } = v;
+        data.pautas = Events.pautaFromText(pauta, e.pautas || []);
         if (isNew) S.events.push({ id: U.uid(), ...data }); else Object.assign(e, data);
         if (toAgenda) D.ensureDay(v.date).push({ id: U.uid(), title: v.title, start: v.time, end: U.fromMin(U.toMin(v.time) + 30), category: 'administrativo', priority: 'media', status: 'pendente', notes: v.notes, fixed: true });
         commit(); UI.toast('Compromisso salvo.');
+      },
+    });
+  },
+
+  /* Detalhes do compromisso: pauta, registro da reunião e ações */
+  view(e) {
+    const r = e.registro, pautas = e.pautas || [];
+    const done = id => r && r.tratadas.includes(id);
+    const m = UI.modal({
+      title: e.title,
+      body: `
+        <p class="muted">${U.fmtLong(e.date)}${e.time ? `, às ${e.time}` : ''}${H.demo(e)}</p>
+        ${e.notes ? `<p class="pre">${U.esc(e.notes)}</p>` : ''}
+        ${pautas.length ? `<h4>Pauta</h4><ul class="pauta">${pautas.map(x => `<li class="${r ? (done(x.id) ? 'ok' : 'no') : ''}">${r ? U.icon(done(x.id) ? 'check' : 'x', 15) : '<i></i>'}<span>${U.esc(x.text)}</span></li>`).join('')}</ul>` : ''}
+        ${r ? `<h4>Registro da reunião</h4><p class="muted small">Registrada em ${U.fmtDateTime(r.at)}${pautas.length ? `. ${r.tratadas.length} de ${U.plural(pautas.length, 'assunto')} tratados.` : '.'}</p>
+          ${r.combinados ? `<p class="ata pre">${U.esc(r.combinados)}</p>` : '<p class="muted">Nada anotado como combinado.</p>'}`
+          : Events.canRegister(e) ? `<p class="muted small mt">Depois da reunião, toque em <strong>Registrar reunião</strong> para marcar o que foi tratado e anotar os combinados.</p>` : ''}`,
+      footer: `<button class="btn ghost" data-ed>${U.icon('edit', 15)} Editar</button><span class="grow"></span>${Events.canRegister(e) ? `<button class="btn primary" data-reg>${U.icon('check', 15)} ${r ? 'Editar registro' : 'Registrar reunião'}</button>` : ''}`,
+    });
+    m.el.querySelector('[data-ed]').onclick = () => { m.close(); Events.form(e); };
+    const reg = m.el.querySelector('[data-reg]'); if (reg) reg.onclick = () => { m.close(); Events.register(e); };
+  },
+
+  /* Registro: o que foi tratado e o que foi combinado (vira tarefa, se quiser) */
+  register(e) {
+    const r = e.registro || { tratadas: [], combinados: '' };
+    const pautas = e.pautas || [];
+    UI.form({
+      title: 'Registrar reunião',
+      submitLabel: 'Salvar registro',
+      fields: [
+        { type: 'html', html: `<p class="muted small">${U.esc(e.title)}, ${U.fmtShort(e.date)}${e.time ? ' ' + e.time : ''}</p>` },
+        ...(pautas.length ? [{ type: 'html', html: '<span class="lbl">Assuntos tratados</span>' }, ...pautas.map(x => ({ name: 'p_' + x.id, label: U.esc(x.text), type: 'checkbox', value: e.registro ? r.tratadas.includes(x.id) : true }))] : []),
+        { name: 'combinados', label: 'O que foi combinado', type: 'textarea', rows: 4, value: r.combinados, placeholder: 'Um combinado por linha. Ex.: Carlos envia o relatório até sexta' },
+        { name: 'mkTasks', label: 'Criar uma tarefa para cada combinado', type: 'checkbox', value: false, hint: 'As tarefas entram em Tarefas, com o nome da reunião na descrição. Ajuste prazo e responsável depois.' },
+      ],
+      onSubmit(v) {
+        e.registro = { at: new Date().toISOString(), tratadas: pautas.filter(x => v['p_' + x.id]).map(x => x.id), combinados: v.combinados };
+        let n = 0;
+        if (v.mkTasks) v.combinados.split('\n').map(l => l.replace(/^[-•*\d.)\s]+/, '').trim()).filter(Boolean).forEach(title => {
+          n++;
+          S.tasks.push({ id: U.uid(), title, description: `Combinado na reunião “${e.title}” (${U.fmtShort(e.date)}).`, category: 'equipe', priority: 'media', status: 'pendente', createdAt: new Date().toISOString(), startDate: U.today(), dueDate: '', dueTime: '', notes: '', completedAt: null });
+        });
+        commit();
+        UI.toast(n ? `Reunião registrada e ${U.plural(n, 'tarefa criada', 'tarefas criadas')}.` : 'Reunião registrada.');
       },
     });
   },
@@ -138,14 +190,15 @@ Object.assign(Actions, {
       body: `
         <p class="muted">${D.isWorkday(k) ? `Dia útil, semana ${cycleOf(k)} do mês${S.monthly.cycles[cycleOf(k) - 1]?.title ? ': ' + U.esc(S.monthly.cycles[cycleOf(k) - 1].title) : ''}` : 'Dia não útil'}</p>
         <h4>Prazos e compromissos</h4>
-        ${items.length ? `<ul class="list">${items.map(i => `<li class="li"><span class="li-time">${i.time || '—'}</span><span class="li-main"><span class="cal-it-dot t-${i.type}"></span>${U.esc(i.label)}${H.demo(i)}</span><small class="muted">${Month.TYPE[i.type]}${i.done ? ' · concluído' : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small>${i.type === 'evento' ? `<button class="icon-btn xs" data-act="evEdit" data-id="${i.id}">${U.icon('edit', 13)}</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted">Nada programado.</p>'}
+        ${items.length ? `<ul class="list">${items.map(i => `<li class="li"><span class="li-time">${i.time || '—'}</span><span class="li-main"><span class="cal-it-dot t-${i.type}"></span>${U.esc(i.label)}${H.demo(i)}</span><small class="muted">${Month.TYPE[i.type]}${i.done ? (i.type === 'evento' ? ' · registrado' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small>${i.type === 'evento' ? `<button class="btn sm" data-act="evView" data-id="${i.id}">Abrir</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted">Nada programado.</p>'}
         <h4>Agenda</h4>
         <p>${ag.length ? `${ag.length} atividades · ${prog.pct === null ? '—' : prog.pct + '% concluído'}` : 'Sem atividades na agenda.'}</p>`,
       footer: `<button class="btn ghost" data-go>Abrir agenda do dia</button><span class="grow"></span><button class="btn primary" data-new>${U.icon('plus', 15)} Compromisso</button>`,
     });
     m.el.querySelector('[data-go]').onclick = () => { m.close(); App.ui.agendaDate = k; location.hash = '#agenda'; };
     m.el.querySelector('[data-new]').onclick = () => { m.close(); Events.form(null, k); };
-    m.el.addEventListener('click', ev => { if (ev.target.closest('[data-act="evEdit"]')) m.close(); });
+    m.el.addEventListener('click', ev => { if (ev.target.closest('[data-act="evView"]')) m.close(); });
   },
   evEdit({ id }) { Events.form(S.events.find(e => e.id === id)); },
+  evView({ id }) { const e = S.events.find(e => e.id === id); if (e) Events.view(e); },
 });
