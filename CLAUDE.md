@@ -62,6 +62,16 @@ bash tests/run.sh android  # só um arquivo
 ```
 `android-device.test.js` simula o Redmi Note 12 com Capacitor falso. Ao criar uma funcionalidade, adicione verificações.
 
+## Fluxo de trabalho: canal de teste (pedido do usuário)
+- **Nada vai para o app oficial sem aprovação do usuário.** Toda mudança nova é feita no ramo `teste` e publicada só no
+  **site de teste**: https://paulojunior2303-maker.github.io/gestao-rotina/teste/
+- Publicar o teste: no ramo `teste`, `python3 build.py --teste` → copiar `dist/gestao-rotina-teste.html` para `teste/index.html`
+  no ramo `main` (só essa pasta; não dispara o APK) e enviar. O build de teste usa outra chave no LocalStorage (`…:teste`),
+  desliga o Google Drive e mostra a marca TESTE (`CANAL_TESTE` em `js/store.js`).
+- Cada recurso num commit separado, para dar para aprovar só uma parte. Quando o usuário aprovar, levar os commits
+  aprovados do `teste` para o `main` (merge ou cherry-pick) → isso gera o APK e atualiza o site oficial.
+- Não há APK de teste (decisão do usuário: testes só pela web).
+
 ## Publicação
 - **GitHub Pages**: automático a cada push em `main` → https://paulojunior2303-maker.github.io/gestao-rotina/
 - **APK**: `.github/workflows/android-apk.yml` gera, assina e publica uma Release (`GestaoRotina.apk`), versão `1.1.<run>`.
