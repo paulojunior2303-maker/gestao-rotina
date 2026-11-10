@@ -1,6 +1,8 @@
 'use strict';
 /* Estado, persistência (LocalStorage) e regras de domínio */
-const STORAGE_KEY = 'gestao-rotina-wibicam:v1';
+/* Canal de teste (site …/teste/): dados guardados à parte, para nunca misturar com os reais */
+const CANAL_TESTE = typeof window !== 'undefined' && window.APP_CHANNEL === 'teste';
+const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_TESTE ? ':teste' : '');
 
 const METRICS = [
   { key: 'pontosCamera', label: 'Pontos de câmera instalados' },

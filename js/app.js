@@ -52,7 +52,7 @@ const App = {
     const scroll = window.scrollY;
     document.getElementById('page-title').textContent = view.title;
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
-    document.title = `${view.title} · Gestão de Rotina`;
+    document.title = `${view.title} · Gestão de Rotina${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
     const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
       : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
@@ -69,6 +69,10 @@ const App = {
   },
 
   async init() {
+    if (CANAL_TESTE) {   // marca visível: é a versão de teste
+      document.body.classList.add('canal-teste');
+      document.querySelector('.topbar').insertAdjacentHTML('afterbegin', '<span class="teste-tag" title="Versão de teste: dados separados do app oficial">TESTE</span>');
+    }
     if (Native.available()) { await Native.restore(); Native.init(); document.body.classList.add('native'); }
     Store.load();
     Theme.init();
@@ -143,7 +147,7 @@ const App = {
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
     Drive.auto();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if (!CANAL_TESTE && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },
   openMenu() { document.body.classList.add('menu-open'); },

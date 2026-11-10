@@ -1,5 +1,7 @@
-"""Gera dist/gestao-rotina.html: um único arquivo com CSS e JS embutidos (abre com duplo clique)."""
-import re, base64, pathlib
+"""Gera dist/gestao-rotina.html: um único arquivo com CSS e JS embutidos (abre com duplo clique).
+   python3 build.py --teste  → dist/gestao-rotina-teste.html (canal de teste: dados separados, sem Google Drive)."""
+import re, base64, pathlib, sys
+TESTE = '--teste' in sys.argv
 root = pathlib.Path(__file__).parent
 html = (root / 'index.html').read_text(encoding='utf-8')
 css = (root / 'css/styles.css').read_text(encoding='utf-8')
@@ -13,6 +15,10 @@ def inline(m):
     js = (root / m.group(1)).read_text(encoding='utf-8').replace('</script', '<\\/script')
     return f'<script>/* {m.group(1)} */\n{js}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline, html)
+if TESTE:
+    html = html.replace('<title>Gestão de Rotina</title>', '<title>Gestão de Rotina (TESTE)</title>')
+    html = html.replace('<script>/* js/utils.js */', "<script>window.APP_CHANNEL = 'teste';</script>\n<script>/* js/utils.js */", 1)
 (root / 'dist').mkdir(exist_ok=True)
-(root / 'dist/gestao-rotina.html').write_text(html, encoding='utf-8')
-print('dist/gestao-rotina.html', len(html) // 1024, 'KB')
+out = 'dist/gestao-rotina-teste.html' if TESTE else 'dist/gestao-rotina.html'
+(root / out).write_text(html, encoding='utf-8')
+print(out, len(html) // 1024, 'KB')
