@@ -21,7 +21,7 @@ const Guide = {
     occ: () => `<div class="tour-mock"><div class="occ card prio-border-urgente"><div class="occ-h"><h3>Câmeras offline no cliente</h3><span class="grow"></span>${H.prio('urgente')}</div>
       <div class="occ-actions"><span class="btn sm">${U.icon('calendar', 15)} Encaixar na agenda</span><span class="btn sm ghost ok-text">${U.icon('check', 15)} Resolver</span></div></div></div>`,
     dash: () => `<div class="tour-mock tm-kpis"><div class="kpi k-green"><span class="kpi-l">Progresso do dia</span><strong class="kpi-v">45%</strong></div><div class="kpi k-red"><span class="kpi-l">Atrasadas</span><strong class="kpi-v">2</strong></div><div class="kpi k-yellow"><span class="kpi-l">Imprevistos</span><strong class="kpi-v">1</strong></div></div>`,
-    plan: () => `<div class="tour-mock tm-grid">${[['week', 'Semanal', 'O que garantir em cada dia'], ['calendar', 'Mensal', '4 semanas e calendário'], ['kanban', 'Projetos', 'Etapas e Kanban'], ['info', 'Guia de uso', 'Tudo explicado']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
+    plan: () => `<div class="tour-mock tm-grid">${[['week', 'Semanal', 'O que garantir em cada dia'], ['calendar', 'Mensal', '4 semanas e calendário'], ['kanban', 'Projetos', 'Etapas e Kanban'], ['users', 'Reuniões', 'Pauta e registro com IA']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
     data: () => `<div class="tour-mock tm-data"><span class="btn sm primary">${U.icon('arrow', 15)} Enviar meus dados</span><span class="btn sm">${U.icon('download', 15)} Receber dados</span></div>`,
   },
 
@@ -51,7 +51,7 @@ const Guide = {
       { icon: 'week', color: 'var(--primary)', title: 'Planejamento, projetos e resultados',
         text: 'No <strong>Menu</strong> ficam as visões de médio prazo.',
         mock: m.plan(),
-        points: ['<strong>Semanal</strong>: uma lista do que você quer garantir em cada dia da semana. Ela se repete toda semana.', '<strong>Mensal</strong>: o mesmo, dividido nas 4 semanas do mês, mais um calendário com prazos e compromissos.', '<strong>Projetos</strong>: marque as etapas e o percentual é calculado sozinho.', 'Os dois planejamentos começam <strong>em branco</strong>: o Guia de uso mostra como montar.'] },
+        points: ['<strong>Semanal</strong>: uma lista do que você quer garantir em cada dia da semana. Ela se repete toda semana.', '<strong>Mensal</strong>: o mesmo, dividido nas 4 semanas do mês, mais um calendário com prazos e compromissos.', '<strong>Reuniões</strong>: pauta antes, combinados depois. A IA pode preencher o registro a partir da gravação.', 'Os dois planejamentos começam <strong>em branco</strong>: o Guia de uso mostra como montar.'] },
       { icon: 'download', color: 'var(--primary)', title: 'Seus dados', final: true,
         text: `Tudo o que você cadastra fica salvo ${this.whereData()}.`,
         mock: m.data(),
@@ -166,7 +166,7 @@ Views.guia = {
 
     ${sec('nav', 'menu', 'Navegação no celular', li([
       '<strong>Barra inferior</strong>: Início, Agenda, Tarefas, Imprevistos e Menu.',
-      `<strong>Menu</strong> (ou ☰ no topo): Planejamento semanal e mensal, Projetos${S.settings.showIndicadores ? ', Indicadores' : ''}, Configurações e este Guia.`,
+      `<strong>Menu</strong> (ou ☰ no topo): Reuniões, Planejamento semanal e mensal, Projetos${S.settings.showIndicadores ? ', Indicadores' : ''}, Configurações e este Guia.`,
       'Os <strong>números em vermelho</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
@@ -243,14 +243,17 @@ Views.guia = {
         'Toque em um dia do calendário para ver o que há nele, criar um compromisso ou abrir a agenda daquele dia.',
         '<strong>Novo compromisso</strong> registra reuniões e visitas. Se quiser, ele já entra na agenda do dia.',
       ])}
-      <p><strong>Reuniões com pauta:</strong></p>
+`)}
+
+    ${sec('reunioes', 'users', 'Reuniões (pauta, registro e IA)', `
+      <p>Fica em <strong>Menu → Reuniões</strong>. Serve para chegar na reunião com a pauta pronta e sair com os combinados registrados.</p>
       <ol>
-        <li>Ao criar o compromisso, escreva a <strong>pauta</strong>: um assunto por linha.</li>
-        <li>Depois da reunião, abra o compromisso (pelo calendário ou pelo Início) e toque em <strong>Registrar reunião</strong>.</li>
-        <li>Marque os assuntos tratados e escreva <strong>o que foi combinado</strong>, um por linha. Se quiser, cada combinado vira uma tarefa.</li>
+        <li>Toque em <strong>Nova reunião</strong>: título, dia, horário e a <strong>pauta</strong>, um assunto por linha.</li>
+        <li>Depois da reunião, ela aparece em <strong>Para registrar</strong> (e em “O que resolver”, no Início). Toque nela e em <strong>Registrar reunião</strong>.</li>
+        <li>Marque os assuntos tratados e escreva o que foi combinado, um por linha. Marque <strong>Criar uma tarefa para cada combinado</strong> para levá-los a Tarefas.</li>
       </ol>
-      <p class="guide-note">Reunião com pauta que já passou e ainda não foi registrada aparece em <strong>O que resolver</strong>, no Início, por até 7 dias.</p>
-      <p class="guide-note"><strong>Exemplo:</strong> Semana 1, foco “Diagnóstico”, item “Levantar pendências do mês anterior”. Semana 4, foco “Fechamento”, itens “Avaliar resultados” e “Planejar o mês seguinte”.</p>`)}
+      <p><strong>Com IA:</strong> no registro, toque em <strong>Gravar reunião</strong> no começo da conversa e em <strong>Parar</strong> no fim, ou escreva/dite suas anotações. Depois toque em <strong>Preencher com IA</strong>: ela marca os assuntos tratados, lista os combinados e escreve um resumo. Confira e salve.</p>
+      <p class="guide-note">Para usar a IA, cole a sua chave do Google em <strong>Configurações → IA</strong>. O áudio é enviado só quando você toca em “Preencher com IA” e não fica guardado no app. Avise os participantes antes de gravar.</p>`)}
 
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>
@@ -278,6 +281,7 @@ Views.guia = {
     ])) : ''}
 
     ${sec('config', 'settings', 'Configurações', li([
+      '<strong>IA</strong>: cole a chave do Google (AI Studio) para a IA preencher o registro das reuniões.',
       '<strong>Aparência</strong>: modo <strong>escuro</strong>, <strong>claro</strong> ou <strong>automático</strong> (segue o tema do celular). Ali também dá para <strong>mostrar ou ocultar a tela Indicadores</strong> no menu.',
       '<strong>Jornada</strong>: horários, intervalo, dias de trabalho e antecedência dos alertas de prazo.',
       '<strong>Rotina padrão</strong>: blocos de horário recorrentes (dias da semana ou um dia do mês).',

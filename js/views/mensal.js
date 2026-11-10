@@ -85,35 +85,39 @@ const Events = {
     return txt.split('\n').map(l => l.trim()).filter(Boolean).map(text => { const o = old.find(x => x.text === text); return { id: o ? o.id : U.uid(), text }; });
   },
   canRegister(e) { return e.date <= U.today(); },
-  form(e, date) {
+  form(e, date, opts = {}) {
     const isNew = !e;
-    e = e || { date: date || U.today() };
+    e = e || { date: date || U.today(), reuniao: !!opts.reuniao };
+    const meet = Meetings.isMeeting(e);
+    const noun = meet ? 'reunião' : 'compromisso';
     UI.form({
-      title: isNew ? 'Novo compromisso' : 'Editar compromisso',
+      title: isNew ? (meet ? 'Nova reunião' : 'Novo compromisso') : `Editar ${noun}`,
       fields: [
-        { name: 'title', label: 'Compromisso', required: true, value: e.title, placeholder: 'Ex.: Reunião com a equipe' },
+        { name: 'title', label: meet ? 'Reunião' : 'Compromisso', required: true, value: e.title, placeholder: meet ? 'Ex.: Alinhamento semanal da equipe' : 'Ex.: Visita ao cliente' },
         { name: 'date', label: 'Data', type: 'date', required: true, value: e.date, half: true },
         { name: 'time', label: 'Horário', type: 'time', value: e.time, half: true },
-        { name: 'pauta', label: 'Pauta (opcional)', type: 'textarea', rows: 3, value: (e.pautas || []).map(x => x.text).join('\n'), placeholder: 'Um assunto por linha', hint: 'Assuntos para tratar. No dia, use “Registrar reunião” para marcar o que foi tratado e anotar o que foi combinado.' },
+        { name: 'pauta', label: meet ? 'Pauta' : 'Pauta (se for reunião)', type: 'textarea', rows: meet ? 4 : 2, value: (e.pautas || []).map(x => x.text).join('\n'), placeholder: 'Um assunto por linha', hint: 'Depois da reunião, abra-a e toque em “Registrar reunião” para marcar o que foi tratado e anotar os combinados.' },
         { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: e.notes },
         ...(isNew ? [{ name: 'toAgenda', label: 'Adicionar também na agenda do dia (30 min)', type: 'checkbox', value: false }] : []),
       ],
-      extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); S.events = S.events.filter(x => x.id !== e.id); commit(); UI.toast('Compromisso excluído.'); } }],
+      extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); S.events = S.events.filter(x => x.id !== e.id); commit(); UI.toast(meet ? 'Reunião excluída.' : 'Compromisso excluído.'); } }],
       validate: v => v.toAgenda && !v.time ? 'Informe o horário para adicionar à agenda.' : null,
       onSubmit(v) {
         const { toAgenda, pauta, ...data } = v;
         data.pautas = Events.pautaFromText(pauta, e.pautas || []);
+        if (e.reuniao || data.pautas.length) data.reuniao = true;
         if (isNew) S.events.push({ id: U.uid(), ...data }); else Object.assign(e, data);
-        if (toAgenda) D.ensureDay(v.date).push({ id: U.uid(), title: v.title, start: v.time, end: U.fromMin(U.toMin(v.time) + 30), category: 'administrativo', priority: 'media', status: 'pendente', notes: v.notes, fixed: true });
-        commit(); UI.toast('Compromisso salvo.');
+        if (toAgenda) D.ensureDay(v.date).push({ id: U.uid(), title: v.title, start: v.time, end: U.fromMin(U.toMin(v.time) + 30), category: data.reuniao ? 'equipe' : 'administrativo', priority: 'media', status: 'pendente', notes: v.notes, fixed: true });
+        commit(); UI.toast(data.reuniao ? 'Reunião salva.' : 'Compromisso salvo.');
       },
     });
   },
 
-  /* Detalhes do compromisso: pauta, registro da reunião e ações */
+  /* Detalhes: pauta, registro da reunião e ações */
   view(e) {
     const r = e.registro, pautas = e.pautas || [];
     const done = id => r && r.tratadas.includes(id);
+    const meet = Meetings.isMeeting(e);
     const m = UI.modal({
       title: e.title,
       body: `
@@ -121,29 +125,44 @@ const Events = {
         ${e.notes ? `<p class="pre">${U.esc(e.notes)}</p>` : ''}
         ${pautas.length ? `<h4>Pauta</h4><ul class="pauta">${pautas.map(x => `<li class="${r ? (done(x.id) ? 'ok' : 'no') : ''}">${r ? U.icon(done(x.id) ? 'check' : 'x', 15) : '<i></i>'}<span>${U.esc(x.text)}</span></li>`).join('')}</ul>` : ''}
         ${r ? `<h4>Registro da reunião</h4><p class="muted small">Registrada em ${U.fmtDateTime(r.at)}${pautas.length ? `. ${r.tratadas.length} de ${U.plural(pautas.length, 'assunto')} tratados.` : '.'}</p>
-          ${r.combinados ? `<p class="ata pre">${U.esc(r.combinados)}</p>` : '<p class="muted">Nada anotado como combinado.</p>'}`
-          : Events.canRegister(e) ? `<p class="muted small mt">Depois da reunião, toque em <strong>Registrar reunião</strong> para marcar o que foi tratado e anotar os combinados.</p>` : ''}`,
-      footer: `<button class="btn ghost" data-ed>${U.icon('edit', 15)} Editar</button><span class="grow"></span>${Events.canRegister(e) ? `<button class="btn primary" data-reg>${U.icon('check', 15)} ${r ? 'Editar registro' : 'Registrar reunião'}</button>` : ''}`,
+          ${r.resumo ? `<p class="ata pre">${U.esc(r.resumo)}</p>` : ''}
+          <h4>Combinados</h4>${r.combinados ? `<p class="ata pre">${U.esc(r.combinados)}</p>` : '<p class="muted">Nada anotado como combinado.</p>'}`
+          : Events.canRegister(e) ? `<p class="muted small mt">Depois da reunião, toque em <strong>Registrar reunião</strong> para marcar o que foi tratado e anotar os combinados${IA.ready() ? ' (a IA pode preencher para você)' : ''}.</p>` : ''}`,
+      footer: `<button class="btn ghost" data-ed>${U.icon('edit', 15)} Editar</button><span class="grow"></span>${Events.canRegister(e) ? `<button class="btn ${meet || r ? 'primary' : ''}" data-reg>${U.icon('check', 15)} ${r ? 'Editar registro' : 'Registrar reunião'}</button>` : ''}`,
     });
     m.el.querySelector('[data-ed]').onclick = () => { m.close(); Events.form(e); };
     const reg = m.el.querySelector('[data-reg]'); if (reg) reg.onclick = () => { m.close(); Events.register(e); };
   },
 
-  /* Registro: o que foi tratado e o que foi combinado (vira tarefa, se quiser) */
+  /* Registro: o que foi tratado e o que foi combinado (com IA opcional; combinados podem virar tarefas) */
   register(e) {
-    const r = e.registro || { tratadas: [], combinados: '' };
+    const r = e.registro || { tratadas: [], combinados: '', resumo: '' };
     const pautas = e.pautas || [];
-    UI.form({
+    const iaBox = !IA.supported() ? '' : IA.ready() ? `<div class="ia-box">
+        <div class="ia-h">${U.icon('spark', 17)}<strong>Preencher com IA</strong></div>
+        <p class="muted small">Grave a reunião ou escreva suas anotações (dá para ditar pelo microfone do teclado). A IA marca os assuntos tratados e lista os combinados. Confira antes de salvar.</p>
+        <textarea name="iaNotas" rows="3" placeholder="Anotações da reunião (opcional se gravar)"></textarea>
+        <div class="ia-actions">
+          ${Recorder.supported() ? `<button type="button" class="btn sm" data-rec>${U.icon('mic', 15)} Gravar reunião</button><span class="rec-st muted small"></span>` : ''}
+          <span class="grow"></span>
+          <button type="button" class="btn sm primary" data-ia>${U.icon('spark', 15)} Preencher com IA</button>
+        </div>
+        <p class="ia-msg small" hidden></p>
+      </div>` : `<p class="ia-off muted small">${U.icon('spark', 15)} A IA pode preencher este registro para você. <a class="link" href="#config" data-ia-cfg>Ativar em Configurações → IA</a></p>`;
+    const m = UI.form({
       title: 'Registrar reunião',
       submitLabel: 'Salvar registro',
+      onClose: () => { if (Recorder.recording()) Recorder.stop(); },
       fields: [
-        { type: 'html', html: `<p class="muted small">${U.esc(e.title)}, ${U.fmtShort(e.date)}${e.time ? ' ' + e.time : ''}</p>` },
-        ...(pautas.length ? [{ type: 'html', html: '<span class="lbl">Assuntos tratados</span>' }, ...pautas.map(x => ({ name: 'p_' + x.id, label: U.esc(x.text), type: 'checkbox', value: e.registro ? r.tratadas.includes(x.id) : true }))] : []),
+        { type: 'html', html: `<p class="muted small">${U.esc(e.title)}, ${U.fmtShort(e.date)}${e.time ? ' ' + e.time : ''}</p>${iaBox}` },
+        ...(pautas.length ? [{ type: 'html', html: '<span class="lbl">Assuntos tratados</span>' }, ...pautas.map(x => ({ name: 'p_' + x.id, label: U.esc(x.text), type: 'checkbox', value: e.registro ? r.tratadas.includes(x.id) : false }))] : []),
         { name: 'combinados', label: 'O que foi combinado', type: 'textarea', rows: 4, value: r.combinados, placeholder: 'Um combinado por linha. Ex.: Carlos envia o relatório até sexta' },
+        { name: 'resumo', label: 'Resumo (opcional)', type: 'textarea', rows: 3, value: r.resumo || '', placeholder: 'O que foi conversado, em poucas frases' },
         { name: 'mkTasks', label: 'Criar uma tarefa para cada combinado', type: 'checkbox', value: false, hint: 'As tarefas entram em Tarefas, com o nome da reunião na descrição. Ajuste prazo e responsável depois.' },
       ],
       onSubmit(v) {
-        e.registro = { at: new Date().toISOString(), tratadas: pautas.filter(x => v['p_' + x.id]).map(x => x.id), combinados: v.combinados };
+        e.registro = { at: new Date().toISOString(), tratadas: pautas.filter(x => v['p_' + x.id]).map(x => x.id), combinados: v.combinados, resumo: v.resumo };
+        e.reuniao = true;
         let n = 0;
         if (v.mkTasks) v.combinados.split('\n').map(l => l.replace(/^[-•*\d.)\s]+/, '').trim()).filter(Boolean).forEach(title => {
           n++;
@@ -153,6 +172,49 @@ const Events = {
         UI.toast(n ? `Reunião registrada e ${U.plural(n, 'tarefa criada', 'tarefas criadas')}.` : 'Reunião registrada.');
       },
     });
+    Events.wireIA(m, e);
+  },
+
+  wireIA(m, e) {
+    const el = m.el, f = el.querySelector('form');
+    const cfg = el.querySelector('[data-ia-cfg]');
+    if (cfg) cfg.onclick = ev => { ev.preventDefault(); m.close(); App.ui.cfgJump = 'ia'; App.go('config'); };
+    const btnIA = el.querySelector('[data-ia]'); if (!btnIA) return;
+    Recorder.blob = null;
+    const msg = el.querySelector('.ia-msg'), st = el.querySelector('.rec-st'), btnRec = el.querySelector('[data-rec]');
+    const say = (t, cls = '') => { msg.hidden = !t; msg.className = 'ia-msg small ' + cls; msg.innerHTML = t; };
+    if (btnRec) btnRec.onclick = async () => {
+      if (Recorder.recording()) {
+        const blob = await Recorder.stop();
+        btnRec.innerHTML = `${U.icon('mic', 15)} Gravar de novo`; btnRec.classList.remove('rec-on');
+        st.textContent = blob ? `Gravado: ${Recorder.fmt(Math.round((Date.now() - Recorder.started) / 1000))}` : '';
+        say('Gravação pronta. Toque em <strong>Preencher com IA</strong>.');
+        return;
+      }
+      try {
+        await Recorder.start(s => { st.textContent = `Gravando ${Recorder.fmt(s)}`; });
+        btnRec.innerHTML = `${U.icon('stop', 15)} Parar`; btnRec.classList.add('rec-on');
+        say(`Gravando. Deixe o celular perto da conversa e ${Native.available() ? 'com o app aberto (a tela fica acesa)' : 'esta aba aberta'}. Limite: ${Recorder.MAX_MIN} min.`);
+      } catch (err) { say('Não foi possível usar o microfone. Permita o acesso ao microfone e tente de novo.', 'err'); }
+    };
+    btnIA.onclick = async () => {
+      const notes = f.elements.iaNotas.value;
+      if (Recorder.recording()) { await Recorder.stop(); if (btnRec) { btnRec.innerHTML = `${U.icon('mic', 15)} Gravar de novo`; btnRec.classList.remove('rec-on'); } }
+      const audio = await Recorder.payload();
+      if (!notes.trim() && !audio) { say('Grave a reunião ou escreva algumas anotações primeiro.', 'err'); return; }
+      btnIA.disabled = true; btnIA.innerHTML = `<span class="spinner"></span> Pensando…`;
+      say(audio ? 'Ouvindo a gravação e organizando a ata. Pode levar até um minuto.' : 'Organizando suas anotações…');
+      try {
+        const res = await IA.ata(e, { notes, audio });
+        (e.pautas || []).forEach(x => { const c = f.elements['p_' + x.id]; if (c) c.checked = res.tratadas.includes(x.id); });
+        const cur = f.elements.combinados.value.trim();
+        f.elements.combinados.value = [cur, ...res.combinados].filter(Boolean).join('\n');
+        if (res.resumo) f.elements.resumo.value = res.resumo;
+        say(`Pronto: ${(e.pautas || []).length ? `${res.tratadas.length} de ${U.plural(e.pautas.length, 'assunto')} marcados, ` : ''}${U.plural(res.combinados.length, 'combinado')}. Confira e toque em <strong>Salvar registro</strong>.`, 'ok');
+        Recorder.blob = null; if (st) st.textContent = '';
+      } catch (err) { say(U.esc(err.message), 'err'); }
+      btnIA.disabled = false; btnIA.innerHTML = `${U.icon('spark', 15)} Preencher com IA`;
+    };
   },
 };
 

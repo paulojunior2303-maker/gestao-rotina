@@ -27,8 +27,8 @@ Views.dashboard = {
       ...openOcc.map(o => ({ kind: 'Imprevisto', title: o.title, prio: o.priority, info: D.deadline(o.dueDate, o.dueTime, false), link: '#imprevistos', demo: o.demo })),
       ...open.filter(x => ['urgente', 'alta'].includes(x.priority) || D.taskLate(x)).map(x => ({ kind: 'Tarefa', title: x.title, prio: x.priority, info: D.deadline(x.dueDate, x.dueTime, false), link: '#tarefas', demo: x.demo })),
       // Reuniões com pauta que já aconteceram (últimos 7 dias) e ainda não foram registradas
-      ...S.events.filter(e => (e.pautas || []).length && !e.registro && e.date <= t && e.date >= U.addDays(t, -7) && (e.date < t || !e.time || U.toMin(e.time) <= nowM))
-        .map(e => ({ kind: 'Registrar reunião', title: e.title, prio: 'media', info: null, link: '#mensal', demo: e.demo, ev: e.id })),
+      ...Meetings.toRegister().filter(e => e.date >= U.addDays(t, -7))
+        .map(e => ({ kind: 'Registrar reunião', title: e.title, prio: 'media', info: null, link: '#reunioes', demo: e.demo, ev: e.id })),
     ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late')) || PRIORITY_RANK[a.prio] - PRIORITY_RANK[b.prio]).slice(0, 7);
 
     // O que cobrar da equipe

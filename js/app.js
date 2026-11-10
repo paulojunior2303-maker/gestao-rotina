@@ -2,7 +2,7 @@
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral em grupos. "Indicadores" só aparece se ativado em Configurações → Aparência. */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos', 'reunioes']],
   ['Planejamento', ['semanal', 'mensal', 'projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];

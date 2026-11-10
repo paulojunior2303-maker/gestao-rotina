@@ -5,7 +5,7 @@ const fs = require('fs');
 let pass = 0, fail = 0; const failures = [];
 const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; failures.push(m); console.log('  XX -', m); } };
 (async () => {
-  const b = await chromium.launch();
+  const b = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const ctx = await b.newContext({
     viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, isMobile: true, hasTouch: true,
     userAgent: 'Mozilla/5.0 (Linux; Android 14; 23021RAA2Y Build/UKQ1.230917.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.107 Mobile Safari/537.36',
@@ -30,7 +30,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
         checkExactNotificationSetting: async () => ({ exact_alarm: 'denied' }),
         changeExactNotificationSetting: async () => window.__call('exact'),
       },
-      Sistema: { status: async () => ({ bateriaLiberada: false, fabricante: 'xiaomi' }), abrir: async (o) => window.__call('abrir', o) },
+      Sistema: { status: async () => ({ bateriaLiberada: false, fabricante: 'xiaomi' }), abrir: async (o) => window.__call('abrir', o), manterTela: async (o) => window.__call('tela', o) },
       Filesystem: {
         writeFile: async (o) => { files[o.directory + '/' + o.path] = o.data; sessionStorage.setItem('__files', JSON.stringify(files)); window.__call('writeFile', { path: o.path, dir: o.directory }); return { uri: 'file:///cache/' + o.path }; },
         readFile: async (o) => { const d = files[o.directory + '/' + o.path]; if (!d) throw new Error('not found'); return { data: d }; },
@@ -40,8 +40,16 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
     } };
   });
   await ctx.route('https://api.github.com/**', r => r.fulfill({ json: { tag_name: 'v1.1.99' } }));
+  const iaReqs = [];
+  await ctx.route('https://generativelanguage.googleapis.com/**', r => {
+    const body = r.request().postDataJSON(); iaReqs.push({ url: r.request().url(), key: r.request().headers()['x-goog-api-key'], body });
+    const txt = JSON.stringify(body);
+    if (txt.includes('Responda apenas: ok')) return r.fulfill({ json: { candidates: [{ content: { parts: [{ text: 'ok' }] } }] } });
+    if (iaReqs.length === 2) return r.fulfill({ status: 503, json: { error: { message: 'high demand' } } });   // 1º modelo sobrecarregado → tenta o próximo
+    return r.fulfill({ json: { candidates: [{ content: { parts: [{ text: JSON.stringify({ tratados: [1, 2], combinados: ['Carlos monta a escala', 'Comprar luvas até quarta'], resumo: 'Escala e EPI definidos; metas ficaram para depois.' }) }] } }] } });
+  });
   const p = await ctx.newPage();
-  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !m.text().includes('status of 503')) errs.push(m.text()); });   // 503 simulado da IA
   const URL = 'http://localhost:8765/android-app/www/index.html';
   const W = (ms = 250) => p.waitForTimeout(ms);
   const tap = async (sel) => { await p.locator(sel).first().scrollIntoViewIfNeeded(); await p.locator(sel).first().tap(); await W(); };
@@ -268,25 +276,53 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await st()).tasks.find(t => t.id === tid).status === 'concluida', '"Feito" na notificação conclui a tarefa');
   sch = calls.filter(c => c[0] === 'schedule').pop();
   check(!sch || !sch[1].some(n => n.body.includes('Entregar relatório')), 'tarefa concluída sai dos avisos');
-  // Reunião com pauta → registrar → combinados viram tarefas
-  await go('mensal'); await tap('[data-act=evNew]');
+  // Reuniões: tela própria no menu, pauta, registro com IA e combinados → tarefas
+  await tap('#bottom-nav [data-act=openMenu]'); await W(300);
+  check(await p.locator('#nav a[href="#reunioes"]').count() === 1, 'Reuniões aparece no menu (Dia a dia)');
+  await tap('#nav a[href="#reunioes"]'); await W(300);
+  check(await p.textContent('#page-title') === 'Reuniões' && (await p.textContent('#view')).includes('Como funciona'), 'tela Reuniões explica como funciona');
+  await tap('[data-act=mtNew]');
+  check((await p.textContent(`${M} .modal-head`)).includes('Nova reunião'), 'botão "Nova reunião"');
   await fill('title', 'Reunião de equipe'); await fill('date', today); await fill('time', '00:05'); await fill('pauta', 'Escala do sábado\nUso de EPI\nMetas do mês'); await save();
   let ev = (await st()).events.find(e => e.title === 'Reunião de equipe');
-  check(ev && ev.pautas.length === 3, 'compromisso com pauta (3 assuntos)');
+  check(ev && ev.pautas.length === 3 && ev.reuniao, 'reunião com pauta (3 assuntos)');
+  check(await p.locator('.mt-sec', { hasText: 'Para registrar' }).locator('.mt-card', { hasText: 'Reunião de equipe' }).count() === 1, 'reunião que já passou fica em "Para registrar"');
+  await overflow('14-reunioes');
   await go('dashboard');
-  check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() >= 1, 'reunião passada sem registro aparece em "O que resolver"');
-  await p.locator('.li-click', { hasText: 'Reunião de equipe' }).tap(); await W(300);
-  check(await p.locator(`${M} .pauta li`).count() === 3, 'abrir compromisso mostra a pauta');
+  check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() >= 1, 'também aparece em "O que resolver" no Início');
+  // IA ainda sem chave: registro mostra o caminho para ativar
+  await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
+  check(await p.locator(`${M} .pauta li`).count() === 3, 'abrir reunião mostra a pauta');
   await tap(`${M} [data-reg]`); await W(300);
-  await p.locator(`${M} [name^=p_]`).nth(2).uncheck();
-  await fill('combinados', 'Carlos monta a escala\nComprar luvas'); await p.locator(`${M} [name=mkTasks]`).check(); await save(); await W(300);
+  check(await p.locator(`${M} [data-ia-cfg]`).count() === 1, 'sem chave: registro indica Configurações → IA');
+  await tap(`${M} [data-ia-cfg]`); await W(500);
+  check(await p.textContent('#page-title') === 'Configurações' && await p.locator('#cfg-ia').count() === 1, 'link leva a Configurações → IA');
+  await p.fill('#ia-key', 'CHAVE-DE-TESTE-1234'); await p.locator('#cfg-ia form button:not([type=button])').tap(); await W(800);
+  check((await st()).settings.ia.key === 'CHAVE-DE-TESTE-1234' && iaReqs.some(r => r.key === 'CHAVE-DE-TESTE-1234'), 'salvar chave da IA e testar');
+  check((await p.textContent('#cfg-ia')).includes('1234'), 'mostra só o final da chave');
+  await overflow('15-config-ia');
+  // Registro com gravação + IA
+  await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300); await tap(`${M} [data-reg]`); await W(300);
+  await tap(`${M} [data-rec]`); await W(1800);
+  check((await p.textContent(`${M} .rec-st`)).includes('Gravando'), 'gravar reunião (microfone)');
+  await tap(`${M} [data-rec]`); await W(500);
+  check((await p.textContent(`${M} .rec-st`)).includes('Gravado'), 'parar gravação');
+  await p.screenshot({ path: OUT + '/16-registro-ia.png' });
+  await tap(`${M} [data-ia]`); await W(1500);
+  const iaCall = iaReqs.filter(r => !JSON.stringify(r.body).includes('Responda apenas')).pop();
+  check(iaCall && iaCall.body.contents[0].parts.some(x => x.inlineData && x.inlineData.mimeType.startsWith('audio/')), 'áudio enviado para a IA');
+  check(iaReqs.filter(r => !JSON.stringify(r.body).includes('Responda apenas')).length === 2, 'modelo sobrecarregado → tenta o próximo sozinho');
+  const checked = await p.locator(`${M} [name^=p_]`).evaluateAll(els => els.map(e => e.checked));
+  check(checked.join() === 'true,true,false', 'IA marcou os assuntos tratados (1 e 2)');
+  check((await p.inputValue(`${M} [name=combinados]`)).includes('Comprar luvas') && (await p.inputValue(`${M} [name=resumo]`)).includes('EPI'), 'IA preencheu combinados e resumo');
+  await p.locator(`${M} [name=mkTasks]`).check(); await save(); await W(300);
   const s9 = await st(); ev = s9.events.find(e => e.title === 'Reunião de equipe');
-  check(ev.registro && ev.registro.tratadas.length === 2 && ev.registro.combinados.includes('luvas'), 'registro: 2 de 3 assuntos tratados e combinados guardados');
-  check(s9.tasks.some(t => t.title === 'Carlos monta a escala') && s9.tasks.some(t => t.title === 'Comprar luvas'), 'cada combinado virou uma tarefa');
-  check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() === 0, 'registrada, sai de "O que resolver"');
-  await p.locator('.li-click', { hasText: 'Reunião de equipe' }).tap(); await W(300);
-  check((await p.textContent(M)).includes('Registro da reunião'), 'compromisso mostra o registro da reunião');
-  await p.screenshot({ path: OUT + '/14-reuniao-registrada.png' });
+  check(ev.registro && ev.registro.tratadas.length === 2 && ev.registro.resumo.includes('EPI'), 'registro salvo com 2 de 3 assuntos e resumo');
+  check(s9.tasks.some(t => t.title === 'Carlos monta a escala') && s9.tasks.some(t => t.title === 'Comprar luvas até quarta'), 'cada combinado virou uma tarefa');
+  check(await p.locator('.mt-sec', { hasText: 'Registradas' }).locator('.mt-card', { hasText: 'Reunião de equipe' }).count() === 1, 'reunião vai para "Registradas"');
+  await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
+  check((await p.textContent(M)).includes('Registro da reunião'), 'reunião mostra o registro');
+  await p.screenshot({ path: OUT + '/17-reuniao-registrada.png' });
   await p.evaluate(() => __fire('backButton')); await W(300);
 
   console.log('\n[9] Botão voltar, persistência e recuperação');

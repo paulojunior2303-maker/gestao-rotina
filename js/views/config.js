@@ -2,7 +2,11 @@
 /* Configurações — jornada, rotina, categorias, prioridades, status, técnicos, metas e dados */
 Views.config = {
   title: 'Configurações', icon: 'settings', nav: 'Configurações',
-  mount(root) { if (Native.available()) Reminders.fillStatus(root); },
+  mount(root) {
+    if (Native.available()) Reminders.fillStatus(root);
+    const j = App.ui.cfgJump; App.ui.cfgJump = null;
+    if (j) setTimeout(() => root.querySelector('#cfg-' + j)?.scrollIntoView({ block: 'start' }), 60);
+  },
   render() {
     const st = S.settings;
     const freqTxt = r => r.freq === 'mensal' ? `Mensal, dia ${r.monthDay}` : (r.days || []).length === 5 && [1, 2, 3, 4, 5].every(d => r.days.includes(d)) ? 'Seg a Sex' : (r.days || []).map(d => U.WD_SHORT[d]).join(', ') || '—';
@@ -11,7 +15,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['lembretes', 'Lembretes'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -24,6 +28,18 @@ Views.config = {
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>`)}
 
     ${Reminders.section(sec)}
+
+    ${sec('ia', 'IA (Google Gemini)', IA.supported() ? 'Preenche o registro das reuniões a partir da gravação ou das suas anotações. Usa a sua própria chave do Google.' : '', !IA.supported() ? '<p class="muted small">A IA funciona no app Android e no site. No link do Claude ela não está disponível.</p>' : `
+      ${IA.key() ? `<div class="lem-row ok">${U.icon('check', 16)}<span>Chave cadastrada (termina em <strong>${U.esc(IA.key().slice(-4))}</strong>)</span><button class="btn sm" data-act="iaTest">Testar</button><button class="btn sm ghost danger-text" data-act="iaRemove">Remover</button></div>` : ''}
+      <form class="ia-key" data-submit="iaSave">
+        <label for="ia-key">${IA.key() ? 'Trocar a chave' : 'Chave da API'}</label>
+        <div class="inline-add"><input id="ia-key" name="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole aqui a chave do AI Studio"><button type="button" class="btn sm ghost" data-act="iaShow">Mostrar</button><button class="btn sm primary">Salvar</button></div>
+      </form>
+      <details class="ia-help"><summary>Como conseguir a chave</summary><ol class="steps">
+        <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
+        <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
+        <li>Copie a chave e cole no campo acima.</li></ol></details>
+      <p class="muted small mt">A chave fica guardada nos seus dados (e nos backups). Nada é enviado para a IA sem você tocar em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para melhorar os modelos; ative o faturamento no AI Studio para evitar isso.</p>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
@@ -133,7 +149,24 @@ const Goals = {
 };
 
 Object.assign(Actions, {
-  cfgJump({ id }) { document.getElementById('cfg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  cfgJump({ id }) {
+    if (App.route !== 'config') { App.ui.cfgJump = id; App.go('config'); return; }
+    document.getElementById('cfg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+  async iaSave(_, form) {
+    const k = form.elements.key.value.trim();
+    if (!k) { UI.toast('Cole a chave antes de salvar.', 'warn'); return; }
+    S.settings.ia = { ...(S.settings.ia || {}), key: k }; commit();
+    UI.toast('Chave salva. Testando…');
+    try { await IA.test(); UI.toast('IA funcionando.'); } catch (e) { UI.toast(U.esc(e.message), 'error'); }
+  },
+  async iaTest(_, el) {
+    el.disabled = true;
+    try { await IA.test(); UI.toast('IA funcionando.'); } catch (e) { UI.toast(U.esc(e.message), 'error'); }
+    el.disabled = false;
+  },
+  iaRemove() { UI.confirm('Remover a chave da IA deste app?', () => { S.settings.ia = { ...(S.settings.ia || {}), key: '' }; commit(); UI.toast('Chave removida.'); }, { okLabel: 'Remover', danger: true }); },
+  iaShow(_, el) { const i = el.closest('.ia-key').querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
   cfgJornada(_, form) {
     const fd = new FormData(form);
     const v = { workStart: fd.get('workStart'), workEnd: fd.get('workEnd'), breakStart: fd.get('breakStart'), breakEnd: fd.get('breakEnd'), workDays: fd.getAll('workDays').map(Number), alertDays: Number(fd.get('alertDays') || 0) };

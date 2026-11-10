@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.view.WindowManager;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -49,6 +50,17 @@ public class SistemaPlugin extends Plugin {
             Intent det = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg));
             if (!tentar(det)) { call.reject("Não foi possível abrir as configurações"); return; }
         }
+        call.resolve();
+    }
+
+    /** Mantém a tela acesa durante a gravação da reunião (senão o Android pode pausar o microfone). */
+    @PluginMethod
+    public void manterTela(PluginCall call) {
+        final boolean ligada = Boolean.TRUE.equals(call.getBoolean("ligada", false));
+        getActivity().runOnUiThread(() -> {
+            if (ligada) getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            else getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        });
         call.resolve();
     }
 

@@ -76,9 +76,9 @@ const UI = (() => {
   }
 
   /* Formulário genérico. onSubmit(values) pode retornar uma string de erro para manter o modal aberto. */
-  function form({ title, fields, submitLabel = 'Salvar', onSubmit, validate, wide, extra = [], onChange }) {
+  function form({ title, fields, submitLabel = 'Salvar', onSubmit, validate, wide, extra = [], onChange, onClose }) {
     const m = modal({
-      title, wide,
+      title, wide, onClose,
       body: `<form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}<div class="form-error full" hidden></div><button type="submit" hidden></button></form>`,
       footer: `${extra.map((b, i) => `<button type="button" class="btn ${b.cls || 'ghost'}" data-extra="${i}">${b.label}</button>`).join('')}<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-submit>${submitLabel}</button>`,
     });
