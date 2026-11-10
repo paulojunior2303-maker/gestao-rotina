@@ -40,13 +40,16 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
     } };
   });
   await ctx.route('https://api.github.com/**', r => r.fulfill({ json: { tag_name: 'v1.1.99' } }));
-  const iaReqs = [];
+  const iaReqs = []; let ataCalls = 0;
   await ctx.route('https://generativelanguage.googleapis.com/**', r => {
     const body = r.request().postDataJSON(); iaReqs.push({ url: r.request().url(), key: r.request().headers()['x-goog-api-key'], body });
     const txt = JSON.stringify(body);
-    if (txt.includes('Responda apenas: ok')) return r.fulfill({ json: { candidates: [{ content: { parts: [{ text: 'ok' }] } }] } });
-    if (iaReqs.length === 2) return r.fulfill({ status: 503, json: { error: { message: 'high demand' } } });   // 1º modelo sobrecarregado → tenta o próximo
-    return r.fulfill({ json: { candidates: [{ content: { parts: [{ text: JSON.stringify({ tratados: [1, 2], combinados: ['Carlos monta a escala', 'Comprar luvas até quarta'], resumo: 'Escala e EPI definidos; metas ficaram para depois.' }) }] } }] } });
+    const ok = text => r.fulfill({ json: { candidates: [{ content: { parts: [{ text }] } }] } });
+    if (txt.includes('Responda apenas: ok')) return ok('ok');
+    if (txt.includes('Transcreva fielmente')) return ok('— Vamos começar pela escala do sábado. Carlos fica no dia 14.\n— Sobre EPI, precisamos comprar luvas até quarta.');
+    ataCalls++;
+    if (ataCalls === 1) return r.fulfill({ status: 503, json: { error: { message: 'high demand' } } });   // 1º modelo sobrecarregado → tenta o próximo
+    return ok(JSON.stringify({ tratados: [1, 2], combinados: ['Carlos monta a escala', 'Comprar luvas até quarta'], resumo: 'Escala e EPI definidos; metas ficaram para depois.' }));
   });
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !m.text().includes('status of 503')) errs.push(m.text()); });   // 503 simulado da IA
@@ -276,11 +279,23 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await st()).tasks.find(t => t.id === tid).status === 'concluida', '"Feito" na notificação conclui a tarefa');
   sch = calls.filter(c => c[0] === 'schedule').pop();
   check(!sch || !sch[1].some(n => n.body.includes('Entregar relatório')), 'tarefa concluída sai dos avisos');
-  // Reuniões: tela própria no menu, pauta, registro com IA e combinados → tarefas
+  // Reuniões: tela própria no menu, pauta, gravação com transcrição ao vivo, IA e combinados → tarefas
   await tap('#bottom-nav [data-act=openMenu]'); await W(300);
   check(await p.locator('#nav a[href="#reunioes"]').count() === 1, 'Reuniões aparece no menu (Dia a dia)');
   await tap('#nav a[href="#reunioes"]'); await W(300);
   check(await p.textContent('#page-title') === 'Reuniões' && (await p.textContent('#view')).includes('Como funciona'), 'tela Reuniões explica como funciona');
+  // Reunião mais tarde hoje: dá para iniciar ANTES do horário
+  const later = await p.evaluate(() => U.nowMin() < 23 * 60 + 30 ? U.fromMin(U.nowMin() + 20) : null);
+  if (later) {
+    await tap('[data-act=mtNew]'); await fill('title', 'Alinhamento da tarde'); await fill('date', today); await fill('time', later); await fill('pauta', 'Ocorrências do dia'); await save();
+    check(await p.locator('.mt-card', { hasText: 'Alinhamento da tarde' }).locator('[data-act=mtStart]').count() === 1, 'reunião de hoje ainda não começou: botão "Iniciar" no cartão');
+    await tap('.mt-card:has-text("Alinhamento da tarde")'); await W(300);
+    check((await p.textContent(`${M} [data-reg]`)).includes('Iniciar reunião'), 'antes do horário, a reunião mostra "Iniciar reunião"');
+    await p.evaluate(() => __fire('backButton')); await W(300);
+    await tap('.mt-card:has-text("Alinhamento da tarde") [data-act=mtStart]'); await W(300);
+    check(await p.locator(`${M} [data-rec]`).count() === 1 && (await p.textContent(`${M} .ia-h`)).includes('ao vivo'), '"Iniciar" abre a reunião com gravação e transcrição ao vivo');
+    await p.evaluate(() => __fire('backButton')); await W(300);
+  }
   await tap('[data-act=mtNew]');
   check((await p.textContent(`${M} .modal-head`)).includes('Nova reunião'), 'botão "Nova reunião"');
   await fill('title', 'Reunião de equipe'); await fill('date', today); await fill('time', '00:05'); await fill('pauta', 'Escala do sábado\nUso de EPI\nMetas do mês'); await save();
@@ -290,38 +305,48 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await overflow('14-reunioes');
   await go('dashboard');
   check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() >= 1, 'também aparece em "O que resolver" no Início');
-  // IA ainda sem chave: registro mostra o caminho para ativar
   await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
   check(await p.locator(`${M} .pauta li`).count() === 3, 'abrir reunião mostra a pauta');
   await tap(`${M} [data-reg]`); await W(300);
-  check(await p.locator(`${M} [data-ia-cfg]`).count() === 1, 'sem chave: registro indica Configurações → IA');
-  await tap(`${M} [data-ia-cfg]`); await W(500);
-  check(await p.textContent('#page-title') === 'Configurações' && await p.locator('#cfg-ia').count() === 1, 'link leva a Configurações → IA');
-  await p.fill('#ia-key', 'CHAVE-DE-TESTE-1234'); await p.locator('#cfg-ia form button:not([type=button])').tap(); await W(800);
-  check((await st()).settings.ia.key === 'CHAVE-DE-TESTE-1234' && iaReqs.some(r => r.key === 'CHAVE-DE-TESTE-1234'), 'salvar chave da IA e testar');
-  check((await p.textContent('#cfg-ia')).includes('1234'), 'mostra só o final da chave');
-  await overflow('15-config-ia');
-  // Registro com gravação + IA
-  await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300); await tap(`${M} [data-reg]`); await W(300);
-  await tap(`${M} [data-rec]`); await W(1800);
-  check((await p.textContent(`${M} .rec-st`)).includes('Gravando'), 'gravar reunião (microfone)');
-  await tap(`${M} [data-rec]`); await W(500);
-  check((await p.textContent(`${M} .rec-st`)).includes('Gravado'), 'parar gravação');
-  await p.screenshot({ path: OUT + '/16-registro-ia.png' });
-  await tap(`${M} [data-ia]`); await W(1500);
-  const iaCall = iaReqs.filter(r => !JSON.stringify(r.body).includes('Responda apenas')).pop();
-  check(iaCall && iaCall.body.contents[0].parts.some(x => x.inlineData && x.inlineData.mimeType.startsWith('audio/')), 'áudio enviado para a IA');
-  check(iaReqs.filter(r => !JSON.stringify(r.body).includes('Responda apenas')).length === 2, 'modelo sobrecarregado → tenta o próximo sozinho');
+  // Sem chave: a área da IA aparece com o campo da chave
+  check(await p.locator(`${M} .ia-box`).count() === 1 && await p.locator(`${M} [name=iaKey]`).count() === 1, 'sem chave: área da IA com campo para colar a chave');
+  await tap(`${M} [data-rec]`); await W(200);
+  check((await p.textContent(`${M} .ia-msg`)).includes('chave'), 'gravar sem chave explica que falta a chave');
+  await p.fill(`${M} [name=iaKey]`, 'CHAVE-DE-TESTE-1234'); await tap(`${M} [data-ia-save]`); await W(800);
+  check((await st()).settings.ia.key === 'CHAVE-DE-TESTE-1234' && iaReqs.some(r => r.key === 'CHAVE-DE-TESTE-1234'), 'salvar a chave direto na reunião e testar');
+  check(await p.locator(`${M} [name=iaKey]`).count() === 0 && (await p.textContent(`${M} .ia-msg`)).includes('funcionando'), 'chave ok: campo some e confirma');
+  // Gravação ao vivo (trechos curtos no teste)
+  await p.evaluate(() => { Recorder.SEG_MS = 1500; });
+  await tap(`${M} [data-rec]`); await W(400);
+  check((await p.textContent(`${M} [data-rec]`)).includes('Encerrar gravação'), 'gravação iniciada (botão vira "Encerrar gravação")');
+  await p.locator(`${M} [name^=p_]`).nth(2).check();
+  await p.evaluate(() => __fire('backButton')); await W(300);
+  check(await p.locator(M).count() === 1, 'voltar/fechar durante a gravação é bloqueado (não perde a gravação)');
+  await W(3800);
+  const liveTxt = await p.textContent(`${M} .live-txt`);
+  check(liveTxt.includes('escala do sábado') && /\[0:0\d\]/.test(liveTxt), 'transcrição aparece AO VIVO durante a gravação, com o tempo de cada trecho');
+  check(calls.some(c => c[0] === 'tela' && c[1].ligada), 'tela fica acesa durante a gravação');
+  await p.screenshot({ path: OUT + '/16-reuniao-ao-vivo.png' });
+  await tap(`${M} [data-rec]`); await W(2500);
+  const ataReq = iaReqs.filter(r => JSON.stringify(r.body).includes('Transcrição da reunião')).pop();
+  check(!!ataReq && !JSON.stringify(ataReq.body).includes('inlineData'), 'ao encerrar, a IA monta o registro a partir da transcrição (texto)');
+  check(ataCalls === 2, 'modelo sobrecarregado → tenta o próximo sozinho');
+  check(calls.some(c => c[0] === 'tela' && c[1].ligada === false), 'tela volta ao normal ao encerrar');
   const checked = await p.locator(`${M} [name^=p_]`).evaluateAll(els => els.map(e => e.checked));
-  check(checked.join() === 'true,true,false', 'IA marcou os assuntos tratados (1 e 2)');
+  check(checked.join() === 'true,true,true', 'IA marcou os assuntos 1 e 2 e manteve o 3, marcado à mão durante a reunião');
   check((await p.inputValue(`${M} [name=combinados]`)).includes('Comprar luvas') && (await p.inputValue(`${M} [name=resumo]`)).includes('EPI'), 'IA preencheu combinados e resumo');
   await p.locator(`${M} [name=mkTasks]`).check(); await save(); await W(300);
   const s9 = await st(); ev = s9.events.find(e => e.title === 'Reunião de equipe');
-  check(ev.registro && ev.registro.tratadas.length === 2 && ev.registro.resumo.includes('EPI'), 'registro salvo com 2 de 3 assuntos e resumo');
+  check(ev.registro && ev.registro.tratadas.length === 3 && ev.registro.resumo.includes('EPI') && ev.registro.transcricao.includes('escala do sábado'), 'registro salvo com pauta, resumo e transcrição');
   check(s9.tasks.some(t => t.title === 'Carlos monta a escala') && s9.tasks.some(t => t.title === 'Comprar luvas até quarta'), 'cada combinado virou uma tarefa');
   check(await p.locator('.mt-sec', { hasText: 'Registradas' }).locator('.mt-card', { hasText: 'Reunião de equipe' }).count() === 1, 'reunião vai para "Registradas"');
   await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
-  check((await p.textContent(M)).includes('Registro da reunião'), 'reunião mostra o registro');
+  check((await p.textContent(M)).includes('Registro da reunião') && await p.locator(`${M} details.tx`).count() === 1, 'reunião mostra o registro e a transcrição');
+  await p.evaluate(() => __fire('backButton')); await W(300);
+  await go('config');
+  check(await p.locator('#cfg-ia').count() === 1 && (await p.textContent('#cfg-ia')).includes('1234'), 'Configurações → IA mostra só o final da chave');
+  await overflow('15-config-ia');
+  await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
   await p.screenshot({ path: OUT + '/17-reuniao-registrada.png' });
   await p.evaluate(() => __fire('backButton')); await W(300);
 

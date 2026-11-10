@@ -4,7 +4,7 @@ const UI = (() => {
   const root = () => document.getElementById('modal-root');
   const stack = [];
 
-  function modal({ title, body = '', footer = '', wide = false, onMount, onClose }) {
+  function modal({ title, body = '', footer = '', wide = false, onMount, onClose, canClose }) {
     const el = document.createElement('div');
     el.className = 'modal-wrap';
     el.innerHTML = `<div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${U.esc(title)}">
@@ -15,6 +15,8 @@ const UI = (() => {
       el,
       setBody(html) { el.querySelector('.modal-body').innerHTML = html; },
       setFooter(html) { const f = el.querySelector('.modal-foot'); f.innerHTML = html; f.style.display = html ? '' : 'none'; },
+      /* Fechamento pedido pelo usuário (fora, X, Esc, voltar, Cancelar): pode ser barrado */
+      tryClose() { if (canClose && !canClose()) return; api.close(); },
       close() {
         const i = stack.indexOf(api); if (i >= 0) stack.splice(i, 1);
         el.classList.remove('open'); setTimeout(() => el.remove(), 150);
@@ -22,8 +24,8 @@ const UI = (() => {
       },
     };
     api.setBody(body); api.setFooter(footer);
-    el.addEventListener('mousedown', e => { if (e.target === el) api.close(); });
-    el.querySelector('[data-close]').addEventListener('click', () => api.close());
+    el.addEventListener('mousedown', e => { if (e.target === el) api.tryClose(); });
+    el.querySelector('[data-close]').addEventListener('click', () => api.tryClose());
     root().appendChild(el);
     stack.push(api);
     requestAnimationFrame(() => el.classList.add('open'));
@@ -33,7 +35,7 @@ const UI = (() => {
     return api;
   }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && stack.length) stack[stack.length - 1].close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && stack.length) stack[stack.length - 1].tryClose(); });
 
   function opts(options, value) {
     return options.map(o => {
@@ -76,9 +78,9 @@ const UI = (() => {
   }
 
   /* Formulário genérico. onSubmit(values) pode retornar uma string de erro para manter o modal aberto. */
-  function form({ title, fields, submitLabel = 'Salvar', onSubmit, validate, wide, extra = [], onChange, onClose }) {
+  function form({ title, fields, submitLabel = 'Salvar', onSubmit, validate, wide, extra = [], onChange, onClose, canClose }) {
     const m = modal({
-      title, wide, onClose,
+      title, wide, onClose, canClose,
       body: `<form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}<div class="form-error full" hidden></div><button type="submit" hidden></button></form>`,
       footer: `${extra.map((b, i) => `<button type="button" class="btn ${b.cls || 'ghost'}" data-extra="${i}">${b.label}</button>`).join('')}<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-submit>${submitLabel}</button>`,
     });
@@ -103,7 +105,7 @@ const UI = (() => {
     };
     f.addEventListener('submit', e => { e.preventDefault(); submit(); });
     m.el.querySelector('[data-submit]').addEventListener('click', submit);
-    m.el.querySelector('[data-cancel]').addEventListener('click', () => m.close());
+    m.el.querySelector('[data-cancel]').addEventListener('click', () => m.tryClose());
     m.el.querySelectorAll('[data-extra]').forEach(b => b.addEventListener('click', () => extra[Number(b.dataset.extra)].onClick(readForm(f, fields), m)));
     return m;
   }

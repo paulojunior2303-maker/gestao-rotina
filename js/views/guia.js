@@ -246,14 +246,16 @@ Views.guia = {
 `)}
 
     ${sec('reunioes', 'users', 'Reuniões (pauta, registro e IA)', `
-      <p>Fica em <strong>Menu → Reuniões</strong>. Serve para chegar na reunião com a pauta pronta e sair com os combinados registrados.</p>
+      <p>Fica em <strong>Menu → Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
       <ol>
-        <li>Toque em <strong>Nova reunião</strong>: título, dia, horário e a <strong>pauta</strong>, um assunto por linha.</li>
-        <li>Depois da reunião, ela aparece em <strong>Para registrar</strong> (e em “O que resolver”, no Início). Toque nela e em <strong>Registrar reunião</strong>.</li>
-        <li>Marque os assuntos tratados e escreva o que foi combinado, um por linha. Marque <strong>Criar uma tarefa para cada combinado</strong> para levá-los a Tarefas.</li>
+        <li><strong>Antes:</strong> toque em <strong>Nova reunião</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha.</li>
+        <li><strong>Na hora:</strong> toque em <strong>Iniciar</strong> no cartão da reunião (ou abra a reunião e toque em <strong>Iniciar reunião</strong>). Dá para iniciar a qualquer momento, antes ou depois do horário marcado.</li>
+        <li>Toque em <strong>Iniciar gravação</strong>. A transcrição aparece na tela a cada ~40 segundos, enquanto a conversa acontece. Marque os assuntos da pauta conforme forem tratados.</li>
+        <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA usa a transcrição (e as suas anotações, se houver) para marcar a pauta, listar os combinados e escrever um resumo.</li>
+        <li>Confira, marque <strong>Criar uma tarefa para cada combinado</strong> se quiser, e toque em <strong>Salvar registro</strong>. A transcrição fica guardada junto.</li>
       </ol>
-      <p><strong>Com IA:</strong> no registro, toque em <strong>Gravar reunião</strong> no começo da conversa e em <strong>Parar</strong> no fim, ou escreva/dite suas anotações. Depois toque em <strong>Preencher com IA</strong>: ela marca os assuntos tratados, lista os combinados e escreve um resumo. Confira e salve.</p>
-      <p class="guide-note">Para usar a IA, cole a sua chave do Google em <strong>Configurações → IA</strong>. O áudio é enviado só quando você toca em “Preencher com IA” e não fica guardado no app. Avise os participantes antes de gravar.</p>`)}
+      <p class="guide-note">Durante a gravação, mantenha o app aberto: a tela fica acesa sozinha e o app não deixa fechar a janela sem encerrar a gravação. Precisa de internet para transcrever; trechos que falharem são tentados de novo ao encerrar. O áudio não fica guardado, só o texto. Avise os participantes antes de gravar.</p>
+      <p class="guide-note">Sem gravar também funciona: escreva ou dite (microfone do teclado) suas anotações e toque em <strong>Preencher com IA</strong>. A chave da IA fica em <strong>Configurações → IA</strong> (ou cole direto na tela da reunião).</p>`)}
 
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>

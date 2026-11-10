@@ -34,10 +34,10 @@ e diga o que mudou e como testar no celular.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
   (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).
 - **Aviso de versão nova** (`Updater`): o APK compara `App.getInfo().version` com a última Release do GitHub.
-- **Reuniões** (`js/views/reunioes.js`, menu Dia a dia): são `S.events` com `reuniao: true` e/ou `pautas`; `registro` = tratadas + combinados + resumo.
+- **Reuniões** (`js/views/reunioes.js`, menu Dia a dia; dá para iniciar antes do horário): são `S.events` com `reuniao: true` e/ou `pautas`; `registro` = tratadas + combinados + resumo.
   Combinados podem virar tarefas. Formulário/visualização/registro em `Events` (`js/views/mensal.js`).
 - **IA** (`js/ia.js`): Google Gemini direto do app, com a chave do usuário em `settings.ia.key` (Configurações → IA). Modelos em `IA.MODELS`
-  (tenta o próximo em 503/429/timeout). `Recorder` grava o áudio (webm/opus 24 kbps, até 60 min; não é guardado). Indisponível no link do Claude.
+  (tenta o próximo em 503/429/timeout). `Recorder` grava em trechos independentes de 40 s (webm/opus 24 kbps, até 90 min) e transcreve cada um ao vivo (`IA.transcribe`); ao encerrar, `IA.ata` usa a transcrição em texto. O áudio não é guardado; a transcrição vai em `registro.transcricao` (até 30 mil caracteres). Durante a gravação a janela não fecha (`canClose`). Indisponível no link do Claude.
   **Nunca** colocar chave real em código, teste ou commit (repositório público): os testes simulam a API.
 - Ícones/splash do Android: `node android-app/tools/icons.js` (gera a partir da marca do anel).
 
