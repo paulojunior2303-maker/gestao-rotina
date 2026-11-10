@@ -3,7 +3,8 @@
    O app chama o Gemini direto, sem servidor. Nada é enviado sem o usuário tocar em "Preencher com IA". */
 const IA = {
   // Ordem de tentativa: se um modelo estiver sobrecarregado (503/429) ou indisponível, tenta o próximo.
-  MODELS: ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'],
+  MODELS: ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'],
+  RETRY_PAUSE: 3000,   // se todos estiverem sobrecarregados, espera e tenta mais uma rodada
   URL: 'https://generativelanguage.googleapis.com/v1beta/models/',
 
   key() { return (S.settings.ia && S.settings.ia.key) || ''; },
@@ -16,7 +17,9 @@ const IA = {
     const body = { contents: [{ role: 'user', parts }], ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
       generationConfig: { temperature: 0.2, ...(schema ? { responseMimeType: 'application/json', responseSchema: schema } : {}) } };
     let last = null;
-    for (const m of models || this.MODELS) {
+    const list = models || this.MODELS;
+    for (const m of [...list, null, ...list]) {
+      if (m === null) { await new Promise(r => setTimeout(r, this.RETRY_PAUSE)); continue; }   // 2ª rodada
       const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), timeout);
       try {
         const r = await fetch(this.URL + m + ':generateContent', { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.key() }, body: JSON.stringify(body) });
@@ -48,7 +51,7 @@ const IA = {
 
   /* Transcrição de um trecho de áudio (rápida: usa primeiro o modelo leve) */
   async transcribe(audio) {
-    const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash'], timeout: 45000,
+    const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout: 45000,
       system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe técnica. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
       parts: [{ inlineData: { mimeType: audio.mime, data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
     return /^\[sil[eê]ncio\]$/i.test(t.trim()) ? '' : t.trim();
@@ -56,32 +59,83 @@ const IA = {
 
   async test() { const t = await this.call({ parts: [{ text: 'Responda apenas: ok' }], timeout: 30000 }); return /ok/i.test(t); },
 
-  /* Ata da reunião: a partir das anotações e/ou do áudio, marca a pauta tratada e lista os combinados */
-  async ata(e, { notes = '', audio = null, transcript = '' } = {}) {
+  /* Instruções do agente do usuário (Configurações → IA). Sem elas, um estilo padrão enxuto. */
+  agent() { return ((S.settings.ia && S.settings.ia.agente) || '').trim(); },
+  level() { return (S.settings.ia && S.settings.ia.nivel) || 'detalhada'; },
+  LEVELS: { detalhada: 'ATA detalhada: registre os assuntos com contexto, problemas identificados, propostas, decisões e encaminhamentos', compacta: 'ATA compacta: mantenha apenas os principais assuntos, decisões e orientações', resumida: 'ATA resumida: apresente uma síntese geral da reunião, sem perder informações essenciais' },
+  DEFAULT_AGENT: `Você é o assistente de documentação de um líder de equipe técnica (instalação e manutenção de CFTV IP).
+Escreva em português do Brasil, de forma profissional, natural e objetiva, direto ao ponto, sem burocracia e sem repetir informações.
+Não invente fatos, participantes, decisões ou responsabilidades. Não transforme sugestões em decisões; o que ficou sem definição é pendência.
+Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere que transcrições automáticas podem ter erros e não complete trechos incompreensíveis com suposições.`,
+  system(task) {
+    return `${this.agent() || this.DEFAULT_AGENT}
+
+=== Instruções do aplicativo Gestão de Rotina (seguir sempre, junto com as de cima) ===
+${task}
+Entregue texto simples, pronto para copiar: sem markdown (não use #, ** ou _). Numere os assuntos ("1. ", "2. ") e use "• " para os tópicos.`;
+  },
+
+  /* Ata da reunião (no padrão do agente) + o que o app precisa: pauta tratada e combinados */
+  async ata(e, { notes = '', audio = null, transcript = '', nivel } = {}) {
     const pautas = e.pautas || [];
-    const system = `Você organiza a ata de uma reunião conduzida por um líder de equipe técnica (instalação e manutenção de CFTV IP).
-Escreva em português do Brasil, de forma objetiva. NÃO invente fatos, nomes, datas, números ou combinados: use só o que estiver nas anotações, na transcrição ou no áudio.
-- "tratados": números (1, 2, 3…) dos itens da pauta que foram de fato discutidos. Item só citado de passagem ou adiado não conta.
-- "combinados": cada decisão ou tarefa combinada, uma por item, começando pelo responsável quando ele for citado e com o prazo quando houver (ex.: "Carlos monta a escala até sexta").
-- "resumo": de 2 a 5 frases com o que foi conversado, incluindo assuntos fora da pauta e o que ficou para depois.
-Se não houver nada sobre um campo, devolva lista vazia ou texto vazio.`;
+    const lvl = this.LEVELS[nivel || this.level()] || this.LEVELS.detalhada;
+    const system = this.system(`Tarefa: /ata. Transforme a reunião abaixo em uma ATA organizada. Nível: ${lvl}.
+Use a data e o título informados. Se o agente definir um cabeçalho (ex.: "ATA DE REUNIÃO — Equipe ..."), use-o.
+Responda em JSON com:
+- "ata": o documento completo da ata, pronto para usar, com quebras de linha (\\n): uma linha para cada campo do cabeçalho, uma linha em branco antes de cada assunto numerado e uma linha para cada tópico.
+- "tratados": números (1, 2, 3…) dos itens da pauta que foram de fato discutidos (item adiado ou só citado não conta).
+- "combinados": decisões confirmadas e compromissos assumidos, um por item, começando pelo responsável quando citado e com o prazo quando houver. Não inclua sugestões nem pendências.`);
     const parts = [];
     if (audio) parts.push({ inlineData: { mimeType: audio.mime, data: audio.b64 } });
-    parts.push({ text: `Reunião: ${e.title} (${U.fmtDate(e.date)}${e.time ? ' ' + e.time : ''})
+    parts.push({ text: `Reunião: ${e.title}
+Data: ${U.fmtDate(e.date)}${e.time ? ', ' + e.time : ''}
 Pauta numerada:
 ${pautas.length ? pautas.map((p, i) => `${i + 1}. ${p.text}`).join('\n') : '(sem pauta)'}
 ${audio ? 'O áudio anexado é a gravação da reunião.' : ''}
 ${transcript.trim() ? `Transcrição da reunião (automática, pode ter erros; [mm:ss] = tempo):\n"""\n${transcript.trim()}\n"""` : ''}
 ${notes.trim() ? `Anotações do líder:\n"""\n${notes.trim()}\n"""` : ''}` });
-    const r = await this.call({ system, parts, timeout: audio ? 180000 : 60000, schema: {
-      type: 'OBJECT', required: ['tratados', 'combinados', 'resumo'],
-      properties: { tratados: { type: 'ARRAY', items: { type: 'INTEGER' } }, combinados: { type: 'ARRAY', items: { type: 'STRING' } }, resumo: { type: 'STRING' } },
+    const r = await this.call({ system, parts, timeout: audio ? 180000 : 90000, schema: {
+      type: 'OBJECT', required: ['ata', 'tratados', 'combinados'],
+      properties: { ata: { type: 'STRING' }, tratados: { type: 'ARRAY', items: { type: 'INTEGER' } }, combinados: { type: 'ARRAY', items: { type: 'STRING' } } },
     } });
     return {
       tratadas: (r.tratados || []).map(n => pautas[n - 1]).filter(Boolean).map(p => p.id),
       combinados: (r.combinados || []).map(s => String(s).trim()).filter(Boolean),
-      resumo: String(r.resumo || '').trim(),
+      ata: this.tidy(String(r.ata || '')),
     };
+  },
+  /* Garante quebras de linha se a IA devolver o documento "corrido" */
+  tidy(t) {
+    t = t.replace(/\r/g, '').trim();
+    if (t.split('\n').length > 3) return t;
+    return t.replace(/\s+(Data:|Assunto:|Participantes:|Local:)/g, '\n$1')
+      .replace(/\s+(\d{1,2}\.\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, '\n\n$1')
+      .replace(/\s+([•*]\s)/g, '\n$1')
+      .replace(/\s+(Pendências|Encaminhamentos|Considerações finais|Próximos passos)(:?)\s/g, '\n\n$1$2\n')
+      .trim();
+  },
+
+  /* Comandos rápidos do agente sobre um texto pronto */
+  REWRITE: { natural: '/natural — Deixe o texto mais natural, fluido e menos formal, mantendo o profissionalismo.', compact: '/compact — Reduza o conteúdo ao essencial, preservando as informações importantes.', detalhado: '/detalhado — Aprofunde o conteúdo, mantendo todos os pontos relevantes da fonte.' },
+  async rewrite(text, mode, source = '') {
+    return this.tidy(await this.call({ system: this.system(`Tarefa: ${this.REWRITE[mode]}
+Mantenha a mesma estrutura de documento (cabeçalho, assuntos numerados). Não acrescente fatos que não estejam no texto${source ? ' ou na transcrição de referência' : ''}.
+Responda apenas com o documento reescrito.`), parts: [{ text: `Documento:\n"""\n${text}\n"""${source ? `\n\nTranscrição de referência (fonte, pode ter erros):\n"""\n${source.slice(0, 60000)}\n"""` : ''}` }], timeout: 90000 }));
+  },
+
+  /* Pauta de uma reunião futura, a partir do tema e das pendências de reuniões anteriores */
+  async pauta({ title, tema, pendencias = [] }) {
+    const r = await this.call({ system: this.system(`Tarefa: monte a PAUTA de uma reunião que ainda vai acontecer.
+Responda em JSON com "itens": a lista de assuntos, em sequência lógica, cada um curto (até ~10 palavras), sem numeração.
+Use apenas o que estiver no tema descrito e nas pendências informadas; não invente assuntos. Inclua as pendências que tiverem relação com a reunião.`),
+      parts: [{ text: `Reunião: ${title || '(sem título)'}
+O que o líder quer tratar:
+"""
+${tema}
+"""
+${pendencias.length ? `Pendências de reuniões anteriores:\n${pendencias.map(x => '- ' + x).join('\n')}` : ''}` }],
+      schema: { type: 'OBJECT', required: ['itens'], properties: { itens: { type: 'ARRAY', items: { type: 'STRING' } } } }, timeout: 60000 });
+    return (r.itens || []).map(x => String(x).replace(/^\s*[\d.)•\-–]+\s*/, '').trim()).filter(Boolean);
   },
 };
 

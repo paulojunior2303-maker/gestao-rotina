@@ -46,10 +46,12 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
     const txt = JSON.stringify(body);
     const ok = text => r.fulfill({ json: { candidates: [{ content: { parts: [{ text }] } }] } });
     if (txt.includes('Responda apenas: ok')) return ok('ok');
+    if (txt.includes('monte a PAUTA')) return ok(JSON.stringify({ itens: ['Escala do sábado', 'Uso de EPI', 'Metas do mês'] }));
+    if (txt.includes('/compact')) return ok('ATA COMPACTA\nData: 09/11\n\n1. Escala\n• Carlos no dia 14.');
     if (txt.includes('Transcreva fielmente')) return ok('— Vamos começar pela escala do sábado. Carlos fica no dia 14.\n— Sobre EPI, precisamos comprar luvas até quarta.');
     ataCalls++;
     if (ataCalls === 1) return r.fulfill({ status: 503, json: { error: { message: 'high demand' } } });   // 1º modelo sobrecarregado → tenta o próximo
-    return ok(JSON.stringify({ tratados: [1, 2], combinados: ['Carlos monta a escala', 'Comprar luvas até quarta'], resumo: 'Escala e EPI definidos; metas ficaram para depois.' }));
+    return ok(JSON.stringify({ tratados: [1, 2], combinados: ['Carlos monta a escala', 'Comprar luvas até quarta'], ata: 'ATA DE REUNIÃO — Equipe Teste Data: 09/11/2026 Assunto: Escala e EPI 1. Escala do sábado • Carlos fica no dia 14. 2. Uso de EPI • Comprar luvas até quarta.' }));
   });
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !m.text().includes('status of 503')) errs.push(m.text()); });   // 503 simulado da IA
@@ -315,6 +317,8 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await p.fill(`${M} [name=iaKey]`, 'CHAVE-DE-TESTE-1234'); await tap(`${M} [data-ia-save]`); await W(800);
   check((await st()).settings.ia.key === 'CHAVE-DE-TESTE-1234' && iaReqs.some(r => r.key === 'CHAVE-DE-TESTE-1234'), 'salvar a chave direto na reunião e testar');
   check(await p.locator(`${M} [name=iaKey]`).count() === 0 && (await p.textContent(`${M} .ia-msg`)).includes('funcionando'), 'chave ok: campo some e confirma');
+  // Instruções do agente (Configurações → IA) — definidas direto no estado para não fechar a reunião aberta
+  await p.evaluate(() => { S.settings.ia.agente = 'MEU AGENTE DE TESTE: escreva atas no padrão Wi-Bicam.'; S.settings.ia.nivel = 'detalhada'; });
   // Gravação ao vivo (trechos curtos no teste)
   await p.evaluate(() => { Recorder.SEG_MS = 1500; });
   await tap(`${M} [data-rec]`); await W(400);
@@ -334,10 +338,17 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(calls.some(c => c[0] === 'tela' && c[1].ligada === false), 'tela volta ao normal ao encerrar');
   const checked = await p.locator(`${M} [name^=p_]`).evaluateAll(els => els.map(e => e.checked));
   check(checked.join() === 'true,true,true', 'IA marcou os assuntos 1 e 2 e manteve o 3, marcado à mão durante a reunião');
-  check((await p.inputValue(`${M} [name=combinados]`)).includes('Comprar luvas') && (await p.inputValue(`${M} [name=resumo]`)).includes('EPI'), 'IA preencheu combinados e resumo');
+  const ataTxt = await p.inputValue(`${M} [name=ata]`);
+  check((await p.inputValue(`${M} [name=combinados]`)).includes('Comprar luvas') && ataTxt.startsWith('ATA DE REUNIÃO'), 'IA escreveu a ata e preencheu os combinados');
+  check(ataTxt.split('\n').length >= 7 && ataTxt.includes('\n\n2. Uso de EPI'), 'ata organizada em linhas mesmo se a IA devolver o texto corrido');
+  const ataReqTxt = JSON.stringify(iaReqs.filter(r => JSON.stringify(r.body).includes('Transcrição da reunião')).pop().body);
+  check(ataReqTxt.includes('MEU AGENTE DE TESTE') && ataReqTxt.includes('ATA detalhada'), 'a ata segue as instruções do agente e o nível escolhido');
+  await tap(`${M} [data-rw=compact]`); await W(800);
+  check((await p.inputValue(`${M} [name=ata]`)).startsWith('ATA COMPACTA'), 'comando rápido "Compactar" reescreve a ata');
+  await tap(`${M} [data-rw-copy]`); await W(200);
   await p.locator(`${M} [name=mkTasks]`).check(); await save(); await W(300);
   const s9 = await st(); ev = s9.events.find(e => e.title === 'Reunião de equipe');
-  check(ev.registro && ev.registro.tratadas.length === 3 && ev.registro.resumo.includes('EPI') && ev.registro.transcricao.includes('escala do sábado'), 'registro salvo com pauta, resumo e transcrição');
+  check(ev.registro && ev.registro.tratadas.length === 3 && ev.registro.ata.startsWith('ATA COMPACTA') && ev.registro.transcricao.includes('escala do sábado'), 'registro salvo com pauta, ata e transcrição');
   check(s9.tasks.some(t => t.title === 'Carlos monta a escala') && s9.tasks.some(t => t.title === 'Comprar luvas até quarta'), 'cada combinado virou uma tarefa');
   check(await p.locator('.mt-sec', { hasText: 'Registradas' }).locator('.mt-card', { hasText: 'Reunião de equipe' }).count() === 1, 'reunião vai para "Registradas"');
   await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
@@ -345,6 +356,19 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await p.evaluate(() => __fire('backButton')); await W(300);
   await go('config');
   check(await p.locator('#cfg-ia').count() === 1 && (await p.textContent('#cfg-ia')).includes('1234'), 'Configurações → IA mostra só o final da chave');
+  check((await p.inputValue('#ia-agent')).includes('MEU AGENTE'), 'Configurações → IA: campo "Instruções do seu agente"');
+  await p.fill('#ia-agent', 'MEU AGENTE V2'); await p.selectOption('#ia-nivel', 'compacta'); await p.locator('#cfg-ia .ia-agent button').tap(); await W(300);
+  check((await st()).settings.ia.agente === 'MEU AGENTE V2' && (await st()).settings.ia.nivel === 'compacta', 'salvar instruções do agente e nível da ata');
+  // Pauta com IA (inclui pendências da última reunião)
+  await p.evaluate(() => { const e = S.events.find(x => x.title === 'Reunião de equipe'); e.registro.tratadas = e.registro.tratadas.slice(0, 2); commit(); });   // "Metas do mês" ficou pendente
+  await go('reunioes'); await tap('[data-act=mtNew]');
+  check(await p.locator(`${M} [data-pauta-ia]`).count() === 1 && (await p.textContent(`${M} .pauta-ia`)).includes('pendente'), 'Nova reunião: "Gerar pauta com IA" oferece incluir pendências');
+  await fill('title', 'Reunião da próxima semana'); await p.fill(`${M} [name=pautaTema]`, 'escala e EPI'); await tap(`${M} [data-pauta-ia]`); await W(600);
+  check((await p.inputValue(`${M} [name=pauta]`)).split('\n').length === 3, 'IA montou a pauta (3 assuntos)');
+  const pReq = JSON.stringify(iaReqs.filter(r => JSON.stringify(r.body).includes('monte a PAUTA')).pop().body);
+  check(pReq.includes('MEU AGENTE V2') && pReq.includes('Pendências de reuniões anteriores') && pReq.includes('Metas do mês'), 'pauta usa o agente e as pendências');
+  await p.screenshot({ path: OUT + '/18-pauta-ia.png' });
+  await p.evaluate(() => __fire('backButton')); await W(300);
   await overflow('15-config-ia');
   await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
   await p.screenshot({ path: OUT + '/17-reuniao-registrada.png' });

@@ -38,7 +38,9 @@ e diga o que mudou e como testar no celular.
   Combinados podem virar tarefas. Formulário/visualização/registro em `Events` (`js/views/mensal.js`).
 - **IA** (`js/ia.js`): Google Gemini direto do app, com a chave do usuário em `settings.ia.key` (Configurações → IA). Modelos em `IA.MODELS`
   (tenta o próximo em 503/429/timeout). `Recorder` grava em trechos independentes de 40 s (webm/opus 24 kbps, até 90 min) e transcreve cada um ao vivo (`IA.transcribe`); ao encerrar, `IA.ata` usa a transcrição em texto. O áudio não é guardado; a transcrição vai em `registro.transcricao` (até 30 mil caracteres). Durante a gravação a janela não fecha (`canClose`). Indisponível no link do Claude.
-  **Nunca** colocar chave real em código, teste ou commit (repositório público): os testes simulam a API.
+  Ata no padrão do **agente do usuário** (`settings.ia.agente`, colado em Configurações → IA; nível em `settings.ia.nivel`) via `IA.system()`;
+  `IA.rewrite` = comandos /natural, /compact, /detalhado; `IA.pauta` gera a pauta (com pendências de `Events.pendencias`). `IA.tidy` garante quebras de linha.
+  **Nunca** colocar chave real nem o prompt do agente do usuário em código, teste ou commit (repositório público): os testes simulam a API.
 - Ícones/splash do Android: `node android-app/tools/icons.js` (gera a partir da marca do anel).
 
 ## Testes (rodar antes de todo commit)

@@ -565,6 +565,18 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 .rec-on ~ * .rec-dot, .ia-box:has(.rec-on) .rec-dot { background: var(--red); animation: recPulse 1.2s ease-in-out infinite; }
 .live-txt { max-height: 220px; min-height: 64px; overflow-y: auto; padding: 10px 12px; font-size: 13.5px; white-space: pre-wrap; line-height: 1.55; }
 .tx { margin-top: 10px; }
+.ia-agent { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); max-width: 640px; display: flex; flex-direction: column; gap: 6px; }
+.ia-agent > label { font-size: 13.5px; font-weight: 600; }
+.ia-agent p { margin: 0; }
+.ia-agent textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--input-border); border-radius: 11px; background: var(--surface-2); resize: vertical; font-size: 13px; }
+.ia-level { max-width: 220px; margin-top: 6px; }
+.ata-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -4px; }
+.ata-doc .row-actions { margin-top: 8px; }
+.pauta-ia { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; border: 1px solid var(--blue-border); background: var(--blue-bg-soft); }
+.pauta-ia .lbl { display: flex; align-items: center; gap: 6px; }
+.pauta-ia .lbl .ic { color: var(--accent); }
+.pauta-ia .inline-add { margin-top: 0; }
+.pauta-ia input[type=text], .pauta-ia input:not([type]) { background: var(--surface); }
 .tx summary { cursor: pointer; color: var(--link); font-weight: 560; font-size: 13.5px; }
 .ia-off { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .ia-off .ic { color: var(--accent); }

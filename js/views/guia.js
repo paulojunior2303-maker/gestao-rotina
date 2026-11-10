@@ -248,10 +248,10 @@ Views.guia = {
     ${sec('reunioes', 'users', 'Reuniões (pauta, registro e IA)', `
       <p>Fica em <strong>Menu → Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
       <ol>
-        <li><strong>Antes:</strong> toque em <strong>Nova reunião</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha.</li>
+        <li><strong>Antes:</strong> toque em <strong>Nova reunião</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha. Ou descreva o tema em <strong>Gerar pauta com IA</strong>: ela monta a pauta e pode incluir os assuntos que ficaram pendentes nas últimas reuniões.</li>
         <li><strong>Na hora:</strong> toque em <strong>Iniciar</strong> no cartão da reunião (ou abra a reunião e toque em <strong>Iniciar reunião</strong>). Dá para iniciar a qualquer momento, antes ou depois do horário marcado.</li>
         <li>Toque em <strong>Iniciar gravação</strong>. A transcrição aparece na tela a cada ~40 segundos, enquanto a conversa acontece. Marque os assuntos da pauta conforme forem tratados.</li>
-        <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA usa a transcrição (e as suas anotações, se houver) para marcar a pauta, listar os combinados e escrever um resumo.</li>
+        <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA escreve a <strong>ata</strong> no padrão do seu agente, marca a pauta e lista os combinados. Use <strong>Natural</strong>, <strong>Compactar</strong> ou <strong>Detalhar</strong> para ajustar a ata, e <strong>Copiar</strong> ou <strong>Compartilhar</strong> para enviar.</li>
         <li>Confira, marque <strong>Criar uma tarefa para cada combinado</strong> se quiser, e toque em <strong>Salvar registro</strong>. A transcrição fica guardada junto.</li>
       </ol>
       <p class="guide-note">Durante a gravação, mantenha o app aberto: a tela fica acesa sozinha e o app não deixa fechar a janela sem encerrar a gravação. Precisa de internet para transcrever; trechos que falharem são tentados de novo ao encerrar. O áudio não fica guardado, só o texto. Avise os participantes antes de gravar.</p>
@@ -283,7 +283,7 @@ Views.guia = {
     ])) : ''}
 
     ${sec('config', 'settings', 'Configurações', li([
-      '<strong>IA</strong>: cole a chave do Google (AI Studio) para a IA preencher o registro das reuniões.',
+      '<strong>IA</strong>: a chave do Google (AI Studio), as <strong>instruções do seu agente</strong> (o padrão das atas e pautas) e o nível da ata (detalhada, compacta ou resumida).',
       '<strong>Aparência</strong>: modo <strong>escuro</strong>, <strong>claro</strong> ou <strong>automático</strong> (segue o tema do celular). Ali também dá para <strong>mostrar ou ocultar a tela Indicadores</strong> no menu.',
       '<strong>Jornada</strong>: horários, intervalo, dias de trabalho e antecedência dos alertas de prazo.',
       '<strong>Rotina padrão</strong>: blocos de horário recorrentes (dias da semana ou um dia do mês).',

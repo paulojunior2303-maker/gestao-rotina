@@ -35,6 +35,13 @@ Views.config = {
         <label for="ia-key">${IA.key() ? 'Trocar a chave' : 'Chave da API'}</label>
         <div class="inline-add"><input id="ia-key" name="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole aqui a chave do AI Studio"><button type="button" class="btn sm ghost" data-act="iaShow">Mostrar</button><button class="btn sm primary">Salvar</button></div>
       </form>
+      <form class="ia-agent" data-submit="iaAgentSave">
+        <label for="ia-agent">Instruções do seu agente <span class="muted">(opcional)</span></label>
+        <p class="muted small">Cole aqui o prompt do agente que você usa para atas e pautas. A IA segue esse padrão ao montar a ata e a pauta. Em branco, usa um estilo padrão objetivo.</p>
+        <textarea id="ia-agent" name="agente" rows="6" placeholder="Ex.: Atue como meu assistente de documentação…">${U.esc((st.ia && st.ia.agente) || '')}</textarea>
+        <div class="field ia-level"><label for="ia-nivel">Nível da ata</label><select id="ia-nivel" name="nivel">${UI.opts([['detalhada', 'Detalhada'], ['compacta', 'Compacta'], ['resumida', 'Resumida']], (st.ia && st.ia.nivel) || 'detalhada')}</select></div>
+        <div class="row-actions"><button class="btn sm primary">Salvar instruções</button>${st.ia && st.ia.agente ? `<span class="muted small">${U.plural(st.ia.agente.length, 'caractere')} salvos</span>` : ''}</div>
+      </form>
       <details class="ia-help"><summary>Como conseguir a chave</summary><ol class="steps">
         <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
         <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
@@ -166,6 +173,10 @@ Object.assign(Actions, {
     el.disabled = false;
   },
   iaRemove() { UI.confirm('Remover a chave da IA deste app?', () => { S.settings.ia = { ...(S.settings.ia || {}), key: '' }; commit(); UI.toast('Chave removida.'); }, { okLabel: 'Remover', danger: true }); },
+  iaAgentSave(_, form) {
+    S.settings.ia = { ...(S.settings.ia || {}), agente: form.elements.agente.value.trim(), nivel: form.elements.nivel.value };
+    commit(); UI.toast(S.settings.ia.agente ? 'Instruções do agente salvas.' : 'Usando o estilo padrão.');
+  },
   iaShow(_, el) { const i = el.closest('.ia-key').querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
   cfgJornada(_, form) {
     const fd = new FormData(form);
