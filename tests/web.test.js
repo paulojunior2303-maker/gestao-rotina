@@ -17,9 +17,12 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.goto(B);
   await p.waitForTimeout(500); if (await p.locator('.tour-wrap').count()) { await p.locator('[data-tour=skip]').click(); await p.waitForTimeout(300); }
 
-  // ---- Agenda
+  // ---- Agenda (intervalo em horário fixo)
+  assert(await p.locator('.bottom-nav, #bottom-nav').count() === 0, 'sem barra de navegação embaixo (só o menu lateral)');
+  await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });
   await go('agenda');
-  assert(await p.locator('.blk').count() === 12, 'agenda inicial tem 12 blocos');
+  assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes .tab').count() === 3, 'Agenda com Dia, Semana e Mês');
+  assert(await p.locator('.blk').count() === 12, 'agenda inicial tem 12 blocos (intervalo fixo)');
   await p.locator('.blk').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(150);
   let s = await state(); const tk = Object.keys(s.days)[0];
   assert(s.days[tk].find(b => b.title.startsWith('Abertura')).status === 'concluida', 'concluir bloco persiste no LocalStorage');
@@ -49,6 +52,20 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await fill('title', 'x'); await fill('start', '10:00'); await fill('end', '09:00'); await submit();
   assert(await p.locator('.modal-wrap.open .form-error:not([hidden])').count() === 1, 'validação de horário fim < início');
   await p.click('.modal-wrap.open [data-cancel]'); await p.waitForTimeout(200);
+
+  // ---- Intervalo flexível (padrão): marcado na hora e empurra o resto do dia
+  await p.evaluate(() => { S.settings.breakMode = 'flexivel'; commit(); });
+  await go('agenda');
+  const nextDay = await p.evaluate(() => { let k = U.addDays(U.today(), 7); while (!D.isWorkday(k)) k = U.addDays(k, 1); App.ui.agendaDate = k; App.render(); return k; });
+  assert(await p.locator('.blk').count() === 11 && await p.locator('.blk-break').count() === 0, 'intervalo flexível: dia começa sem o bloco de intervalo');
+  await p.click('[data-act=agBreak]'); await p.waitForTimeout(200);
+  await fill('start', '11:30'); await p.selectOption('.modal-wrap.open [name=dur]', '60'); await submit();
+  s = await state(); const dfx = s.days[nextDay]; const g = t => dfx.find(b => b.title === t);
+  assert(g('Intervalo').start === '11:30' && g('Intervalo').end === '12:30' && g('Intervalo').category === 'intervalo', '"Intervalo agora" marca o almoço no horário escolhido');
+  assert(g('Resolução de pendências').start === '12:30', 'atividade que caía no almoço vai para depois dele');
+  assert(await p.locator('[data-act=agBreak]').count() === 0, 'botão some depois de marcar o intervalo do dia');
+  await go('config');
+  assert(await p.inputValue('#cfg-break') === 'flexivel', 'Configurações → Jornada: intervalo flexível, fixo ou sem intervalo');
 
   // ---- Imprevisto com encaixe
   await go('imprevistos');
@@ -113,7 +130,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   // ---- Indicadores (oculto por padrão; ativado em Configurações → Aparência)
   assert(await p.locator('#nav a[href="#indicadores"]').count() === 0, 'Indicadores fica oculto no menu por padrão');
   await go('indicadores');
-  assert(await p.textContent('#page-title') === 'Dashboard', 'endereço #indicadores oculto volta ao Dashboard');
+  assert(await p.textContent('#page-title') === 'Início', 'endereço #indicadores oculto volta ao Início');
   await go('config');
   assert(await p.locator('#cfg-metas').count() === 0, 'Metas ocultas junto com Indicadores');
   await p.click('#cfg-aparencia .switch'); await p.waitForTimeout(250);
@@ -146,10 +163,22 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('[data-act=guideOpen][data-id=semanal]'); await p.waitForTimeout(400);
   assert(await p.textContent('#page-title') === 'Guia de uso' && await p.locator('#g-semanal[open]').count() === 1, '"Como funciona" abre o guia no tema certo');
   await go('mensal');
+  assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes .tab.active').textContent() === 'Mês', 'endereço antigo #mensal abre Agenda → Mês');
   assert(await p.locator('.cycle.is-empty').count() === 4 && await p.locator('input[data-change=mcCheck]').count() === 0, 'planejamento mensal começa em branco');
-  await p.click('[data-act=evNew]'); await p.waitForTimeout(200);
+  await p.click('.calx-day [data-act=calAdd]'); await p.waitForTimeout(200);
+  await p.click('.sheet-item:has-text("Compromisso")'); await p.waitForTimeout(200);
   await fill('title', 'Reunião com fornecedor'); await fill('date', '2026-11-20'); await fill('time', '10:00'); await submit();
-  assert(await p.locator('.cal-it.t-evento', { hasText: 'Reunião com fornecedor' }).count() === 1, 'compromisso aparece no calendário');
+  assert(await p.locator('.calx-chip.t-evento', { hasText: 'Reunião com fornecedor' }).count() === 1, 'compromisso aparece no calendário (com título no computador)');
+  await p.click('.calx-d[data-k="2026-11-20"]'); await p.waitForTimeout(200);
+  assert(await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'tocar no dia mostra a lista do dia ao lado');
+  await go('dashboard');
+  assert(await p.locator('.cal-home .calx-grid .calx-d').count() >= 28, 'calendário do mês na tela inicial');
+  await p.click('.cal-home [data-act=calMode][data-v=week]'); await p.waitForTimeout(200);
+  assert(await p.locator('.cal-home .calx-grid .calx-d').count() === 7, 'calendário encolhe para a semana');
+  await p.click('.cal-home [data-act=calNav][data-n="1"]'); await p.waitForTimeout(200);
+  assert(await p.locator('.cal-home [data-act=calToday]').count() === 1, 'fora da semana atual aparece "Hoje"');
+  await p.click('.cal-home [data-act=calToday]'); await p.waitForTimeout(200);
+  assert(await p.locator('.cal-home .calx-d.today.sel').count() === 1, '"Hoje" volta e seleciona o dia atual');
 
   // ---- Migração do visual v2: modelo antigo sai, itens do usuário ficam
   const mig = await p.evaluate(() => {

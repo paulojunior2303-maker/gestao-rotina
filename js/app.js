@@ -2,11 +2,10 @@
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral em grupos. "Indicadores" só aparece se ativado em Configurações → Aparência. */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos', 'reunioes']],
-  ['Planejamento', ['semanal', 'mensal', 'projetos', 'indicadores']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
+  ['Equipe e projetos', ['feedbacks', 'projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
-const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => id !== 'indicadores' || !!(S && S.settings && S.settings.showIndicadores);
 
 const App = {
@@ -17,6 +16,9 @@ const App = {
   parseHash() {
     const h = location.hash.replace(/^#\/?/, '');
     const [path, qs] = h.split('?');
+    // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
+    const moved = { semanal: 'semana', mensal: 'mes' }[path];
+    if (moved) { this.ui.agendaMode = moved; this.route = 'agenda'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
@@ -26,9 +28,8 @@ const App = {
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${id === 'dashboard' ? 'Início' : id === 'agenda' ? 'Agenda' : Views[id].nav}</span>${badge(id)}</a>`).join('')
-      + `<button data-act="openMenu" class="${BOTTOM.includes(this.route) ? '' : 'active'}"><span class="bn-ic">${U.icon('menu', 20)}</span><span>Menu</span></button>`;
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
+    document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
     document.getElementById('storage-status').innerHTML =
       dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
@@ -106,6 +107,16 @@ const App = {
 
     document.getElementById('menu-btn').addEventListener('click', () => this.openMenu());
     document.getElementById('backdrop').addEventListener('click', () => this.closeMenu());
+    // Celular: arrastar da borda esquerda abre o menu; arrastar para a esquerda fecha
+    let sx = null, sy = 0;
+    document.addEventListener('touchstart', e => { const t = e.touches[0]; sx = (t.clientX < 24 || document.body.classList.contains('menu-open')) && !document.querySelector('.modal-wrap') ? t.clientX : null; sy = t.clientY; }, { passive: true });
+    document.addEventListener('touchend', e => {
+      if (sx === null) return;
+      const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy); sx = null;
+      if (dy > 60) return;
+      if (dx > 60 && !document.body.classList.contains('menu-open')) this.openMenu();
+      else if (dx < -60 && document.body.classList.contains('menu-open')) this.closeMenu();
+    }, { passive: true });
 
     // Relógio e atualização periódica (status "agora"/"atrasada")
     const tick = () => {
@@ -165,7 +176,7 @@ const Theme = {
 function commit() { Store.save(); App.render(); }
 
 Actions.openMenu = () => App.openMenu();
-Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
+Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.ui.agendaMode = 'dia'; App.go('agenda'); };
 Actions.goTasks = ({ status }) => { App.ui.taskF = { q: '', status, priority: '', category: '', period: '', from: '', to: '' }; App.go('tarefas'); };
 
 document.addEventListener('DOMContentLoaded', () => App.init());

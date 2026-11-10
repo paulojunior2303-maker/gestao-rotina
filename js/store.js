@@ -48,6 +48,8 @@ const Store = {
       version: 1,
       settings: {
         workStart: '08:00', workEnd: '18:00', breakStart: '12:00', breakEnd: '13:00',
+        breakMode: 'flexivel',   // flexivel (marca na hora) | fixo (bloco da rotina) | nenhum
+        breakDur: 60,            // duração padrão do intervalo flexível (min)
         workDays: [1, 2, 3, 4, 5],
         alertDays: 2,
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
@@ -97,7 +99,8 @@ const Store = {
       occurrences: [],
       events: [],
       indicators: [],
-      meta: { v2: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
+      feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
+      meta: { v2: true, v3: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -120,7 +123,16 @@ const Store = {
     for (const k of Object.keys(d)) if (s[k] === undefined) s[k] = d[k];
     for (const k of Object.keys(d.settings)) if (s.settings[k] === undefined) s.settings[k] = d.settings[k];
     if (needV2) { this.migrateV2(s); s.meta = { ...(s.meta || {}), v2: true }; }
+    if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
     return s;
+  },
+
+  /* v3: intervalo de almoço flexível (o usuário não tem horário fixo). Tira o intervalo da rotina dos dias futuros já montados. */
+  migrateV3(s) {
+    if (!s.settings) return;
+    s.settings.breakMode = 'flexivel';
+    const t = U.today();
+    for (const [k, blocks] of Object.entries(s.days || {})) if (k > t) s.days[k] = blocks.filter(b => !(b.category === 'intervalo' && b.routineId && b.status === 'pendente'));
   },
 
   /* v2 (novo visual): planejamento semanal/mensal em branco, nova paleta e tema escuro como padrão.
@@ -241,7 +253,9 @@ const D = {
   routineFor(k) {
     if (!D.isWorkday(k)) return [];
     const wd = U.weekday(k), dom = U.parse(k).getDate();
+    const fixedBreak = (S.settings.breakMode || 'fixo') === 'fixo';
     return S.routine
+      .filter(r => fixedBreak || r.category !== 'intervalo')   // intervalo flexível: marcado na hora pela Agenda
       .filter(r => r.freq === 'mensal' ? Number(r.monthDay) === dom : (r.days || []).includes(wd))
       .map(r => ({ id: r.id, routineId: r.id, start: r.start, end: r.end, title: r.title, category: r.category, priority: r.priority, notes: r.notes || '', fixed: !!r.fixed, status: 'pendente' }));
   },

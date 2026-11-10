@@ -54,11 +54,13 @@ Views.config = {
       <form class="form-grid cfg-form" data-submit="cfgJornada">
         <div class="field"><label>Entrada</label><input type="time" name="workStart" value="${st.workStart}" required></div>
         <div class="field"><label>Saída</label><input type="time" name="workEnd" value="${st.workEnd}" required></div>
-        <div class="field"><label>Início do intervalo</label><input type="time" name="breakStart" value="${st.breakStart}"></div>
-        <div class="field"><label>Fim do intervalo</label><input type="time" name="breakEnd" value="${st.breakEnd}"></div>
+        <div class="field full"><label for="cfg-break">Intervalo de almoço</label><select id="cfg-break" name="breakMode" data-change="cfgBreakMode">${UI.opts([['flexivel', 'Flexível: marco na hora, pela Agenda'], ['fixo', 'Horário fixo todos os dias'], ['nenhum', 'Sem intervalo']], st.breakMode || 'fixo')}</select>
+          <small class="hint">${(st.breakMode || 'fixo') === 'flexivel' ? 'Na Agenda, toque em <strong>Intervalo agora</strong> quando for almoçar: as atividades seguintes são empurradas.' : (st.breakMode || 'fixo') === 'fixo' ? 'O intervalo entra na agenda de todos os dias úteis, no horário abaixo.' : 'Nenhum intervalo é colocado na agenda.'}</small></div>
+        ${(st.breakMode || 'fixo') === 'fixo' ? `<div class="field"><label>Início do intervalo</label><input type="time" name="breakStart" value="${st.breakStart}"></div>
+        <div class="field"><label>Fim do intervalo</label><input type="time" name="breakEnd" value="${st.breakEnd}"></div>` : (st.breakMode || 'fixo') === 'flexivel' ? `<div class="field"><label>Duração do intervalo</label><select name="breakDur">${UI.opts([[30, '30 min'], [45, '45 min'], [60, '1 hora'], [90, '1h30'], [120, '2 horas']], st.breakDur || 60)}</select></div>` : ''}
         <div class="field full"><span class="lbl">Dias de trabalho</span><div class="wd-pick">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label><input type="checkbox" name="workDays" value="${d}" ${st.workDays.includes(d) ? 'checked' : ''}><span>${U.WD_SHORT[d]}</span></label>`).join('')}</div></div>
         <div class="field"><label>Alertar prazos com antecedência de (dias)</label><input type="number" name="alertDays" min="0" max="30" value="${st.alertDays}"></div>
-        <div class="field full"><label class="check"><input type="checkbox" name="syncBreak" checked> <span>Atualizar também o horário do bloco “Intervalo” na rotina padrão</span></label></div>
+        ${(st.breakMode || 'fixo') === 'fixo' ? '<div class="field full"><label class="check"><input type="checkbox" name="syncBreak" checked> <span>Atualizar também o horário do bloco “Intervalo” na rotina padrão</span></label></div>' : ''}
         <div class="full"><button class="btn primary">Salvar jornada</button></div>
       </form>`)}
 
@@ -180,11 +182,14 @@ Object.assign(Actions, {
     commit(); UI.toast(S.settings.ia.agente ? 'Instruções do agente salvas.' : 'Usando o estilo padrão.');
   },
   iaShow(_, el) { const i = el.closest('.ia-key').querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; },
+  cfgBreakMode(_, el) { S.settings.breakMode = el.value; commit(); UI.toast(el.value === 'flexivel' ? 'Intervalo flexível: marque pela Agenda.' : el.value === 'fixo' ? 'Intervalo em horário fixo.' : 'Sem intervalo na agenda.'); },
   cfgJornada(_, form) {
     const fd = new FormData(form);
-    const v = { workStart: fd.get('workStart'), workEnd: fd.get('workEnd'), breakStart: fd.get('breakStart'), breakEnd: fd.get('breakEnd'), workDays: fd.getAll('workDays').map(Number), alertDays: Number(fd.get('alertDays') || 0) };
+    const v = { workStart: fd.get('workStart'), workEnd: fd.get('workEnd'), breakMode: fd.get('breakMode') || 'fixo', workDays: fd.getAll('workDays').map(Number), alertDays: Number(fd.get('alertDays') || 0) };
+    if (fd.get('breakStart')) { v.breakStart = fd.get('breakStart'); v.breakEnd = fd.get('breakEnd'); }
+    if (fd.get('breakDur')) v.breakDur = Number(fd.get('breakDur'));
     if (U.toMin(v.workEnd) <= U.toMin(v.workStart)) return UI.toast('A saída deve ser depois da entrada.', 'error');
-    if (v.breakStart && v.breakEnd && U.toMin(v.breakEnd) <= U.toMin(v.breakStart)) return UI.toast('O fim do intervalo deve ser depois do início.', 'error');
+    if (v.breakMode === 'fixo' && v.breakStart && v.breakEnd && U.toMin(v.breakEnd) <= U.toMin(v.breakStart)) return UI.toast('O fim do intervalo deve ser depois do início.', 'error');
     if (!v.workDays.length) return UI.toast('Selecione ao menos um dia de trabalho.', 'error');
     const old = { ...S.settings };
     Object.assign(S.settings, v);

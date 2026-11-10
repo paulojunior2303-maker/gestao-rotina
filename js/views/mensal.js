@@ -1,27 +1,23 @@
 'use strict';
-/* Planejamento mensal — 4 ciclos + calendário com prazos e compromissos */
+/* Agenda → Mês (calendário + metas das 4 semanas) e compromissos/reuniões (Events) */
 const cycleOf = k => { const d = U.parse(k).getDate(); return d <= 7 ? 1 : d <= 14 ? 2 : d <= 21 ? 3 : 4; };
 const CYCLE_COLORS = ['var(--cy1)', 'var(--cy2)', 'var(--cy3)', 'var(--cy4)'];
 
+/* Agenda → Mês: o calendário (com a lista do dia escolhido) e, abaixo, o planejamento das 4 semanas do mês */
 const Month = {
-  itemsOn(k) {
-    const out = [];
-    S.events.filter(e => e.date === k).forEach(e => out.push({ type: 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro }));
-    S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo }));
-    S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo }));
-    S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo }));
-    return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
-  },
-  TYPE: { evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Prazo de imprevisto' },
+  itemsOn(k) { return Cal.itemsOn(k); },
+  TYPE: Cal.TYPES,
 };
 
-Views.mensal = {
-  title: 'Planejamento mensal', icon: 'calendar', nav: 'Planejamento mensal',
+const MonthPlan = {
   render() {
-    const mk = App.ui.month || U.monthKey(U.today());
+    const cs = Cal.st('agenda');
+    cs.mode = 'month';   // a semana fica na aba Semana da Agenda
+    const mk = App.ui.month = U.monthKey(cs.anchor);
     const t = U.today();
     const chk = S.monthly.checks[mk] || {};
     const curCycle = U.monthKey(t) === mk ? cycleOf(t) : null;
+    const planned = S.monthly.cycles.some(c => c.title || c.items.length);
 
     const cycles = S.monthly.cycles.map((c, i) => {
       const dn = c.items.filter(x => chk[x.id]).length;
@@ -36,46 +32,16 @@ Views.mensal = {
       </div>`;
     }).join('');
 
-    // Calendário (semana começando no domingo)
-    const first = U.monthStart(mk), last = U.monthEnd(mk);
-    const gridStart = U.addDays(first, -U.weekday(first));
-    const cells = [];
-    for (let k = gridStart; cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length >= 35 && k >= last && U.weekday(k) === 6) break; }
-    const cal = cells.map(k => {
-      const inMonth = U.monthKey(k) === mk;
-      const items = inMonth ? Month.itemsOn(k) : [];
-      const hasAgenda = !!(S.days[k] && S.days[k].length);
-      const cyc = inMonth ? cycleOf(k) : 0;
-      return `<button class="cal-cell ${inMonth ? '' : 'out'} ${k === t ? 'today' : ''} ${D.isWorkday(k) ? '' : 'off'}" data-act="calDay" data-k="${k}" ${inMonth ? `style="--cc:${CYCLE_COLORS[cyc - 1]}"` : ''}>
-        <span class="cal-n">${U.parse(k).getDate()}</span>
-        ${hasAgenda ? `<span class="cal-ag" title="Agenda do dia com alterações">${D.progress(k).pct ?? 0}%</span>` : ''}
-        <span class="cal-items">${items.slice(0, 3).map(i => `<span class="cal-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}">${i.time ? i.time + ' ' : ''}${U.esc(i.label)}</span>`).join('')}${items.length > 3 ? `<span class="cal-more">+${items.length - 3}</span>` : ''}</span>
-        ${items.length ? `<span class="cal-dots">${items.slice(0, 4).map(i => `<i class="t-${i.type} ${i.late ? 'late' : ''}"></i>`).join('')}</span>` : ''}
-      </button>`;
-    }).join('');
-
     return `
-    <div class="plan-intro">
-      <p>O mês é dividido em <strong>4 semanas</strong>. Dê um foco a cada uma e liste as entregas do período. A lista se repete todo mês; as marcações valem só para o mês exibido. Abaixo, o calendário reúne prazos e compromissos.</p>
-      <button class="link" data-act="guideOpen" data-id="mensal">Como funciona</button>
-    </div>
-    <div class="toolbar">
-      <div class="date-nav">
-        <button class="icon-btn" data-act="mShift" data-n="-1" aria-label="Mês anterior">${U.icon('left')}</button>
-        <strong class="range-lbl">${U.fmtMonth(mk)}</strong>
-        <button class="icon-btn" data-act="mShift" data-n="1" aria-label="Próximo mês">${U.icon('right')}</button>
-        ${mk !== U.monthKey(t) ? '<button class="btn sm ghost" data-act="mShift" data-n="0">Mês atual</button>' : ''}
+    <section class="card cal-card">${Cal.render('agenda')}${Cal.day('agenda')}</section>
+    <details class="card plan-month" ${planned || App.ui.planOpen ? 'open' : ''}>
+      <summary><span>${U.icon('target')} Metas das semanas de ${U.MONTHS[U.parse(mk + '-01').getMonth()].toLowerCase()}</span><small class="muted">${planned ? '' : 'opcional'}</small>${U.icon('right', 16)}</summary>
+      <div class="plan-month-body">
+        <div class="plan-intro"><p>O mês é dividido em <strong>4 semanas</strong>. Dê um foco a cada uma e liste as entregas do período. A lista se repete todo mês; as marcações valem só para o mês exibido.</p>
+        <button class="link" data-act="guideOpen" data-id="mensal">Como funciona</button></div>
+        <div class="cycles">${cycles}</div>
       </div>
-      <span class="grow"></span>
-      <button class="btn primary" data-act="evNew">${U.icon('plus')} Novo compromisso</button>
-    </div>
-    <div class="cycles">${cycles}</div>
-    <div class="card">
-      <div class="card-h"><h3>${U.icon('calendar')} Calendário</h3>
-        <div class="legend"><span><i class="t-evento"></i>Compromisso</span><span><i class="t-tarefa"></i>Tarefa</span><span><i class="t-projeto"></i>Projeto</span><span><i class="t-imprevisto"></i>Imprevisto</span></div></div>
-      <div class="cal">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => `<div class="cal-wd">${d}</div>`).join('')}${cal}</div>
-      <p class="muted small mt">A faixa no topo de cada dia indica a semana do mês. Toque em um dia para ver detalhes, criar um compromisso ou abrir a agenda.</p>
-    </div>`;
+    </details>`;
   },
 };
 

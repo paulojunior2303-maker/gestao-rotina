@@ -1,8 +1,16 @@
 'use strict';
-/* Cronograma diário — agenda por horário com remanejamento */
+/* Agenda — tudo da rotina num lugar só: Dia (cronograma por horário), Semana (foco e checklist de cada dia,
+   compromissos e prazos) e Mês (calendário + planejamento das 4 semanas do mês) */
 Views.agenda = {
-  title: 'Cronograma diário', icon: 'clock', nav: 'Cronograma diário',
+  title: 'Agenda', icon: 'clock', nav: 'Agenda',
   render(params) {
+    const mode = App.ui.agendaMode || 'dia';
+    const tabs = `<div class="agenda-modes tabs" role="tablist">${[['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês']].map(([v, l]) => `<button class="tab ${mode === v ? 'active' : ''}" role="tab" aria-selected="${mode === v}" data-act="agMode" data-v="${v}">${l}</button>`).join('')}</div>`;
+    if (mode === 'semana') return tabs + WeekPlan.render();
+    if (mode === 'mes') return tabs + MonthPlan.render();
+    return tabs + this.renderDay(params);
+  },
+  renderDay(params) {
     const k = App.ui.agendaDate || U.today();
     const t = U.today();
     const blocks = D.dayBlocks(k);
@@ -48,15 +56,15 @@ Views.agenda = {
     };
 
     return `
+    ${Cal.strip(k)}
     <div class="toolbar">
       <div class="date-nav">
-        <button class="icon-btn" data-act="agShift" data-n="-1" title="Dia anterior">${U.icon('left')}</button>
-        <input type="date" value="${k}" data-change="agDate" aria-label="Data">
-        <button class="icon-btn" data-act="agShift" data-n="1" title="Próximo dia">${U.icon('right')}</button>
+        <input type="date" value="${k}" data-change="agDate" aria-label="Ir para a data">
         ${k !== t ? '<button class="btn sm ghost" data-act="agShift" data-n="0">Hoje</button>' : ''}
       </div>
       <span class="grow"></span>
       <button class="btn ghost" data-act="agMenu">${U.icon('more')} Reorganizar</button>
+      ${(S.settings.breakMode || 'fixo') === 'flexivel' && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada') ? `<button class="btn" data-act="agBreak">${U.icon('pause')} Intervalo ${k === t ? 'agora' : ''}</button>` : ''}
       <button class="btn warn" data-act="agImprevisto">${U.icon('alert')} Imprevisto</button>
       <button class="btn primary" data-act="agNew">${U.icon('plus')} Nova atividade</button>
     </div>
@@ -160,6 +168,8 @@ const Agenda = {
 };
 
 Object.assign(Actions, {
+  agMode({ v }) { App.ui.agendaMode = v; App.render({ resetScroll: true }); },
+  agDay({ k }) { App.ui.agendaDate = k; App.render(); },
   agShift({ n }) { n = Number(n); App.ui.agendaDate = n === 0 ? U.today() : U.addDays(Agenda.day(), n); App.render(); },
   agDate(_, el) { if (el.value) { App.ui.agendaDate = el.value; App.render(); } },
   agStatus({ id, s }) {
@@ -254,4 +264,29 @@ Object.assign(Actions, {
     ]);
   },
   agImprevisto() { Occ.form(null, { scheduleAfter: true }); },
+  /* Intervalo flexível: marca o almoço agora (ou no horário escolhido) e empurra o que vem depois */
+  agBreak() {
+    const k = Agenda.day(), t = U.today();
+    const start = k === t ? U.fromMin(Math.round(U.nowMin() / 5) * 5) : S.settings.breakStart || '12:00';
+    UI.form({
+      title: 'Intervalo',
+      submitLabel: 'Marcar intervalo',
+      fields: [
+        { name: 'start', label: 'Início', type: 'time', value: start, required: true, half: true },
+        { name: 'dur', label: 'Duração', type: 'select', options: [[30, '30 min'], [45, '45 min'], [60, '1 hora'], [90, '1h30'], [120, '2 horas']], value: S.settings.breakDur || 60, half: true },
+        { name: 'reflow', label: 'Empurrar as atividades seguintes para depois do intervalo', type: 'checkbox', value: true },
+      ],
+      onSubmit(v) {
+        const s = U.toMin(v.start), end = U.fromMin(s + Number(v.dur));
+        const day = D.ensureDay(k);
+        const b = { id: U.uid(), title: 'Intervalo', start: v.start, end, category: 'intervalo', priority: 'baixa', status: 'pendente', notes: '', fixed: true };
+        day.push(b);
+        // Atividade em andamento que atravessa o intervalo é encurtada até o início dele
+        const moved = v.reflow ? D.reflow(k, b.id) : 0;
+        commit();
+        UI.toast(`Intervalo das ${v.start} às ${end}.${moved ? ` ${U.plural(moved, 'atividade deslocada', 'atividades deslocadas')}.` : ''}`);
+        if (moved) Agenda.afterReflow(k, 0);
+      },
+    });
+  },
 });

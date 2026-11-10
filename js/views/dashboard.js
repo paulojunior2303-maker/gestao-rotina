@@ -1,7 +1,7 @@
 'use strict';
 /* Dashboard — centro de controle */
 Views.dashboard = {
-  title: 'Dashboard', icon: 'dashboard', nav: 'Dashboard',
+  title: 'Início', icon: 'dashboard', nav: 'Início',
   render() {
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
@@ -83,6 +83,8 @@ Views.dashboard = {
       ${blocks.length ? H.dayRail(t) : ''}
     </section>
 
+    <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
+
     <section class="kpis">
       <div class="kpi kpi-ring">${Charts.ring(prog.pct, { size: 76, stroke: 7 })}<div><span class="kpi-l">Progresso do dia</span><span class="kpi-s">${prog.total ? `${prog.done} de ${U.plural(prog.total, 'atividade')}` : 'Sem atividades hoje'}</span><a class="link" href="#agenda">Abrir agenda</a></div></div>
       ${kpi('Tarefas concluídas', doneTotal, `${doneWeek.length} nesta semana`, 'k-green', '#tarefas', 'concluida')}
@@ -118,7 +120,7 @@ Views.dashboard = {
       </div>
     </section>
 
-    <section class="${showGoals ? 'grid-3' : 'grid-2'} dash-foot">
+    <section class="${showGoals ? 'grid-2' : 'grid-1'} dash-foot">
       <div class="card flat">
         <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#semanal">Semana</a></div>
         <div class="stat-row">
@@ -135,11 +137,6 @@ Views.dashboard = {
         ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--accent)')}<small class="muted">${st.val === null ? 'Nenhum dado lançado' : `${U.fmtNum(st.val)} ${g.direction === 'max' ? '(máx.' : '(meta'} ${U.fmtNum(st.target)}) · ${g.period}`}</small></div>`).join('')
           : H.empty('Nenhuma meta configurada.', '<a class="btn sm" href="#config">Configurar metas</a>')}
       </div>` : ''}
-      <div class="card flat">
-        <div class="card-h"><h3>${U.icon('calendar')} Hoje e próximos 7 dias</h3><a class="link" href="#mensal">Calendário</a></div>
-        ${upcoming.length ? `<ul class="list">${upcoming.slice(0, 8).map(u => `<li class="li li-stack ${u.ev ? 'li-click' : ''}" ${u.ev ? `data-act="evView" data-id="${u.ev}"` : ''}><div class="li-top"><span class="li-time">${u.k === t ? 'Hoje' : `${U.WD_SHORT[U.weekday(u.k)]} ${U.fmtShort(u.k)}`}</span><small class="muted">${u.type}</small></div><div class="li-txt">${U.esc(u.label)}${H.demo(u)}</div></li>`).join('')}</ul>${upcoming.length > 8 ? `<p class="muted small">+ ${upcoming.length - 8} itens</p>` : ''}`
-          : H.empty('Nenhum prazo ou compromisso nos próximos 7 dias.')}
-      </div>
     </section>`;
   },
 };

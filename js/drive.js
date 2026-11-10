@@ -23,7 +23,7 @@ const Drive = {
   setInfo(o) { try { localStorage.setItem(this.KEY, JSON.stringify({ ...this.info(), ...o })); } catch (e) { /* sem armazenamento */ } },
   connected() { return !!this.info().email; },
   device() { return Native.available() ? 'app Android' : 'navegador'; },
-  hasData(st) { return !!st && ['tasks', 'projects', 'occurrences', 'events', 'indicators'].some(k => (st[k] || []).length) || !!(st && st.days && Object.keys(st.days).length) || !!(st && st.weekly && st.weekly.focus && st.weekly.focus.length); },
+  hasData(st) { return !!st && ['tasks', 'projects', 'occurrences', 'events', 'indicators', 'feedbacks'].some(k => (st[k] || []).length) || !!(st && st.days && Object.keys(st.days).length) || !!(st && st.weekly && st.weekly.focus && st.weekly.focus.length); },
 
   /* ---------- Token ---------- */
   needsAuth() { const e = new Error('Toque em Sincronizar para reconectar o Google Drive.'); e.needsAuth = true; return e; },

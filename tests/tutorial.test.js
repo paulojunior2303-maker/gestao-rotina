@@ -48,7 +48,7 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   console.log('[Guia de uso]');
   await p.locator('.help-btn').tap(); await W(400);
   check(await p.textContent('#page-title') === 'Guia de uso', 'botão ? do topo abre o Guia');
-  check(await p.locator('.guide-sec').count() === 14, '14 temas no guia');
+  check(await p.locator('.guide-sec').count() === 16, '16 temas no guia (com Calendário e Feedbacks)');
   check(await p.locator('.guide-sec[open]').count() === 1, 'só "Primeiros passos" aberto de início');
   await p.locator('#g-agenda summary').tap(); await W();
   check(await p.locator('#g-agenda[open]').count() === 1 && (await p.textContent('#g-agenda')).includes('Horário fixo'), 'tocar no tema abre o conteúdo (Agenda explica Horário fixo)');
@@ -60,10 +60,17 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   check(await p.locator('#tour-demo').count() === 0 || true, 'ok');
   await p.evaluate(() => __fire('backButton')); await W(400);
   check(await p.locator('.tour-wrap').count() === 0, 'botão voltar do Android fecha o tutorial');
-  await p.locator('#bottom-nav [data-act=openMenu]').tap(); await W(300);
+  await p.locator('#menu-btn').tap(); await W(300);
+  check(await p.evaluate(() => document.body.classList.contains('menu-open')), '☰ no topo abre o menu lateral');
   check(await p.locator('#nav a[href="#guia"]').count() === 1, '"Guia de uso" aparece no menu');
   await p.locator('#nav a[href="#config"]').tap(); await W(300);
   check(await p.locator('#cfg-dados [data-act=tourOpen]').count() === 1, 'Configurações → Dados tem "Rever tutorial"');
+  // Arrastar da borda esquerda abre o menu; arrastar para a esquerda fecha
+  const edge = (x0, x1) => p.evaluate(([a, b]) => { const mk = x => new Touch({ identifier: 1, target: document.body, clientX: x, clientY: 400 }); document.dispatchEvent(new TouchEvent('touchstart', { touches: [mk(a)], bubbles: true })); document.dispatchEvent(new TouchEvent('touchend', { changedTouches: [mk(b)], bubbles: true })); }, [x0, x1]);
+  await edge(8, 200); await W(300);
+  check(await p.evaluate(() => document.body.classList.contains('menu-open')), 'arrastar da borda esquerda abre o menu');
+  await edge(220, 40); await W(300);
+  check(!(await p.evaluate(() => document.body.classList.contains('menu-open'))), 'arrastar para a esquerda fecha o menu');
   check(!errs.length, 'sem erros de JavaScript ' + errs.join(' | '));
   console.log(`\nRESULTADO: ${pass} ok, ${fail} falhas`);
   await b.close();

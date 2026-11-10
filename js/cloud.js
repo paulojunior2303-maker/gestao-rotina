@@ -14,7 +14,7 @@ const Cloud = {
   split(s) {
     const parts = {
       core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly },
-      tasks: { items: s.tasks }, projects: { items: s.projects }, occurrences: { items: s.occurrences }, events: { items: s.events },
+      tasks: { items: s.tasks }, projects: { items: s.projects }, occurrences: { items: s.occurrences }, events: { items: s.events }, feedbacks: { items: s.feedbacks || [] },
     };
     for (const [k, blocks] of Object.entries(s.days)) { const id = 'days-' + k.slice(0, 7); (parts[id] = parts[id] || { days: {} }).days[k] = blocks; }
     for (const r of s.indicators) { const id = 'ind-' + r.date.slice(0, 7); (parts[id] = parts[id] || { items: [] }).items.push(r); }
@@ -23,7 +23,7 @@ const Cloud = {
   join(docs) {
     const core = docs.core || {};
     const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, days: {}, indicators: [],
-      tasks: docs.tasks?.items || [], projects: docs.projects?.items || [], occurrences: docs.occurrences?.items || [], events: docs.events?.items || [] };
+      tasks: docs.tasks?.items || [], projects: docs.projects?.items || [], occurrences: docs.occurrences?.items || [], events: docs.events?.items || [], feedbacks: docs.feedbacks?.items || [] };
     for (const [id, d] of Object.entries(docs)) {
       if (id.startsWith('days-')) Object.assign(s.days, d.days || {});
       if (id.startsWith('ind-')) s.indicators.push(...(d.items || []));

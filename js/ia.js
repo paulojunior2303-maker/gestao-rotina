@@ -106,13 +106,37 @@ ${notes.trim() ? `Anotações do líder:\n"""\n${notes.trim()}\n"""` : ''}` });
   },
   /* Garante quebras de linha se a IA devolver o documento "corrido" */
   tidy(t) {
-    t = t.replace(/\r/g, '').trim();
+    t = t.replace(/\r/g, '').trim()
+      // Seções finais sempre em linha própria, com uma linha em branco antes
+      .replace(/[ \t]*\n?[ \t]*(Acordos|Próximos passos|Pendências|Encaminhamentos|Considerações finais):[ \t]*\n?/g, '\n\n$1:\n')
+      .replace(/\n{3,}/g, '\n\n').trim();
     if (t.split('\n').length > 3) return t;
     return t.replace(/\s+(Data:|Assunto:|Participantes:|Local:)/g, '\n$1')
       .replace(/\s+(\d{1,2}\.\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, '\n\n$1')
       .replace(/\s+([•*]\s)/g, '\n$1')
       .replace(/\s+(Pendências|Encaminhamentos|Considerações finais|Próximos passos)(:?)\s/g, '\n\n$1$2\n')
       .trim();
+  },
+
+  /* Feedback individual (comando /feedback do agente) */
+  TIPOS: { feedback: 'Feedback', orientacao: 'Orientação verbal', advertencia: 'Advertência formal' },
+  TONS: { positivo: 'Positivo', neutro: 'Neutro', melhorar: 'A melhorar' },
+  async feedback({ nome, tipo = 'feedback', tom = 'neutro', date, notes = '', transcript = '' }) {
+    const extra = tipo === 'feedback' ? '' : `Este registro é uma ${this.TIPOS[tipo].toUpperCase()}. Registre: motivo, ocorrência identificada, orientação transmitida, posicionamento do colaborador, comportamento esperado e medidas para evitar reincidência. Não confunda orientação verbal com advertência formal.`;
+    const system = this.system(`Tarefa: /feedback. Resuma a conversa individual da liderança com o colaborador ${nome}.
+Tom do registro: ${this.TONS[tom] || 'Neutro'} (muda a tonalidade do texto, nunca os fatos).
+${extra}
+Use só o que estiver na transcrição e nas anotações; identifique o colaborador pelo nome informado e não misture com outras pessoas.
+Responda em JSON com:
+- "resumo": o texto do registro, pronto para usar (normalmente 2 ou 3 parágrafos, separados por uma linha em branco: \\n\\n). Diferencie o que o colaborador relatou do que a liderança observou ou orientou. Se houver vários encaminhamentos, termine com uma seção "Acordos:" numa linha própria, com um tópico "• " por linha.
+- "acordos": compromissos assumidos e próximos passos confirmados, um por item, começando pelo responsável quando citado. Não inclua sugestões nem assuntos pendentes.`);
+    const r = await this.call({ system, timeout: 90000, parts: [{ text: `Colaborador: ${nome}
+Data: ${U.fmtDate(date || U.today())}
+Tipo: ${this.TIPOS[tipo]}
+${transcript.trim() ? `Transcrição da conversa (automática, pode ter erros; [mm:ss] = tempo):\n"""\n${transcript.trim()}\n"""` : ''}
+${notes.trim() ? `Anotações da liderança:\n"""\n${notes.trim()}\n"""` : ''}` }],
+      schema: { type: 'OBJECT', required: ['resumo', 'acordos'], properties: { resumo: { type: 'STRING' }, acordos: { type: 'ARRAY', items: { type: 'STRING' } } } } });
+    return { resumo: this.tidy(String(r.resumo || '')), acordos: (r.acordos || []).map(s => String(s).trim()).filter(Boolean) };
   },
 
   /* Comandos rápidos do agente sobre um texto pronto */
@@ -214,4 +238,79 @@ const Recorder = {
   text() { return this.parts.filter(p => p.text).map(p => `[${this.fmt(p.at)}] ${p.text}`).join('\n'); },
   reset() { this.parts = []; this.onUpdate = null; },
   emit() { if (this.onUpdate) this.onUpdate({ elapsed: this.running ? this.elapsed() : null, text: this.text(), pending: this.pending, failed: this.failed() }); },
+};
+
+/* Peças de tela reaproveitáveis: chave da IA no próprio formulário e gravação com transcrição ao vivo */
+const IAUI = {
+  keyRow() {
+    return IA.key() ? '' : `<div class="ia-keyrow"><label>Primeiro, cole a sua chave da IA (só uma vez ${Native.available() ? 'neste celular' : 'neste navegador'})</label>
+      <div class="inline-add"><input name="iaKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Chave do AI Studio"><button type="button" class="btn sm primary" data-ia-save>Salvar chave</button></div></div>`;
+  },
+  recHtml() {
+    return Recorder.supported() ? `<div class="ia-actions"><button type="button" class="btn primary rec-btn" data-rec>${U.icon('mic', 16)} Iniciar gravação</button><span class="rec-st small"></span></div>
+      <div class="live" hidden><div class="live-h"><span class="rec-dot"></span><strong>Transcrição</strong><small class="live-st muted"></small></div><div class="live-txt" aria-live="polite"></div></div>` : '';
+  },
+  /* Liga os botões. Devolve { say, needKey }. onStop é chamado depois de encerrar e terminar a transcrição. */
+  wire(el, { onStop }) {
+    const f = el.querySelector('form'), msg = el.querySelector('.ia-msg');
+    const say = (t, cls = '') => { if (!msg) return; msg.hidden = !t; msg.className = 'ia-msg small ' + cls; msg.innerHTML = t; };
+    const needKey = () => { if (IA.key()) return false; say('Cole e salve a sua chave da IA no campo acima primeiro.', 'err'); if (f.elements.iaKey) f.elements.iaKey.focus(); return true; };
+    const keySave = el.querySelector('[data-ia-save]');
+    if (keySave) keySave.onclick = async () => {
+      const k = f.elements.iaKey.value.trim();
+      if (!k) { say('Cole a chave no campo acima.', 'err'); return; }
+      S.settings.ia = { ...(S.settings.ia || {}), key: k }; commit();
+      keySave.disabled = true; say('Testando a chave…');
+      try { await IA.test(); el.querySelector('.ia-keyrow').remove(); say('Chave salva e funcionando.', 'ok'); }
+      catch (err) { S.settings.ia.key = ''; commit(); keySave.disabled = false; say(U.esc(err.message), 'err'); }
+    };
+    const btnRec = el.querySelector('[data-rec]'), st = el.querySelector('.rec-st');
+    const liveBox = el.querySelector('.live'), liveTxt = el.querySelector('.live-txt'), liveSt = el.querySelector('.live-st');
+    const update = ({ elapsed, text, pending, failed }) => {
+      if (elapsed !== null) st.textContent = Recorder.fmt(elapsed);
+      liveBox.hidden = false;
+      const atEnd = liveTxt.scrollTop + liveTxt.clientHeight >= liveTxt.scrollHeight - 30;
+      liveTxt.textContent = text || (Recorder.recording() ? 'A transcrição aparece aqui a cada ~40 segundos.' : '');
+      liveTxt.classList.toggle('muted', !text);
+      if (atEnd) liveTxt.scrollTop = liveTxt.scrollHeight;
+      liveSt.textContent = [pending ? `transcrevendo ${U.plural(pending, 'trecho')}…` : '', failed ? `${U.plural(failed, 'trecho')} sem transcrição (tenta de novo ao encerrar)` : ''].filter(Boolean).join(' · ');
+    };
+    if (btnRec) btnRec.onclick = async () => {
+      if (Recorder.recording()) {
+        btnRec.disabled = true;
+        await Recorder.stop();
+        btnRec.classList.remove('rec-on'); btnRec.innerHTML = `${U.icon('mic', 16)} Gravar mais`;
+        say('Gravação encerrada. Terminando a transcrição…');
+        await Recorder.finish();
+        btnRec.disabled = false;
+        if (Recorder.failed()) say(`${U.plural(Recorder.failed(), 'trecho não pôde', 'trechos não puderam')} ser transcritos. O restante será usado.`, 'err');
+        if (onStop) await onStop();
+        return;
+      }
+      if (needKey()) return;
+      try {
+        await Recorder.start(update);
+        btnRec.classList.add('rec-on'); btnRec.innerHTML = `${U.icon('stop', 16)} Encerrar gravação`;
+        say(`Gravando. Deixe o celular perto da conversa e ${Native.available() ? 'o app aberto (a tela fica acesa)' : 'esta aba aberta'}. Limite: ${Recorder.MAX_MIN} min.`);
+      } catch (err) { say('Não foi possível usar o microfone. Permita o acesso ao microfone e tente de novo.', 'err'); }
+    };
+    return { say, needKey };
+  },
+  /* Botões Natural / Compactar / Detalhar / Copiar / Compartilhar sobre um campo de texto */
+  toolsHtml() { return `<div class="ata-tools"><span class="muted small">Ajustar:</span><button type="button" class="btn sm" data-rw="natural">Natural</button><button type="button" class="btn sm" data-rw="compact">Compactar</button><button type="button" class="btn sm" data-rw="detalhado">Detalhar</button><button type="button" class="btn sm ghost" data-rw-copy>${U.icon('check', 14)} Copiar</button><button type="button" class="btn sm ghost" data-rw-share>${U.icon('upload', 14)} Compartilhar</button></div>`; },
+  wireTools(el, field, title, { say, needKey, onChange = () => {}, source = () => '' }) {
+    const f = el.querySelector('form');
+    el.querySelectorAll('[data-rw]').forEach(b => b.onclick = async () => {
+      const text = f.elements[field].value.trim();
+      if (!text) { say('Gere ou escreva o texto primeiro.', 'err'); return; }
+      if (needKey()) return;
+      const lbl = b.innerHTML; el.querySelectorAll('[data-rw]').forEach(x => { x.disabled = true; });
+      b.innerHTML = '<span class="spinner"></span>';
+      try { f.elements[field].value = (await IA.rewrite(text, b.dataset.rw, source())).trim(); onChange(); UI.toast('Texto ajustado.'); }
+      catch (err) { UI.toast(U.esc(err.message), 'error'); }
+      b.innerHTML = lbl; el.querySelectorAll('[data-rw]').forEach(x => { x.disabled = false; });
+    });
+    const rc = el.querySelector('[data-rw-copy]'); if (rc) rc.onclick = () => { const t = f.elements[field].value.trim(); if (t) Events.copy(t); };
+    const rs = el.querySelector('[data-rw-share]'); if (rs) rs.onclick = () => { const t = f.elements[field].value.trim(); if (t) Events.share(t, title()); };
+  },
 };

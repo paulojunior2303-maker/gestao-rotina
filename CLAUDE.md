@@ -29,7 +29,14 @@ e diga o que mudou e como testar no celular.
   Tipografia: Geist (interface) e Bricolage Grotesque (títulos e números), em `fonts/` (OFL), embutidas no arquivo único pelo `build.py`.
   A "régua do dia" (`H.dayRail`, em `js/ui.js`) é o elemento de assinatura: Dashboard e Agenda. `tests/theme.test.js` verifica o contraste.
 - **Indicadores fica oculto** por padrão (`settings.showIndicadores`, chave em Configurações → Aparência). Oculto também esconde Metas e o card de metas do Dashboard.
-- **Planejamento semanal e mensal começam em branco** (o usuário monta). Explicação detalhada no Guia de uso (`#g-semanal`, `#g-mensal`; botão “Como funciona” usa `guideOpen`).
+- **Navegação só pelo menu lateral** (☰ ou arrastar da borda esquerda). A barra inferior foi removida a pedido do usuário: não recriar.
+- **Agenda unificada** (`js/views/agenda.js`): abas Dia (cronograma + faixa da semana `Cal.strip`), Semana (`WeekPlan`, em `semanal.js`: foco/checklist + compromissos e prazos de cada dia)
+  e Mês (`MonthPlan`, em `mensal.js`: calendário + metas das 4 semanas, que começam em branco). `#semanal`/`#mensal` antigos redirecionam para a Agenda.
+- **Calendário** (`js/calendar.js`, `Cal`) é o recurso principal: no Início e em Agenda → Mês. Mês/semana, bolinhas no celular e títulos no computador,
+  lista do dia escolhido, arrastar para trocar de mês, "Hoje", "+ Novo" (reunião, compromisso, tarefa, atividade). Reuniões têm cor própria (`--t-reuniao`).
+- **Intervalo de almoço**: `settings.breakMode` = flexivel (padrão; botão "Intervalo agora" na Agenda, empurra o resto) | fixo (bloco da rotina) | nenhum.
+- **Feedbacks** (`js/views/feedbacks.js`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
+  Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
   (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).

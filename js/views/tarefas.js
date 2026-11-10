@@ -73,9 +73,9 @@ Views.tarefas = {
 };
 
 const Tasks = {
-  form(x) {
+  form(x, defaults = {}) {
     const isNew = !x;
-    x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today() };
+    x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
     UI.form({
       title: isNew ? 'Nova tarefa' : 'Editar tarefa',
       wide: true,

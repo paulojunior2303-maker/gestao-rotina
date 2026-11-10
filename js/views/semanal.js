@@ -1,7 +1,7 @@
 'use strict';
-/* Planejamento semanal — foco de gestão por dia + checklist com progresso */
-Views.semanal = {
-  title: 'Planejamento semanal', icon: 'week', nav: 'Planejamento semanal',
+/* Agenda → Semana: para cada dia, o foco e o checklist (que se repetem toda semana), os compromissos,
+   reuniões e prazos do dia e o andamento da agenda */
+const WeekPlan = {
   render() {
     const ws = App.ui.weekStart || U.weekStart(U.today());
     const t = U.today();
@@ -28,18 +28,18 @@ Views.semanal = {
           <button class="icon-btn" data-act="wkFocus" data-d="${d}" title="${f && f.title ? 'Editar foco' : 'Definir foco'}" aria-label="${f && f.title ? 'Editar foco' : 'Definir foco'}">${U.icon('edit', 15)}</button>
         </div>
         ${items.length ? `${H.bar(p, p === 100 ? 'var(--green)' : null)}<small class="muted">${dn} de ${items.length} concluídos</small>` : ''}
+        ${(() => { const its = Cal.itemsOn(k); return its.length ? `<ul class="wk-items">${its.map(i => `<li class="t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" data-act="${i.act}" data-id="${i.id}"><i></i><span>${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span></li>`).join('')}</ul>` : ''; })()}
         <ul class="checklist">${items.map(i => `<li><label class="check"><input type="checkbox" data-change="wkCheck" data-id="${i.id}" ${chk[i.id] ? 'checked' : ''}><span>${U.esc(i.text)}</span></label><button class="icon-btn xs" data-act="wkItemEdit" data-d="${d}" data-id="${i.id}" title="Editar item">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
         <button class="btn sm ghost add-item" data-act="wkItemAdd" data-d="${d}">${U.icon('plus', 15)} Adicionar item</button>
         <div class="wk-foot">
-          <a href="#agenda" data-act="goAgenda" data-d="${k}" class="link small">Agenda do dia: ${ag.pct === null ? 'sem dados' : ag.pct + '%'}</a>
-          ${dueTasks ? `<a href="#tarefas" class="small dl dl-soon">${U.plural(dueTasks, 'prazo')}</a>` : ''}
+          <a href="#agenda" data-act="goAgenda" data-d="${k}" class="link small">Abrir o dia${ag.pct === null ? '' : ` · ${ag.pct}%`}</a>
         </div>
       </div>`;
     };
 
     return `
     <div class="plan-intro">
-      <p>Dê um <strong>foco</strong> a cada dia útil e liste o que não pode faltar. A lista se repete toda semana; as marcações valem só para a semana exibida.</p>
+      <p>A semana inteira num lugar: compromissos e prazos de cada dia, o <strong>foco</strong> e o que não pode faltar (a lista se repete toda semana; as marcações valem só para a semana exibida).</p>
       <button class="link" data-act="guideOpen" data-id="semanal">Como funciona</button>
     </div>
     <div class="toolbar">
