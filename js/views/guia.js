@@ -32,7 +32,7 @@ const Guide = {
       { icon: 'dashboard', color: 'var(--primary)', title: 'Bem-vindo ao seu centro de controle',
         text: 'Em poucos toques você vê o que fazer hoje, o que está atrasado, o que cobrar da equipe e quais projetos precisam de atenção.',
         mock: m.nav(),
-        points: ['Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. No celular, também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
+        points: ['No celular, a <strong>barra de baixo</strong> leva às telas do dia a dia: Início, Agenda, Tarefas e Imprevistos.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
       { icon: 'dashboard', color: 'var(--primary)', title: 'Início: o resumo do seu dia',
         text: 'A primeira tela mostra a situação geral, atualizada automaticamente.',
         mock: m.dash(),
@@ -166,6 +166,7 @@ Views.guia = {
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
     ${sec('nav', 'menu', 'Navegação', li([
+      'No celular, a <strong>barra de baixo</strong> tem os atalhos do dia a dia: Início, Agenda, Tarefas e Imprevistos.',
       'Toque em <strong>☰</strong> (canto superior esquerdo) para abrir o menu com todas as telas. No celular, também dá para <strong>arrastar o dedo a partir da borda esquerda</strong>; para fechar, arraste para a esquerda ou toque fora.',
       'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões, Imprevistos), <strong>Equipe e projetos</strong> (Feedbacks, Projetos) e <strong>Ajustes</strong>.',
       'Um <strong>ponto vermelho</strong> no ☰ e os <strong>números</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',

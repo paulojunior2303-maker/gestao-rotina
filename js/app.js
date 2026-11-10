@@ -6,6 +6,8 @@ const NAV_GROUPS = [
   ['Equipe e projetos', ['feedbacks', 'projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
+/* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
+const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => id !== 'indicadores' || !!(S && S.settings && S.settings.showIndicadores);
 
 const App = {
@@ -30,6 +32,7 @@ const App = {
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].nav}</span>${badge(id)}</a>`).join('');
     document.getElementById('storage-status').innerHTML =
       dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'

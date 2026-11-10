@@ -88,7 +88,9 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   console.log('\n[1] Dashboard e navegação');
   check((await p.textContent('#storage-status')).includes('aparelho'), 'status "Dados salvos neste aparelho"');
   await overflow('01-dashboard');
-  check(await p.locator('#bottom-nav').count() === 0, 'sem barra embaixo: navegação só pelo menu lateral');
+  check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0, 'barra de baixo com Início, Agenda, Tarefas e Imprevistos, sem o botão Menu');
+  await tap('#bottom-nav a[href="#tarefas"]'); check(await p.textContent('#page-title') === 'Gestão de tarefas', 'barra de baixo → Tarefas');
+  await tap('#bottom-nav a[href="#dashboard"]');
   check(await p.locator('.cal-home .calx-grid').count() === 1, 'calendário em destaque na tela inicial');
   await tap('#menu-btn'); await W(300);
   check(await p.evaluate(() => document.body.classList.contains('menu-open')), '☰ abre o menu lateral');

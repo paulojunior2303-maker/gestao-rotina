@@ -149,6 +149,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .topbar h1 { font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
 .top-clock { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .icon-btn.menu-btn { display: none; position: relative; }
+.bottom-nav { display: none; }
 /* Canal de teste */
 .teste-tag { order: 10; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 9px; border-radius: 99px; background: #e3a043; color: #2a1a04; }
 body.canal-teste .topbar { box-shadow: inset 0 3px 0 #e3a043; }
@@ -669,9 +670,16 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .main { margin-left: 0; }
   .icon-btn.menu-btn { display: inline-grid; margin-left: -6px; }
   .topbar { padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
-  .view { padding: 18px 16px calc(40px + env(safe-area-inset-bottom)); gap: 16px; }
+  .view { padding: 18px 16px calc(112px + env(safe-area-inset-bottom)); gap: 16px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  #toast-root { bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .bottom-nav { display: flex; position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; padding: 6px; gap: 2px; border-radius: 22px; background: color-mix(in srgb, var(--side-bg) 90%, transparent); backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); border: 1px solid rgba(255, 255, 255, .07); box-shadow: 0 12px 34px rgba(0, 0, 0, .35); }
+  .bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px 3px; font-size: 11px; color: #a49db6; position: relative; border-radius: 16px; transition: color .2s; }
+  .bn-ic { display: grid; place-items: center; width: 52px; height: 28px; border-radius: 14px; transition: background .25s var(--ease), color .2s; }
+  .bottom-nav .active { color: #fff; font-weight: 600; }
+  .bottom-nav .active .bn-ic { background: rgba(148, 97, 245, .26); color: #e2d6ff; }
+  .bottom-nav a:active .bn-ic { transform: scale(.92); }
+  .bottom-nav .nav-badge { position: absolute; top: 0; right: calc(50% - 28px); font-size: 10px; padding: 0 5px; line-height: 16px; border: 2px solid var(--side-bg); }
+  #toast-root { bottom: calc(92px + env(safe-area-inset-bottom)); }
   .occ-list { grid-template-columns: 1fr; }
   .today-top { align-items: flex-start; }
 }

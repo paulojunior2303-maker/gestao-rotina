@@ -18,7 +18,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.waitForTimeout(500); if (await p.locator('.tour-wrap').count()) { await p.locator('[data-tour=skip]').click(); await p.waitForTimeout(300); }
 
   // ---- Agenda (intervalo em horário fixo)
-  assert(await p.locator('.bottom-nav, #bottom-nav').count() === 0, 'sem barra de navegação embaixo (só o menu lateral)');
+  assert(!(await p.locator('#bottom-nav').isVisible()), 'no computador a barra de baixo fica escondida (menu lateral fixo)');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });
   await go('agenda');
   assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes .tab').count() === 3, 'Agenda com Dia, Semana e Mês');
