@@ -36,7 +36,7 @@ const Native = {
       CapApp.exitApp();
     });
     // Ao voltar ao app, atualiza horários e atrasos
-    CapApp.addListener('resume', () => { if (!document.querySelector('.modal-wrap')) App.render(); Reminders.schedule(); });
+    CapApp.addListener('resume', () => { if (!document.querySelector('.modal-wrap')) App.render(); Reminders.schedule(); Drive.auto(); });
   },
 
   blobToBase64(blob) {

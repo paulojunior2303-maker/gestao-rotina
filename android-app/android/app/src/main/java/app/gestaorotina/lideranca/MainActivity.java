@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(PrinterPlugin.class);
         registerPlugin(SistemaPlugin.class);
+        registerPlugin(GooglePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

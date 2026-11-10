@@ -1,5 +1,7 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+// meta.updatedAt muda ao importar (é uma alteração local, que sobe para o Google Drive): compara o resto
+const norm = j => { const o = JSON.parse(j); if (o.meta) delete o.meta.updatedAt; return JSON.stringify(o); };
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 const phone = { viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, isMobile: true, hasTouch: true, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo' };
 (async () => {
@@ -55,7 +57,7 @@ const phone = { viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, 
   check(confirmTxt.includes('5 tarefas') && confirmTxt.includes('2 projetos'), `confirmação mostra o resumo: "${confirmTxt.match(/\d+ tarefas[^.]*/)[0]}"`);
   await w.locator('.modal-wrap.open [data-yes]').click(); await w.waitForTimeout(500);
   const snapW = await w.evaluate(() => JSON.stringify(S));
-  check(snapW === snapA, 'dados na web idênticos aos do APK (código com quebras de linha e texto extra)');
+  check(norm(snapW) === norm(snapA), 'dados na web idênticos aos do APK (código com quebras de linha e texto extra)');
   await w.evaluate(() => location.hash = '#tarefas'); await w.waitForTimeout(300);
   check(await w.locator('.task', { hasText: 'Minha tarefa real' }).count() === 1, 'tarefa aparece na web');
   await w.reload(); await w.waitForTimeout(600); await w.evaluate(() => location.hash = '#tarefas'); await w.waitForTimeout(300);
@@ -70,7 +72,7 @@ const phone = { viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, 
   await w.setInputFiles('input[data-change=dataImport]', { name: 'backup-gestao-rotina (1).bin', mimeType: 'application/octet-stream', buffer: Buffer.from(snapA) });
   await w.waitForTimeout(500);
   await w.locator('.modal-wrap.open [data-yes]').click(); await w.waitForTimeout(400);
-  check(await w.evaluate(() => JSON.stringify(S)) === snapA, 'importa backup mesmo com tipo de arquivo desconhecido');
+  check(norm(await w.evaluate(() => JSON.stringify(S))) === norm(snapA), 'importa backup mesmo com tipo de arquivo desconhecido');
   await w.setInputFiles('input[data-change=dataImport]', { name: 'foto.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([255, 216, 255, 0, 1]) });
   await w.waitForTimeout(400);
   check((await w.locator('.toast').last().textContent()).includes('Não é um backup'), 'arquivo errado → aviso claro, nada é alterado');

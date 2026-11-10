@@ -33,6 +33,11 @@ e diga o que mudou e como testar no celular.
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
   (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).
+- **Google Drive** (`js/drive.js`, `Drive`): arquivo `gestao-rotina-dados.json` na pasta "Gestão de Rotina" do Drive do usuário (escopo `drive.file`).
+  Vale a versão com `meta.updatedAt` mais novo (`Store.save` marca o horário; dados vindos de fora usam `touch: false`). Sincroniza ao abrir/voltar e ~2,5 s após cada alteração.
+  Android: `GooglePlugin.java` (AuthorizationClient do play-services-auth; cliente OAuth Android = pacote + SHA-1 da chave de release).
+  Site: Google Identity Services com o cliente Web (token ~1 h em sessionStorage; depois aparece "Sincronizar"). Projeto Google Cloud do usuário.
+  `tests/drive.test.js` simula a API do Drive. A conexão (e-mail, ids) fica em `localStorage['gr-drive']`, por aparelho.
 - **Aviso de versão nova** (`Updater`): o APK compara `App.getInfo().version` com a última Release do GitHub.
 - **Reuniões** (`js/views/reunioes.js`, menu Dia a dia; dá para iniciar antes do horário): são `S.events` com `reuniao: true` e/ou `pautas`; `registro` = tratadas + combinados + resumo.
   Combinados podem virar tarefas. Formulário/visualização/registro em `Events` (`js/views/mensal.js`).

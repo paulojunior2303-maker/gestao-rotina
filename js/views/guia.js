@@ -4,6 +4,7 @@
 const Guide = {
   /* Onde os dados ficam, conforme o modo em que o app está rodando */
   whereData() {
+    if (typeof Drive !== 'undefined' && Drive.connected()) return `${Native.available() ? 'neste celular' : 'neste navegador'} e no seu Google Drive (iguais no app e no site)`;
     if (Native.available()) return 'neste celular';
     if (Cloud.state === 'on') return 'na sua conta Claude (área privada), iguais no celular e no computador';
     return 'neste navegador';
@@ -293,6 +294,7 @@ Views.guia = {
 
     ${sec('dados', 'download', 'Seus dados e backup', li([
       `Os dados ficam salvos ${Guide.whereData()}.`,
+      '<strong>Google Drive</strong> (recomendado): em Configurações → Google Drive, toque em <strong>Conectar com o Google</strong> no app e no site, com a mesma conta. A partir daí os dados ficam iguais nos dois e com cópia no seu Drive (pasta “Gestão de Rotina”). Vale sempre a alteração mais recente.',
       '<strong>Passar dados do celular para a web (ou o contrário):</strong> em Configurações → Dados, toque em <strong>Enviar meus dados</strong> → Copiar ou Enviar código. Mande o código para você mesmo (WhatsApp na conversa “Você”, e-mail ou Keep). Na outra versão, abra <strong>Receber dados</strong>, cole e confirme.',
       '<strong>Exportar backup (arquivo)</strong> gera um arquivo com tudo. Guarde no Drive ou envie para você mesmo. <strong>Importar backup</strong> restaura o arquivo (substitui os dados atuais).',
       Native.available() ? '<strong>Atualizar o app</strong>: quando houver versão nova, aparece um aviso no Início com o botão <strong>Baixar</strong>. Instale por cima, sem desinstalar: os dados são mantidos. Desinstalar apaga os dados.' : 'Para usar em outro aparelho, exporte aqui e importe lá.',

@@ -28,8 +28,13 @@ const App = {
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${id === 'dashboard' ? 'Início' : id === 'agenda' ? 'Agenda' : Views[id].nav}</span>${badge(id)}</a>`).join('')
       + `<button data-act="openMenu" class="${BOTTOM.includes(this.route) ? '' : 'active'}"><span class="bn-ic">${U.icon('menu', 20)}</span><span>Menu</span></button>`;
+    const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     document.getElementById('storage-status').innerHTML =
-      Cloud.state === 'on' ? '<span class="dot-ok"></span> Dados salvos na sua conta (privados)'
+      dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
+      : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
+      : dv === 'needs-auth' ? '<span class="dot-wait"></span> Google Drive: toque em Sincronizar'
+      : dv === 'error' ? '<span class="dot-err"></span> Google Drive: erro ao sincronizar'
+      : Cloud.state === 'on' ? '<span class="dot-ok"></span> Dados salvos na sua conta (privados)'
       : Cloud.state === 'connecting' ? '<span class="dot-wait"></span> Conectando…'
       : Store.persistent ? `<span class="dot-ok"></span> Dados salvos neste ${Native.available() ? 'aparelho' : 'navegador'}`
       : '<span class="dot-err"></span> Armazenamento indisponível — os dados serão perdidos ao fechar';
@@ -51,7 +56,7 @@ const App = {
     const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
       : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
     try {
-      root.innerHTML = warn + demo + view.render(this.params);
+      root.innerHTML = warn + Drive.banner() + demo + view.render(this.params);
       if (view.mount) view.mount(root);
     } catch (e) {
       console.error(e);
@@ -125,6 +130,8 @@ const App = {
     setTimeout(() => document.body.classList.remove('intro'), 1600);
     Tutorial.maybeShow();
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
+    Drive.auto();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
     if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },

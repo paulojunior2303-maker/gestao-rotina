@@ -157,13 +157,16 @@ const Store = {
     if (st.theme === 'claro') st.theme = 'escuro';   // o novo visual nasce escuro; o claro continua disponível
   },
 
-  save({ cloud = true } = {}) {
+  /* touch = alteração feita aqui (marca o horário e envia ao Google Drive). Dados vindos de fora usam touch: false. */
+  save({ cloud = true, touch = true } = {}) {
+    if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }
       catch (e) { this.persistent = false; }
     }
     if (cloud) Cloud.schedule();
     if (typeof Reminders !== 'undefined') Reminders.schedule();
+    if (touch && typeof Drive !== 'undefined') Drive.schedule();
     if (Native.available()) Native.persist();
     if (!this.persistent && Cloud.state !== 'on' && Cloud.state !== 'connecting' && !this.warned) {
       this.warned = true;
@@ -173,10 +176,10 @@ const Store = {
   /* Há onde guardar os dados de forma duradoura? */
   isPersistent() { return Cloud.state === 'on' || (this.persistent && !Cloud.available()); },
 
-  replace(newState, { fromCloud = false } = {}) {
+  replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
-    this.save({ cloud: !fromCloud });
+    this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 
   /* ---------- Dados de demonstração (sempre marcados com demo: true) ---------- */
