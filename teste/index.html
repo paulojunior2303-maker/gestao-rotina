@@ -161,11 +161,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .top-clock { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .icon-btn.menu-btn { display: none; position: relative; }
 .bottom-nav { display: none; }
+/* Botão flutuante "+" (cria o item da tela atual) */
+.fab { position: fixed; right: 32px; bottom: 32px; z-index: 31; width: 58px; height: 58px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: linear-gradient(145deg, var(--accent), var(--primary)); box-shadow: 0 10px 26px rgba(91, 40, 200, .45), inset 0 1px 0 rgba(255, 255, 255, .2); transition: transform .18s var(--ease), box-shadow .2s; }
+.fab[hidden] { display: none; }
+.fab:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(91, 40, 200, .5), inset 0 1px 0 rgba(255, 255, 255, .2); }
+.fab:active { transform: scale(.92); }
+.fab:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 3px; }
+body.menu-open .fab { display: none; }
 /* Canal de teste */
 .teste-tag { order: 10; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 9px; border-radius: 99px; background: #e3a043; color: #2a1a04; }
 body.canal-teste .topbar { box-shadow: inset 0 3px 0 #e3a043; }
 .menu-btn.has-badge::after { content: ""; position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: #f0566a; box-shadow: 0 0 0 2px var(--bg); }
-.view { padding: 28px 36px 56px; display: flex; flex-direction: column; gap: 20px; max-width: 1360px; width: 100%; }
+.view { padding: 28px 36px 110px; display: flex; flex-direction: column; gap: 20px; max-width: 1360px; width: 100%; }
 .view.enter { animation: viewIn .26s var(--ease); }
 @keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .backdrop { display: none; }
@@ -681,7 +688,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .main { margin-left: 0; }
   .icon-btn.menu-btn { display: inline-grid; margin-left: -6px; }
   .topbar { padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
-  .view { padding: 18px 16px calc(112px + env(safe-area-inset-bottom)); gap: 16px; }
+  .view { padding: 18px 16px calc(170px + env(safe-area-inset-bottom)); gap: 16px; }
+  .fab { right: 18px; bottom: calc(92px + env(safe-area-inset-bottom)); width: 56px; height: 56px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .bottom-nav { display: flex; position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; padding: 6px; gap: 2px; border-radius: 22px; background: color-mix(in srgb, var(--side-bg) 90%, transparent); backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); border: 1px solid rgba(255, 255, 255, .07); box-shadow: 0 12px 34px rgba(0, 0, 0, .35); }
   .bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px 3px; font-size: 11px; color: #a49db6; position: relative; border-radius: 16px; transition: color .2s; }
@@ -721,10 +729,11 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .li:has(.li-side) { flex-wrap: wrap; gap: 4px 8px; }
   .li:has(.li-side) .li-main { flex-basis: 100%; }
   .li-side { flex-direction: row; align-items: center; gap: 8px; width: 100%; justify-content: space-between; }
-  .blk { flex-wrap: wrap; }
-  .blk-time { width: 72px; padding: 10px 8px 8px 14px; }
-  .blk-body { flex: 1 1 calc(100% - 72px); padding: 10px 12px 8px 4px; }
-  .blk-actions { width: 100%; justify-content: flex-end; border-top: 1px solid var(--line); padding: 4px 8px; }
+  .blk-time { width: 64px; padding: 10px 6px 10px 13px; }
+  .blk-time strong { font-size: 15px; }
+  .blk-body { padding: 10px 6px 10px 2px; }
+  .blk-head { margin-bottom: 2px; }
+  .blk-actions { padding: 0 6px 0 0; gap: 2px; }
   .blk-break .blk-time { width: auto; flex-direction: row; gap: 6px; white-space: nowrap; }
   .blk-break .blk-actions { display: none; }
   .blk-break .blk-body { flex: 1; }
@@ -924,20 +933,26 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-agenda .bar { flex: 1 1 100%; order: 3; height: 5px; }
 
 /* Faixa da semana (Agenda → Dia) */
-.calx-strip { display: flex; align-items: center; gap: 4px; touch-action: pan-y; }
-.calx-s { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 2px 6px; border-radius: 12px; border: 1px solid transparent; background: var(--surface); color: var(--text); cursor: pointer; transition: background .15s, border-color .15s; }
-.calx-s small { font-size: 11px; color: var(--muted); }
-.calx-s strong { font-family: var(--font-d); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.calx-s.off { background: transparent; }
-.calx-s.today strong { color: var(--link); }
-.calx-s.sel { background: var(--primary); border-color: transparent; color: #fff; }
-.calx-s.sel small, .calx-s.sel.today strong { color: #fff; }
-.calx-s .calx-dots { display: flex; min-height: 6px; }
-.calx-s.sel .calx-dots i { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .7); }
 
 /* Agenda: Dia | Semana | Mês */
-.agenda-modes { align-self: flex-start; }
-.agenda-modes .tab { padding: 7px 18px; font-size: 13.5px; }
+.mt-tabs { align-self: flex-start; }
+.mt-tabs .tab { padding: 7px 18px; font-size: 13.5px; }
+.tab-n { font-size: 11.5px; font-weight: 600; min-width: 20px; padding: 0 6px; line-height: 18px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+/* Agenda (tela única) */
+.ag-cal { padding-bottom: 14px; }
+.calx-exp { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 6px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 560; cursor: pointer; border-radius: 10px; }
+.calx-exp:hover { color: var(--text); background: var(--surface-2); }
+.ag-day { display: flex; flex-direction: column; gap: 12px; }
+.ag-head { display: flex; align-items: flex-end; gap: 12px; }
+.ag-head-t small { font-size: 12.5px; }
+.ag-head-t h2 { margin: 1px 0 2px; font-size: 22px; }
+.ag-head-t p { margin: 0; }
+.blk-it { min-height: 54px; cursor: pointer; }
+.blk-it .blk-time strong { font-size: 14.5px; }
+.blk-it .blk-head { margin-bottom: 2px; }
+.blk-kind { color: var(--muted); font-size: 12px; }
+.blk-it .blk-actions { color: var(--muted); }
+.blk-it.st-concluida .blk-title { text-decoration: line-through; color: var(--muted); }
 .wk-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .wk-items li { display: flex; align-items: center; gap: 7px; font-size: 12.5px; padding: 4px 8px; border-radius: 8px; background: var(--surface-2); cursor: pointer; min-width: 0; }
 .wk-items li i { width: 7px; height: 7px; border-radius: 50%; background: var(--t-evento); flex-shrink: 0; }
@@ -988,11 +1003,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .calx-dots { display: flex; }
   .calx-legend { font-size: 11px; gap: 4px 10px; }
   .calx-day-h h3 { font-size: 19px; }
-  .agenda-modes { align-self: stretch; display: flex; }
-  .agenda-modes .tab { flex: 1; justify-content: center; }
-  .calx-strip .icon-btn { width: 28px; flex-shrink: 0; }
-  .calx-s { padding: 6px 0 5px; }
-  .calx-s strong { font-size: 16px; }
+  .mt-tabs { align-self: stretch; display: flex; }
+  .mt-tabs .tab { flex: 1; justify-content: center; }
   .fb-people { grid-template-columns: minmax(0, 1fr); }
   .fb-person .chip { display: none; }
 }
@@ -1030,6 +1042,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
       <main id="view" class="view"></main>
     </div>
     <nav class="bottom-nav" id="bottom-nav" aria-label="Atalhos"></nav>
+    <button class="fab" id="fab" type="button" hidden><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>
   <div id="modal-root"></div>
   <div id="toast-root"></div>
@@ -1097,6 +1110,8 @@ const U = (() => {
     trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
     left: '<path d="M15 18l-6-6 6-6"/>',
     right: '<path d="M9 18l6-6-6-6"/>',
+    down: '<path d="M6 9l6 6 6-6"/>',
+    up: '<path d="M18 15l-6-6-6 6"/>',
     menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
     x: '<path d="M18 6 6 18M6 6l12 12"/>',
     download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
@@ -1185,6 +1200,7 @@ const Store = {
         alertDays: 2,
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
+        showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
@@ -2914,9 +2930,10 @@ const Charts = (() => {
 </script>
   <script>/* js/calendar.js */
 'use strict';
-/* Calendário — recurso principal do app (Início e Agenda → Mês).
+/* Calendário — recurso principal do app (Início e Agenda).
    Padrão mobile: mês compacto em cima (bolinhas coloridas por tipo; no computador, títulos dentro dos dias)
-   e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje". */
+   e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje".
+   Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
   TYPES: { reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Imprevisto' },
   WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
@@ -2926,14 +2943,20 @@ const Cal = {
     const out = [];
     S.events.filter(e => e.date === k).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
-    S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
+    if (S.settings.showProjetos) S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
     return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
   },
 
   st(id) {
     App.ui.cal = App.ui.cal || {};
-    return App.ui.cal[id] = App.ui.cal[id] || { mode: 'month', sel: U.today(), anchor: U.today() };
+    return App.ui.cal[id] = App.ui.cal[id] || { mode: id === 'agenda' ? 'week' : 'month', sel: U.today(), anchor: U.today() };
+  },
+  /* Mantém o calendário mostrando o dia escolhido (Agenda) */
+  sync(id, k) {
+    const s = this.st(id); s.sel = k;
+    const r = this.range(s);
+    if (k < r.cells[0] || k > r.cells[r.cells.length - 1] || (s.mode === 'month' && U.monthKey(k) !== r.mk)) s.anchor = k;
   },
   mondayOf(k) { return U.weekStart(k); },
   range(s) {
@@ -2977,7 +3000,8 @@ const Cal = {
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
-      <div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', projeto: 'Projeto', imprevisto: 'Imprevisto' }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>
+      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto' }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
+      ${id === 'agenda' ? `<button class="calx-exp" data-act="calMode" data-cal="${id}" data-v="${s.mode === 'week' ? 'month' : 'week'}" aria-expanded="${s.mode === 'month'}">${s.mode === 'week' ? `${U.icon('down', 16)} Ver o mês inteiro` : `${U.icon('up', 16)} Mostrar só a semana`}</button>` : ''}
     </div>`;
   },
 
@@ -2991,8 +3015,6 @@ const Cal = {
     return `<div class="calx-day">
       <div class="calx-day-h">
         <div><small class="muted">${when}</small><h3>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h3></div>
-        <span class="grow"></span>
-        <button class="btn sm primary" data-act="calAdd" data-k="${k}">${U.icon('plus', 15)} Novo</button>
       </div>
       ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}</span>
@@ -3006,15 +3028,6 @@ const Cal = {
     </div>`;
   },
 
-  /* Faixa da semana (Agenda → Dia): troca o dia com um toque */
-  strip(k) {
-    const a = this.mondayOf(k), t = U.today();
-    return `<div class="calx-strip" data-swipe="strip">
-      <button class="icon-btn" data-act="agShift" data-n="-7" aria-label="Semana anterior">${U.icon('left')}</button>
-      ${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = U.addDays(a, i), items = this.itemsOn(d); return `<button class="calx-s ${d === k ? 'sel' : ''} ${d === t ? 'today' : ''} ${D.isWorkday(d) ? '' : 'off'}" data-act="agDay" data-k="${d}"><small>${this.WD[i]}</small><strong>${U.parse(d).getDate()}</strong><span class="calx-dots">${items.slice(0, 3).map(x => `<i class="t-${x.type}"></i>`).join('')}</span></button>`; }).join('')}
-      <button class="icon-btn" data-act="agShift" data-n="7" aria-label="Próxima semana">${U.icon('right')}</button>
-    </div>`;
-  },
 };
 
 Object.assign(Actions, {
@@ -3022,26 +3035,43 @@ Object.assign(Actions, {
     const s = Cal.st(cal);
     s.sel = k;
     if (s.mode === 'month' && U.monthKey(k) !== U.monthKey(s.anchor)) s.anchor = k;
+    if (cal === 'agenda') App.ui.agendaDate = k;
     App.render();
   },
   calNav({ cal, n }) {
     const s = Cal.st(cal), t = U.today();
-    if (s.mode === 'week') s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
-    else s.anchor = U.addMonths(U.monthKey(s.anchor), Number(n)) + '-01';
-    const r = Cal.range(s);
-    s.sel = t >= r.from && t <= r.to ? t : (s.mode === 'week' ? r.from : U.monthStart(r.mk));
+    if (s.mode === 'week') {
+      s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
+      // Na Agenda, mantém o mesmo dia da semana (ou hoje, se a semana for a atual)
+      const r = Cal.range(s);
+      s.sel = t >= r.from && t <= r.to ? t : cal === 'agenda' ? U.addDays(s.sel, Number(n) * 7) : r.from;
+    } else {
+      s.anchor = U.addMonths(U.monthKey(s.anchor), Number(n)) + '-01';
+      const r = Cal.range(s);
+      s.sel = t >= r.from && t <= r.to ? t : U.monthStart(r.mk);
+    }
+    if (cal === 'agenda') App.ui.agendaDate = s.sel;
     App.render();
   },
-  calToday({ cal }) { const s = Cal.st(cal); s.anchor = s.sel = U.today(); App.render(); },
+  calToday({ cal }) { const s = Cal.st(cal); s.anchor = s.sel = U.today(); if (cal === 'agenda') App.ui.agendaDate = s.sel; App.render(); },
   calMode({ cal, v }) { const s = Cal.st(cal); s.mode = v; s.anchor = s.sel; App.render(); },
-  /* "+ Novo" no dia escolhido */
-  calAdd({ k }) {
-    UI.sheet(`Novo em ${U.fmtShort(k)}`, [
+  /* Botão flutuante "+" no Início e na Agenda: escolhe o que criar (no dia escolhido) */
+  quickAdd({ k, from }) {
+    const t = U.today(); k = k || t;
+    const onAgenda = from === 'agenda';
+    const dated = onAgenda || k !== t;   // prazo da tarefa: só se o dia foi escolhido
+    const breakOk = onAgenda && (S.settings.breakMode || 'fixo') === 'flexivel' && !D.dayBlocks(k).some(b => D.isBreak(b) && b.status !== 'cancelada');
+    const activity = { label: 'Atividade na agenda', hint: 'Um horário no cronograma do dia', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
+    const items = [
+      { label: dated ? 'Tarefa com prazo neste dia' : 'Tarefa', icon: 'tasks', onClick: () => Tasks.form(null, dated ? { dueDate: k } : {}) },
       { label: 'Reunião', hint: 'Com pauta, gravação e ata', icon: 'users', onClick: () => Events.form(null, k, { reuniao: true }) },
+      { label: 'Feedback', hint: 'Conversa individual com o colaborador', icon: 'chat', onClick: () => FB.form(null) },
+      { label: 'Imprevisto', hint: onAgenda ? 'E já encaixa na agenda' : 'Demanda urgente', icon: 'alert', onClick: () => onAgenda ? Actions.agImprevisto() : Occ.form(null) },
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
-      { label: 'Tarefa com prazo neste dia', icon: 'tasks', onClick: () => Tasks.form(null, { dueDate: k }) },
-      { label: 'Atividade na agenda do dia', icon: 'clock', onClick: () => { App.ui.agendaDate = k; App.ui.agendaMode = 'dia'; App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } },
-    ]);
+    ];
+    if (onAgenda) items.unshift(activity); else items.push(activity);
+    if (breakOk) items.splice(1, 0, { label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
+    UI.sheet(k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`, items);
   },
 });
 
@@ -3057,7 +3087,7 @@ Object.assign(Actions, {
     const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy); sx = null;
     if (Math.abs(dx) < 50 || dy > Math.abs(dx) * 0.7) return;
     const id = el.dataset.swipe, n = dx < 0 ? 1 : -1;
-    if (id === 'strip') Actions.agShift({ n: n * 7 }); else Actions.calNav({ cal: id, n });
+    Actions.calNav({ cal: id, n });
   }, { passive: true });
 })();
 
@@ -3133,6 +3163,7 @@ const XLSX = (() => {
 /* Dashboard — centro de controle */
 Views.dashboard = {
   title: 'Início', icon: 'dashboard', nav: 'Início',
+  fab: () => ({ act: 'quickAdd', label: 'Adicionar', data: { k: Cal.st('home').sel, from: 'home' } }),
   render() {
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
@@ -3166,7 +3197,7 @@ Views.dashboard = {
     const charge = [
       ...open.filter(x => x.responsible).map(x => ({ who: x.responsible, what: x.title, kind: 'Tarefa', info: D.deadline(x.dueDate, x.dueTime, false), demo: x.demo })),
       ...openOcc.filter(o => o.responsible).map(o => ({ who: o.responsible, what: o.title, kind: 'Imprevisto', info: D.deadline(o.dueDate, o.dueTime, false), demo: o.demo })),
-      ...S.projects.filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status)).flatMap(p => (p.pendencias || []).filter(x => !x.done).map(x => ({ who: p.responsible || '—', what: x.text, kind: 'Pendência · ' + p.name, info: null, demo: p.demo }))),
+      ...(S.settings.showProjetos ? S.projects : []).filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status)).flatMap(p => (p.pendencias || []).filter(x => !x.done).map(x => ({ who: p.responsible || '—', what: x.text, kind: 'Pendência · ' + p.name, info: null, demo: p.demo }))),
     ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late'))).slice(0, 7);
 
     // Projetos
@@ -3178,7 +3209,7 @@ Views.dashboard = {
     for (let i = 0; i <= 7; i++) {
       const k = U.addDays(t, i);
       S.tasks.filter(x => OPEN(x.status) && x.dueDate === k).forEach(x => upcoming.push({ k, label: x.title, type: 'Prazo de tarefa', demo: x.demo }));
-      S.projects.filter(p => !['concluido', 'cancelado'].includes(p.status) && p.dueDate === k).forEach(p => upcoming.push({ k, label: p.name, type: 'Prazo de projeto', demo: p.demo }));
+      (S.settings.showProjetos ? S.projects : []).filter(p => !['concluido', 'cancelado'].includes(p.status) && p.dueDate === k).forEach(p => upcoming.push({ k, label: p.name, type: 'Prazo de projeto', demo: p.demo }));
       S.events.filter(e => e.date === k).forEach(e => upcoming.push({ k, label: e.title, type: 'Compromisso' + (e.time ? ' ' + e.time : '') + ((e.pautas || []).length ? `, ${U.plural(e.pautas.length, 'assunto')} na pauta` : ''), demo: e.demo, ev: e.id }));
       S.occurrences.filter(o => OPEN(o.status) && o.dueDate === k).forEach(o => upcoming.push({ k, label: o.title, type: 'Prazo de imprevisto', demo: o.demo }));
     }
@@ -3198,7 +3229,7 @@ Views.dashboard = {
 
     const dWd = U.WD[U.weekday(t)].replace('-feira', '');
     const dDate = `${dWd}, ${U.parse(t).getDate()} de ${U.MONTHS[U.parse(t).getMonth()].toLowerCase()}`;
-    const showGoals = !!S.settings.showIndicadores;
+    const showGoals = !!S.settings.showIndicadores, showProj = !!S.settings.showProjetos;
 
     return `
     ${Updater.banner()}
@@ -3238,28 +3269,28 @@ Views.dashboard = {
       </div>
     </section>
 
-    <section class="grid-2">
+    <section class="${showProj ? 'grid-2' : 'grid-1'}">
       <div class="card">
         <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3></div>
         ${charge.length ? `<ul class="list">${charge.map(c => `<li class="li li-stack"><div class="li-top"><strong>${U.esc(c.who)}</strong><small class="muted">${U.esc(c.kind)}</small>${H.deadline(c.info)}</div><div class="li-txt">${U.esc(c.what)}${H.demo(c)}</div></li>`).join('')}</ul>`
           : H.empty('Nada delegado em aberto. Defina um responsável em tarefas, imprevistos ou projetos para acompanhar aqui.')}
       </div>
-      <div class="card">
+      ${showProj ? `<div class="card">
         <div class="card-h"><h3>${U.icon('kanban')} Projetos em andamento</h3><a class="link" href="#projetos">Projetos</a></div>
         ${projects.length ? projects.map(p => { const pct = D.projectProgress(p); const dl = D.deadline(p.dueDate, null, false); return `<div class="proj-mini"><div class="pm-h"><a href="#projetos" class="pm-n">${U.esc(p.name)}</a>${H.demo(p)}${H.pstatus(p.status)}</div><div class="pm-b">${H.bar(pct, D.projectLate(p) ? 'var(--red)' : 'var(--accent)')}<strong>${pct}%</strong></div><div class="pm-f"><small class="muted">${U.esc(p.client || '')}</small>${H.deadline(dl)}</div></div>`; }).join('')
           : H.empty('Nenhum projeto ativo cadastrado.', '<a class="btn sm" href="#projetos">Cadastrar projeto</a>')}
-      </div>
+      </div>` : ''}
     </section>
 
     <section class="${showGoals ? 'grid-2' : 'grid-1'} dash-foot">
       <div class="card flat">
-        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#semanal">Semana</a></div>
+        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#agenda">Agenda</a></div>
         <div class="stat-row">
-          <div><small>Checklist semanal</small><strong>${wPct === null ? '—' : wPct + '%'}</strong></div>
+          ${wItems.length ? `<div><small>Checklist semanal</small><strong>${wPct}%</strong></div>` : ''}
           <div><small>Tarefas concluídas</small><strong>${doneWeek.length}</strong></div>
           <div><small>Imprevistos na semana</small><strong>${S.occurrences.filter(o => o.date >= ws && o.date <= we).length}</strong></div>
         </div>
-        ${H.bar(wPct)}
+        ${wItems.length ? H.bar(wPct) : ''}
         <p class="muted small mt">Conclusão da agenda por dia</p>
         ${dayVals.some(v => v !== null) ? Charts.bars({ labels: weekKeys.map(k => U.WD_SHORT[U.weekday(k)]), series: [{ name: 'Agenda concluída', color: 'var(--accent)', values: dayVals }], height: 150, unit: '%', maxValue: 100 }) : '<div class="chart-empty"><span>Sem dados ainda nesta semana</span></div>'}
       </div>
@@ -3275,94 +3306,82 @@ Views.dashboard = {
 </script>
   <script>/* js/views/agenda.js */
 'use strict';
-/* Agenda — tudo da rotina num lugar só: Dia (cronograma por horário), Semana (foco e checklist de cada dia,
-   compromissos e prazos) e Mês (calendário + planejamento das 4 semanas do mês) */
+/* Agenda — uma tela só: calendário compacto em cima (semana; "Ver mês" abre o mês inteiro) e, embaixo,
+   o dia escolhido numa lista única por horário: atividades da rotina + reuniões, compromissos e prazos. */
 Views.agenda = {
   title: 'Agenda', icon: 'clock', nav: 'Agenda',
-  render(params) {
-    const mode = App.ui.agendaMode || 'dia';
-    const tabs = `<div class="agenda-modes tabs" role="tablist">${[['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês']].map(([v, l]) => `<button class="tab ${mode === v ? 'active' : ''}" role="tab" aria-selected="${mode === v}" data-act="agMode" data-v="${v}">${l}</button>`).join('')}</div>`;
-    if (mode === 'semana') return tabs + WeekPlan.render();
-    if (mode === 'mes') return tabs + MonthPlan.render();
-    return tabs + this.renderDay(params);
-  },
-  renderDay(params) {
-    const k = App.ui.agendaDate || U.today();
-    const t = U.today();
+  fab: () => ({ act: 'quickAdd', label: 'Adicionar neste dia', data: { k: Agenda.day(), from: 'agenda' } }),
+  render() {
+    const k = Agenda.day(), t = U.today();
+    Cal.sync('agenda', k);
     const blocks = D.dayBlocks(k);
     const conflicts = D.conflicts(blocks);
     const prog = D.progress(k);
-    const endMin = U.toMin(S.settings.workEnd), startMin = U.toMin(S.settings.workStart);
     const late = blocks.filter(b => D.blockLate(b, k));
-    const focus = S.weekly.focus.find(f => f.day === U.weekday(k));
-    const counts = st => blocks.filter(b => !D.isBreak(b) && b.status === st).length;
-    const occ = S.occurrences.filter(o => OPEN(o.status) && !(o.scheduled && o.scheduled.date));
+    const items = Cal.itemsOn(k);
+    const d = U.parse(k), wd = U.WD[d.getDay()];
+    const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : '';
 
     const row = b => {
       const c = D.cat(b.category);
       const isLate = D.blockLate(b, k), isNow = D.blockNow(b, k);
-      const dur = U.toMin(b.end) - U.toMin(b.start);
-      const outside = U.toMin(b.start) < startMin || U.toMin(b.end) > endMin;
+      if (D.isBreak(b)) {
+        return `<div class="blk blk-break" style="--c:${c.color}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body" data-act="agEdit" data-id="${b.id}"><span class="blk-title">${U.esc(b.title)}</span></div></div>`;
+      }
       const badges = [
         isNow ? '<span class="badge b-blue">Agora</span>' : '',
         isLate ? '<span class="badge b-red">Atrasada</span>' : '',
-        conflicts.has(b.id) ? '<span class="badge b-yellow">Conflito de horário</span>' : '',
-        outside && !D.blockDone(b) ? '<span class="badge b-yellow">Fora do expediente</span>' : '',
-        b.occurrenceId ? '<span class="badge b-red">Imprevisto</span>' : '',
-        b.fixed ? '<span class="badge">Horário fixo</span>' : '',
+        conflicts.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
+        b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
-      if (D.isBreak(b)) {
-        return `<div class="blk blk-break" style="--c:${c.color}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body"><span class="blk-title">${U.esc(b.title)}</span></div><div class="blk-actions"><button class="icon-btn" data-act="agEdit" data-id="${b.id}" title="Editar">${U.icon('edit', 16)}</button></div></div>`;
-      }
       return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color}">
-        <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span><small>${U.fmtDur(dur)}</small></div>
+        <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div>
         <div class="blk-body" data-act="agEdit" data-id="${b.id}">
           <div class="blk-head"><span class="blk-title">${U.esc(b.title)}</span>${badges}</div>
-          <div class="blk-meta">${H.cat(b.category)} ${H.prio(b.priority)} ${H.status(b.status)}</div>
           ${b.notes ? `<p class="blk-notes">${U.esc(b.notes)}</p>` : ''}
         </div>
         <div class="blk-actions">
           ${b.status === 'concluida'
-            ? `<button class="icon-btn" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir">${U.icon('undo', 16)}</button>`
-            : `<button class="icon-btn ok" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir">${U.icon('check', 16)}</button>
-               ${b.status !== 'andamento' ? `<button class="icon-btn info" data-act="agStatus" data-id="${b.id}" data-s="andamento" title="Iniciar (em andamento)">${U.icon('play', 14)}</button>` : ''}`}
-          <button class="icon-btn" data-act="agMore" data-id="${b.id}" title="Mais opções">${U.icon('more', 16)}</button>
+            ? `<button class="icon-btn" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
+            : `<button class="icon-btn ok" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`}
+          <button class="icon-btn" data-act="agMore" data-id="${b.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
         </div>
       </div>`;
     };
+    // Reuniões, compromissos e prazos entram na mesma lista, pela hora
+    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+        <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
+        <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
+          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
+        <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
+    const list = [
+      ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
+      ...blocks.map(b => ({ t: b.start, h: row(b) })),
+      ...items.filter(i => i.time).map(i => ({ t: i.time, h: item(i) })),
+    ].map((x, n) => ({ ...x, n })).sort((a, b) => a.t.localeCompare(b.t) || a.n - b.n);
+
+    const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
+      : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`;
 
     return `
-    ${Cal.strip(k)}
-    <div class="toolbar">
-      <div class="date-nav">
-        <input type="date" value="${k}" data-change="agDate" aria-label="Ir para a data">
-        ${k !== t ? '<button class="btn sm ghost" data-act="agShift" data-n="0">Hoje</button>' : ''}
-      </div>
-      <span class="grow"></span>
-      <button class="btn ghost" data-act="agMenu">${U.icon('more')} Reorganizar</button>
-      ${(S.settings.breakMode || 'fixo') === 'flexivel' && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada') ? `<button class="btn" data-act="agBreak">${U.icon('pause')} Intervalo ${k === t ? 'agora' : ''}</button>` : ''}
-      <button class="btn warn" data-act="agImprevisto">${U.icon('alert')} Imprevisto</button>
-      <button class="btn primary" data-act="agNew">${U.icon('plus')} Nova atividade</button>
-    </div>
+    <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
-    <div class="card day-head">
-      <div>
-        <h2>${U.fmtLong(k)}</h2>
-        <p class="muted">${D.isWorkday(k) ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : 'Dia útil') : 'Dia não útil (folga). Você ainda pode adicionar atividades.'}${S.days[k] ? '' : (blocks.length ? ' · Rotina padrão' : '')}</p>
+    <section class="ag-day">
+      <div class="ag-head">
+        <div class="ag-head-t">
+          <small class="muted">${when ? `${when} · ` : ''}${wd}</small>
+          <h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2>
+          <p class="muted small">${summary}</p>
+        </div>
+        <span class="grow"></span>
+        ${blocks.length ? `<button class="btn sm ghost" data-act="agMenu" aria-label="Reorganizar o dia">${U.icon('more', 16)} Reorganizar</button>` : ''}
       </div>
-      <div class="day-prog">
-        ${blocks.length ? H.dayRail(k, { link: false }) : H.bar(prog.pct)}
-        <div class="day-counts"><span>${prog.pct === null ? '—' : prog.pct + '%'} concluído</span><span class="c-green">${counts('concluida')} concluídas</span><span class="c-blue">${counts('andamento')} em andamento</span><span class="c-gray">${counts('pendente')} pendentes</span>${late.length ? `<span class="c-red">${late.length} atrasadas</span>` : ''}</div>
+      ${blocks.length ? H.dayRail(k, { link: false }) : ''}
+      ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
+      <div class="timeline">
+        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', '<small class="muted">Toque em <strong>+</strong> para adicionar.</small>')}
       </div>
-    </div>
-
-    ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade atrasada', 'atividades atrasadas')}. Use <strong>Reorganizar</strong> para remanejá-las ou o menu ⋯ de cada uma.</span></div>` : ''}
-    ${occ.length ? `<div class="alert a-yellow">${U.icon('alert')} <span>${U.plural(occ.length, 'imprevisto aberto', 'imprevistos abertos')} sem horário na agenda.</span> <a class="link" href="#imprevistos">Ver imprevistos</a></div>` : ''}
-
-    <div class="timeline">
-      ${blocks.length ? blocks.map(row).join('') : H.empty('Nenhuma atividade neste dia.', '<button class="btn sm primary" data-act="agNew">Adicionar atividade</button>')}
-    </div>
-    <p class="muted small mt">Dica: clique em uma atividade para editar horário, prioridade e observações. Ao alterar um horário, você pode deslocar automaticamente as atividades seguintes, sem mexer no intervalo.</p>`;
+    </section>`;
   },
 };
 
@@ -3444,10 +3463,7 @@ const Agenda = {
 };
 
 Object.assign(Actions, {
-  agMode({ v }) { App.ui.agendaMode = v; App.render({ resetScroll: true }); },
-  agDay({ k }) { App.ui.agendaDate = k; App.render(); },
   agShift({ n }) { n = Number(n); App.ui.agendaDate = n === 0 ? U.today() : U.addDays(Agenda.day(), n); App.render(); },
-  agDate(_, el) { if (el.value) { App.ui.agendaDate = el.value; App.render(); } },
   agStatus({ id, s }) {
     const k = Agenda.day(); const b = D.findBlock(k, id); if (!b) return;
     b.status = s;
@@ -3516,7 +3532,8 @@ Object.assign(Actions, {
     };
     UI.sheet(b.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Actions.agEdit({ id }) },
-      { label: 'Marcar como pendente', icon: 'undo', onClick: () => Actions.agStatus({ id, s: 'pendente' }) },
+      b.status === 'andamento' ? { label: 'Marcar como pendente', icon: 'undo', onClick: () => Actions.agStatus({ id, s: 'pendente' }) }
+        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.agStatus({ id, s: 'andamento' }) },
       { label: 'Cancelar atividade', icon: 'x', onClick: () => Actions.agStatus({ id, s: 'cancelada' }) },
       { sep: true },
       { label: 'Adiar 15 minutos', hint: 'Desloca as seguintes, preservando o intervalo', icon: 'clock', onClick: delay(15) },
@@ -3573,6 +3590,7 @@ Object.assign(Actions, {
 /* Gestão de imprevistos — ocorrências que exigem atenção imediata */
 Views.imprevistos = {
   title: 'Imprevistos', icon: 'alert', nav: 'Imprevistos',
+  fab: { act: 'occNew', label: 'Registrar imprevisto' },
   render() {
     const f = App.ui.occFilter || 'abertas';
     const all = S.occurrences;
@@ -3610,8 +3628,6 @@ Views.imprevistos = {
     return `
     <div class="toolbar">
       <div class="tabs">${tab('abertas', 'Abertos', nOpen)}${tab('encerradas', 'Encerrados', all.length - nOpen)}${tab('todas', 'Todos', all.length)}</div>
-      <span class="grow"></span>
-      <button class="btn warn" data-act="occNew">${U.icon('plus')} Registrar imprevisto</button>
     </div>
     <p class="muted small">Registre aqui demandas urgentes que exigem sua atenção imediata. Use <strong>Encaixar na agenda</strong> para reservar um horário e reorganizar o dia automaticamente.</p>
     <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;
@@ -3681,167 +3697,9 @@ Object.assign(Actions, {
 });
 
 </script>
-  <script>/* js/views/semanal.js */
-'use strict';
-/* Agenda → Semana: para cada dia, o foco e o checklist (que se repetem toda semana), os compromissos,
-   reuniões e prazos do dia e o andamento da agenda */
-const WeekPlan = {
-  render() {
-    const ws = App.ui.weekStart || U.weekStart(U.today());
-    const t = U.today();
-    const chk = S.weekly.checks[ws] || {};
-    const days = [1, 2, 3, 4, 5, 6, 0].filter(d => S.settings.workDays.includes(d));
-    const focusOf = d => S.weekly.focus.find(f => f.day === d);
-    const all = days.flatMap(d => (focusOf(d) || { items: [] }).items);
-    const done = all.filter(i => chk[i.id]).length;
-    const pct = all.length ? Math.round(done / all.length * 100) : null;
-
-    const col = d => {
-      const k = U.addDays(ws, (d + 6) % 7);
-      const f = focusOf(d);
-      const items = f ? f.items : [];
-      const dn = items.filter(i => chk[i.id]).length;
-      const p = items.length ? Math.round(dn / items.length * 100) : null;
-      const dueTasks = S.tasks.filter(x => OPEN(x.status) && x.dueDate === k).length;
-      const ag = D.progress(k);
-      const empty = !(f && f.title) && !items.length;
-      return `<div class="wk-col card ${k === t ? 'is-today' : ''} ${empty ? 'is-empty' : ''}">
-        <div class="wk-h">
-          <div><small>${U.WD[d]}, ${U.fmtShort(k)}${k === t ? ' · hoje' : ''}</small>
-          <h3>${f && f.title ? U.esc(f.title) : '<span class="muted">Sem foco definido</span>'}</h3></div>
-          <button class="icon-btn" data-act="wkFocus" data-d="${d}" title="${f && f.title ? 'Editar foco' : 'Definir foco'}" aria-label="${f && f.title ? 'Editar foco' : 'Definir foco'}">${U.icon('edit', 15)}</button>
-        </div>
-        ${items.length ? `${H.bar(p, p === 100 ? 'var(--green)' : null)}<small class="muted">${dn} de ${items.length} concluídos</small>` : ''}
-        ${(() => { const its = Cal.itemsOn(k); return its.length ? `<ul class="wk-items">${its.map(i => `<li class="t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" data-act="${i.act}" data-id="${i.id}"><i></i><span>${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span></li>`).join('')}</ul>` : ''; })()}
-        <ul class="checklist">${items.map(i => `<li><label class="check"><input type="checkbox" data-change="wkCheck" data-id="${i.id}" ${chk[i.id] ? 'checked' : ''}><span>${U.esc(i.text)}</span></label><button class="icon-btn xs" data-act="wkItemEdit" data-d="${d}" data-id="${i.id}" title="Editar item">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
-        <button class="btn sm ghost add-item" data-act="wkItemAdd" data-d="${d}">${U.icon('plus', 15)} Adicionar item</button>
-        <div class="wk-foot">
-          <a href="#agenda" data-act="goAgenda" data-d="${k}" class="link small">Abrir o dia${ag.pct === null ? '' : ` · ${ag.pct}%`}</a>
-        </div>
-      </div>`;
-    };
-
-    return `
-    <div class="plan-intro">
-      <p>A semana inteira num lugar: compromissos e prazos de cada dia, o <strong>foco</strong> e o que não pode faltar (a lista se repete toda semana; as marcações valem só para a semana exibida).</p>
-      <button class="link" data-act="guideOpen" data-id="semanal">Como funciona</button>
-    </div>
-    <div class="toolbar">
-      <div class="date-nav">
-        <button class="icon-btn" data-act="wkShift" data-n="-7" aria-label="Semana anterior">${U.icon('left')}</button>
-        <strong class="range-lbl">${U.fmtShort(ws)} a ${U.fmtShort(U.addDays(ws, 6))}</strong>
-        <button class="icon-btn" data-act="wkShift" data-n="7" aria-label="Próxima semana">${U.icon('right')}</button>
-        ${ws !== U.weekStart(t) ? '<button class="btn sm ghost" data-act="wkShift" data-n="0">Semana atual</button>' : ''}
-      </div>
-    </div>
-    <div class="card wk-summary">
-      ${all.length ? `<div>${Charts.ring(pct, { size: 72, stroke: 7 })}</div>` : ''}
-      <div class="grow">
-        <h3>Checklist da semana</h3>
-        <p class="muted">${all.length ? `${done} de ${U.plural(all.length, 'item', 'itens')} concluídos nesta semana.` : 'Ainda não há itens. Comece tocando no lápis de um dia para definir o foco, depois em “Adicionar item”.'}</p>
-        ${all.length ? H.bar(pct) : ''}
-      </div>
-      ${Object.keys(chk).length ? `<button class="btn sm ghost" data-act="wkReset">${U.icon('undo', 15)} Desmarcar semana</button>` : ''}
-    </div>
-    <div class="wk-grid">${days.map(col).join('')}</div>`;
-  },
-};
-
-Object.assign(Actions, {
-  wkShift({ n }) { n = Number(n); const cur = App.ui.weekStart || U.weekStart(U.today()); App.ui.weekStart = n === 0 ? U.weekStart(U.today()) : U.addDays(cur, n); App.render(); },
-  wkCheck({ id }, el) {
-    const ws = App.ui.weekStart || U.weekStart(U.today());
-    const c = S.weekly.checks[ws] = S.weekly.checks[ws] || {};
-    if (el.checked) c[id] = true; else delete c[id];
-    commit();
-  },
-  wkReset() { const ws = App.ui.weekStart || U.weekStart(U.today()); UI.confirm('Desmarcar todos os itens desta semana?', () => { delete S.weekly.checks[ws]; commit(); }); },
-  wkFocus({ d }) {
-    d = Number(d);
-    let f = S.weekly.focus.find(x => x.day === d);
-    UI.form({
-      title: `Foco de ${U.WD[d]}`,
-      fields: [{ name: 'title', label: 'Foco do dia', value: f ? f.title : '', placeholder: 'Ex.: Planejamento, Operação, Equipe…', hint: 'Um tema curto que resume o que você prioriza nesse dia. Pode deixar em branco.' }],
-      onSubmit(v) {
-        if (!f) { f = { day: d, title: '', items: [] }; S.weekly.focus.push(f); }
-        f.title = v.title;
-        if (!f.title && !f.items.length) S.weekly.focus = S.weekly.focus.filter(x => x !== f);
-        commit();
-      },
-    });
-  },
-  wkItemAdd({ d }) {
-    d = Number(d);
-    UI.form({
-      title: `Novo item — ${U.WD[d]}`,
-      fields: [{ name: 'text', label: 'Item do checklist', required: true, placeholder: 'Ex.: Conferir escala da equipe' }],
-      onSubmit(v) {
-        let f = S.weekly.focus.find(x => x.day === d);
-        if (!f) { f = { day: d, title: '', items: [] }; S.weekly.focus.push(f); }
-        f.items.push({ id: U.uid(), text: v.text }); commit();
-      },
-    });
-  },
-  wkItemEdit({ d, id }) {
-    const f = S.weekly.focus.find(x => x.day === Number(d)); const it = f.items.find(i => i.id === id);
-    UI.form({
-      title: 'Editar item',
-      fields: [{ name: 'text', label: 'Item do checklist', required: true, value: it.text }],
-      extra: [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); f.items = f.items.filter(i => i.id !== id); if (!f.title && !f.items.length) S.weekly.focus = S.weekly.focus.filter(x => x !== f); commit(); UI.toast('Item excluído.'); } }],
-      onSubmit(v) { it.text = v.text; commit(); },
-    });
-  },
-});
-
-</script>
   <script>/* js/views/mensal.js */
 'use strict';
-/* Agenda → Mês (calendário + metas das 4 semanas) e compromissos/reuniões (Events) */
-const cycleOf = k => { const d = U.parse(k).getDate(); return d <= 7 ? 1 : d <= 14 ? 2 : d <= 21 ? 3 : 4; };
-const CYCLE_COLORS = ['var(--cy1)', 'var(--cy2)', 'var(--cy3)', 'var(--cy4)'];
-
-/* Agenda → Mês: o calendário (com a lista do dia escolhido) e, abaixo, o planejamento das 4 semanas do mês */
-const Month = {
-  itemsOn(k) { return Cal.itemsOn(k); },
-  TYPE: Cal.TYPES,
-};
-
-const MonthPlan = {
-  render() {
-    const cs = Cal.st('agenda');
-    cs.mode = 'month';   // a semana fica na aba Semana da Agenda
-    const mk = App.ui.month = U.monthKey(cs.anchor);
-    const t = U.today();
-    const chk = S.monthly.checks[mk] || {};
-    const curCycle = U.monthKey(t) === mk ? cycleOf(t) : null;
-    const planned = S.monthly.cycles.some(c => c.title || c.items.length);
-
-    const cycles = S.monthly.cycles.map((c, i) => {
-      const dn = c.items.filter(x => chk[x.id]).length;
-      const p = c.items.length ? Math.round(dn / c.items.length * 100) : null;
-      const range = [[1, 7], [8, 14], [15, 21], [22, Number(U.monthEnd(mk).slice(8))]][i];
-      return `<div class="cycle card ${curCycle === c.n ? 'is-current' : ''} ${!c.title && !c.items.length ? 'is-empty' : ''}" style="--cc:${CYCLE_COLORS[i]}">
-        <div class="wk-h"><div><small>Semana ${c.n}, dias ${range[0]} a ${range[1]}${curCycle === c.n ? ' · agora' : ''}</small><h3>${c.title ? U.esc(c.title) : '<span class="muted">Sem foco definido</span>'}</h3></div>
-        <button class="icon-btn" data-act="mcEdit" data-n="${c.n}" title="${c.title ? 'Editar foco' : 'Definir foco'}" aria-label="${c.title ? 'Editar foco' : 'Definir foco'}">${U.icon('edit', 15)}</button></div>
-        ${c.items.length ? `${H.bar(p, 'var(--cc)')}<small class="muted">${dn}/${c.items.length} concluídos</small>` : ''}
-        <ul class="checklist">${c.items.map(x => `<li><label class="check"><input type="checkbox" data-change="mcCheck" data-id="${x.id}" ${chk[x.id] ? 'checked' : ''}><span>${U.esc(x.text)}</span></label><button class="icon-btn xs" data-act="mcItemEdit" data-n="${c.n}" data-id="${x.id}" title="Editar item">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
-        <button class="btn sm ghost add-item" data-act="mcItemAdd" data-n="${c.n}">${U.icon('plus', 15)} Adicionar item</button>
-      </div>`;
-    }).join('');
-
-    return `
-    <section class="card cal-card">${Cal.render('agenda')}${Cal.day('agenda')}</section>
-    <details class="card plan-month" ${planned || App.ui.planOpen ? 'open' : ''}>
-      <summary><span>${U.icon('target')} Metas das semanas de ${U.MONTHS[U.parse(mk + '-01').getMonth()].toLowerCase()}</span><small class="muted">${planned ? '' : 'opcional'}</small>${U.icon('right', 16)}</summary>
-      <div class="plan-month-body">
-        <div class="plan-intro"><p>O mês é dividido em <strong>4 semanas</strong>. Dê um foco a cada uma e liste as entregas do período. A lista se repete todo mês; as marcações valem só para o mês exibido.</p>
-        <button class="link" data-act="guideOpen" data-id="mensal">Como funciona</button></div>
-        <div class="cycles">${cycles}</div>
-      </div>
-    </details>`;
-  },
-};
-
+/* Compromissos e reuniões (S.events): formulário, visualização, registro com IA */
 const Events = {
   /* Pauta guardada como lista; no formulário, um assunto por linha (mantém os ids dos que já existiam) */
   pautaFromText(txt, old = []) {
@@ -4079,48 +3937,7 @@ const Events = {
 };
 
 Object.assign(Actions, {
-  mShift({ n }) { n = Number(n); App.ui.month = n === 0 ? U.monthKey(U.today()) : U.addMonths(App.ui.month || U.monthKey(U.today()), n); App.render(); },
-  mcCheck({ id }, el) {
-    const mk = App.ui.month || U.monthKey(U.today());
-    const c = S.monthly.checks[mk] = S.monthly.checks[mk] || {};
-    if (el.checked) c[id] = true; else delete c[id];
-    commit();
-  },
-  mcEdit({ n }) {
-    const c = S.monthly.cycles.find(x => x.n === Number(n));
-    UI.form({ title: `Foco da semana ${n} do mês`, fields: [{ name: 'title', label: 'Foco', value: c.title, placeholder: 'Ex.: Diagnóstico, Equipe, Fechamento…', hint: 'Um tema para essa parte do mês. Pode deixar em branco.' }], onSubmit(v) { c.title = v.title; commit(); } });
-  },
-  mcItemAdd({ n }) {
-    const c = S.monthly.cycles.find(x => x.n === Number(n));
-    UI.form({ title: `Novo item da semana ${n}`, fields: [{ name: 'text', label: 'Item', required: true, placeholder: 'Ex.: Fechar relatório do mês' }], onSubmit(v) { c.items.push({ id: U.uid(), text: v.text }); commit(); } });
-  },
-  mcItemEdit({ n, id }) {
-    const c = S.monthly.cycles.find(x => x.n === Number(n)); const it = c.items.find(i => i.id === id);
-    UI.form({
-      title: 'Editar item', fields: [{ name: 'text', label: 'Item', required: true, value: it.text }],
-      extra: [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); c.items = c.items.filter(i => i.id !== id); commit(); } }],
-      onSubmit(v) { it.text = v.text; commit(); },
-    });
-  },
   evNew() { Events.form(null); },
-  calDay({ k }) {
-    const items = Month.itemsOn(k);
-    const ag = D.dayBlocks(k);
-    const prog = D.progress(k);
-    const m = UI.modal({
-      title: U.fmtLong(k),
-      body: `
-        <p class="muted">${D.isWorkday(k) ? `Dia útil, semana ${cycleOf(k)} do mês${S.monthly.cycles[cycleOf(k) - 1]?.title ? ': ' + U.esc(S.monthly.cycles[cycleOf(k) - 1].title) : ''}` : 'Dia não útil'}</p>
-        <h4>Prazos e compromissos</h4>
-        ${items.length ? `<ul class="list">${items.map(i => `<li class="li"><span class="li-time">${i.time || '—'}</span><span class="li-main"><span class="cal-it-dot t-${i.type}"></span>${U.esc(i.label)}${H.demo(i)}</span><small class="muted">${Month.TYPE[i.type]}${i.done ? (i.type === 'evento' ? ' · registrado' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small>${i.type === 'evento' ? `<button class="btn sm" data-act="evView" data-id="${i.id}">Abrir</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted">Nada programado.</p>'}
-        <h4>Agenda</h4>
-        <p>${ag.length ? `${ag.length} atividades · ${prog.pct === null ? '—' : prog.pct + '% concluído'}` : 'Sem atividades na agenda.'}</p>`,
-      footer: `<button class="btn ghost" data-go>Abrir agenda do dia</button><span class="grow"></span><button class="btn primary" data-new>${U.icon('plus', 15)} Compromisso</button>`,
-    });
-    m.el.querySelector('[data-go]').onclick = () => { m.close(); App.ui.agendaDate = k; location.hash = '#agenda'; };
-    m.el.querySelector('[data-new]').onclick = () => { m.close(); Events.form(null, k); };
-    m.el.addEventListener('click', ev => { if (ev.target.closest('[data-act="evView"]')) m.close(); });
-  },
   evEdit({ id }) { Events.form(S.events.find(e => e.id === id)); },
   evView({ id }) { const e = S.events.find(e => e.id === id); if (e) Events.view(e); },
 });
@@ -4128,7 +3945,9 @@ Object.assign(Actions, {
 </script>
   <script>/* js/views/reunioes.js */
 'use strict';
-/* Reuniões — marcar com pauta, registrar o que foi tratado e combinado (com IA, se quiser) */
+/* Reuniões e feedbacks — conversas com pessoas num lugar só.
+   Aba Reuniões: marcar com pauta, gravar, registrar o que foi combinado (com IA, se quiser).
+   Aba Feedbacks: conversas individuais com cada colaborador (FBPage, em feedbacks.js). */
 const Meetings = {
   isMeeting: e => !!(e.reuniao || (e.pautas || []).length),
   passed(e) { const t = U.today(); return e.date < t || (e.date === t && (!e.time || U.toMin(e.time) <= U.nowMin())); },
@@ -4147,20 +3966,25 @@ const Meetings = {
 };
 
 Views.reunioes = {
-  title: 'Reuniões', icon: 'users', nav: 'Reuniões',
+  title: 'Reuniões e feedbacks', icon: 'users', nav: 'Reuniões e feedbacks',
+  fab: () => App.ui.mtTab === 'feedbacks'
+    ? { act: 'fbNew', label: 'Novo feedback', data: App.ui.fbWho ? { n: App.ui.fbWho } : {} }
+    : { act: 'mtNew', label: 'Nova reunião' },
   render() {
+    const tab = App.ui.mtTab === 'feedbacks' ? 'feedbacks' : 'reunioes';
+    const nMt = Meetings.toRegister().length + Meetings.upcoming().filter(Meetings.isMeeting).length, nFb = FB.list().length;
+    const tabs = `<div class="tabs mt-tabs" role="tablist">${[['reunioes', 'Reuniões', nMt], ['feedbacks', 'Feedbacks', nFb]].map(([v, l, n]) => `<button class="tab ${tab === v ? 'active' : ''}" role="tab" aria-selected="${tab === v}" data-act="mtTab" data-v="${v}">${l}${n ? ` <span class="tab-n">${n}</span>` : ''}</button>`).join('')}</div>`;
+    return tabs + (tab === 'feedbacks' ? FBPage.render() : this.meetings());
+  },
+  meetings() {
     const reg = Meetings.toRegister(), up = Meetings.upcoming(), done = Meetings.registered();
     const empty = !reg.length && !up.length && !done.length;
     const iaHint = IA.supported() && !IA.ready() ? `<p class="muted small">Dica: com a <a class="link" href="#config" data-act="cfgJump" data-id="ia">IA ativada</a>, ela preenche o registro a partir da gravação ou das suas anotações.</p>` : '';
     return `
-    <div class="toolbar">
-      <p class="plan-intro-p">Marque a reunião com a <strong>pauta</strong>. Na hora, toque em <strong>Iniciar</strong> para gravar com transcrição ao vivo; no fim, a IA preenche o que foi combinado.</p>
-      <button class="btn primary" data-act="mtNew">${U.icon('plus')} Nova reunião</button>
-    </div>
     ${empty ? `<div class="card mt-empty">
         <h3>Como funciona</h3>
         <ol class="mt-steps">
-          <li><strong>Nova reunião</strong>: dia, horário e a pauta, um assunto por linha.</li>
+          <li>Toque em <strong>+</strong>: dia, horário e a pauta, um assunto por linha.</li>
           <li>Na hora, ${Reminders.on() ? 'o app avisa e ' : ''}você toca em <strong>Iniciar</strong> e depois em <strong>Iniciar gravação</strong>. A transcrição aparece na tela enquanto a reunião acontece, e você marca a pauta conforme os assuntos são tratados.</li>
           <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA preenche os combinados e um resumo. Confira e salve. Cada combinado pode virar uma tarefa.</li>
         </ol>
@@ -4176,6 +4000,7 @@ Views.reunioes = {
 Object.assign(Actions, {
   mtStart({ id }) { const e = S.events.find(x => x.id === id); if (e) Events.register(e); },
   mtNew() { Events.form(null, U.today(), { reuniao: true }); },
+  mtTab({ v }) { App.ui.mtTab = v; if (v !== 'feedbacks') App.ui.fbWho = null; App.render({ resetScroll: true }); },
 });
 
 </script>
@@ -4204,22 +4029,18 @@ const FB = {
   },
 };
 
-Views.feedbacks = {
-  title: 'Feedbacks', icon: 'chat', nav: 'Feedbacks',
+/* Aba "Feedbacks" da tela Reuniões e feedbacks */
+const FBPage = {
   render() {
     const who = App.ui.fbWho;
     if (who) return this.person(who);
     const people = FB.people(), recent = [...FB.list()].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
     return `
-    <div class="toolbar">
-      <p class="plan-intro-p">Grave a conversa com o colaborador e a IA escreve o registro no padrão do seu agente. Os acordos podem virar tarefas.</p>
-      <button class="btn primary" data-act="fbNew">${U.icon('plus')} Novo feedback</button>
-    </div>
     ${people.length ? `<section class="mt-sec"><h3 class="mt-h">Equipe</h3><div class="fb-people">${people.map(p => `<div class="fb-person" role="button" tabindex="0" data-act="fbWho" data-n="${U.esc(p.name)}">
         <span class="fb-av">${U.esc(FB.initials(p.name))}</span>
         <span class="fb-p-body"><strong>${U.esc(p.name)}${H.demo(p)}</strong><small class="muted">${p.items.length ? `${U.plural(p.items.length, 'feedback')} · último em ${U.fmtShort(p.items[0].date)}` : 'Nenhum feedback ainda'}</small></span>
         ${p.items[0] ? H.chip(IA.TONS[p.items[0].tom] || 'Neutro', FB.TOM_COLOR[p.items[0].tom] || '#8e87a3') : ''}${U.icon('right', 15)}</div>`).join('')}</div></section>` : `<div class="card mt-empty"><h3>Como funciona</h3><ol class="mt-steps">
-        <li>Toque em <strong>Novo feedback</strong> e escreva o nome do colaborador (ele entra na lista da equipe).</li>
+        <li>Toque em <strong>+</strong> e escreva o nome do colaborador (ele entra na lista da equipe).</li>
         <li>Na conversa, toque em <strong>Iniciar gravação</strong> (avise o colaborador). A transcrição aparece na tela.</li>
         <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA escreve o registro e separa os acordos. Confira e salve.</li></ol></div>`}
     ${recent.length ? `<section class="mt-sec"><h3 class="mt-h">Recentes</h3><div class="mt-list">${recent.map(f => FB.card(f, true)).join('')}</div></section>` : ''}`;
@@ -4228,11 +4049,10 @@ Views.feedbacks = {
     const items = FB.list().filter(f => f.pessoa === name).sort((a, b) => b.date.localeCompare(a.date));
     const count = k => items.filter(f => f.tom === k).length;
     return `
-    <div class="toolbar"><button class="btn sm ghost" data-act="fbWho" data-n="">${U.icon('left', 15)} Equipe</button><span class="grow"></span>
-      <button class="btn primary" data-act="fbNew" data-n="${U.esc(name)}">${U.icon('plus')} Novo feedback</button></div>
+    <div class="toolbar"><button class="btn sm ghost" data-act="fbWho" data-n="">${U.icon('left', 15)} Equipe</button></div>
     <div class="card fb-head"><span class="fb-av big">${U.esc(FB.initials(name))}</span><div><h2>${U.esc(name)}</h2>
       <p class="muted small">${items.length ? `${U.plural(items.length, 'feedback')}: ${count('positivo')} positivos, ${count('neutro')} neutros, ${count('melhorar')} a melhorar` : 'Nenhum feedback registrado ainda.'}</p></div></div>
-    ${items.length ? `<div class="mt-list">${items.map(f => FB.card(f, false)).join('')}</div>` : H.empty('Toque em Novo feedback para registrar a primeira conversa.')}`;
+    ${items.length ? `<div class="mt-list">${items.map(f => FB.card(f, false)).join('')}</div>` : H.empty('Toque em + para registrar a primeira conversa.')}`;
   },
 };
 
@@ -4281,7 +4101,7 @@ Object.assign(FB, {
           S.tasks.push({ id: U.uid(), title, description: `Acordo do feedback com ${v.pessoa} (${U.fmtShort(v.date)}).`, category: 'equipe', priority: 'media', status: 'pendente', responsible: v.pessoa, createdAt: new Date().toISOString(), startDate: U.today(), dueDate: '', dueTime: '', notes: '', completedAt: null });
         });
         warned = true;
-        App.ui.fbWho = v.pessoa;
+        if (App.route === 'reunioes' && App.ui.mtTab === 'feedbacks') App.ui.fbWho = v.pessoa;
         commit();
         UI.toast(n ? `Feedback salvo e ${U.plural(n, 'tarefa criada', 'tarefas criadas')}.` : 'Feedback salvo.');
       },
@@ -4343,6 +4163,7 @@ Object.assign(Actions, {
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
   title: 'Gestão de tarefas', icon: 'tasks', nav: 'Tarefas',
+  fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
     const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
@@ -4396,8 +4217,6 @@ Views.tarefas = {
     return `
     <div class="toolbar">
       <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
-      <span class="grow"></span>
-      <button class="btn primary" data-act="tkNew">${U.icon('plus')} Nova tarefa</button>
     </div>
     <div class="filters card">
       <input type="search" placeholder="Buscar tarefa, descrição ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
@@ -4473,6 +4292,7 @@ Object.assign(Actions, {
 /* Gestão de projetos — Kanban e linha do tempo */
 Views.projetos = {
   title: 'Gestão de projetos', icon: 'kanban', nav: 'Projetos',
+  fab: { act: 'pjNew', label: 'Novo projeto' },
   render() {
     const mode = App.ui.projMode || 'kanban';
     const ps = S.projects;
@@ -4536,8 +4356,6 @@ Views.projetos = {
         <button class="tab ${mode === 'timeline' ? 'active' : ''}" data-act="pjMode" data-v="timeline">${U.icon('timeline', 15)} Linha do tempo</button>
       </div>
       <span class="muted small">${cnt('andamento')} em andamento · ${cnt('planejamento')} em planejamento · ${cnt('concluido')} concluídos${ps.filter(D.projectLate).length ? ` · <span class="c-red">${ps.filter(D.projectLate).length} com prazo vencido</span>` : ''}</span>
-      <span class="grow"></span>
-      <button class="btn primary" data-act="pjNew">${U.icon('plus')} Novo projeto</button>
     </div>
     ${body}`;
   },
@@ -4710,6 +4528,7 @@ const Ind = {
 
 Views.indicadores = {
   title: 'Indicadores e relatórios', icon: 'chart', nav: 'Indicadores',
+  fab: { act: 'indNew', label: 'Lançar dados' },
   render() {
     const [from, to, label] = Ind.range();
     const f = App.ui.indF;
@@ -4746,7 +4565,6 @@ Views.indicadores = {
       <span class="grow"></span>
       <button class="btn ghost" data-act="indXlsx">${U.icon('download')} Excel</button>
       <button class="btn ghost" data-act="indPdf">${U.icon('printer')} PDF</button>
-      <button class="btn primary" data-act="indNew">${U.icon('plus')} Lançar dados</button>
     </div>
     <p class="muted small">Período: <strong>${label}</strong> (${U.fmtDate(from)} a ${U.fmtDate(to)}) · ${U.plural(recs.length, 'lançamento')}</p>
 
@@ -4836,7 +4654,9 @@ Views.config = {
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento de pontos de câmera, manutenções e retrabalhos, metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
-        <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>`)}
+        <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
+      <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
+        <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`)}
 
     ${Drive.section(sec)}
 
@@ -5038,6 +4858,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgProjetos(_, el) { S.settings.showProjetos = el.checked; commit(); UI.toast(el.checked ? 'Projetos aparece no menu, em Planejamento.' : 'Projetos ocultado. Os dados continuam guardados.'); },
   cfgIndicadores(_, el) { S.settings.showIndicadores = el.checked; commit(); UI.toast(el.checked ? 'Indicadores aparece no menu, em Planejamento.' : 'Indicadores ocultado. Os dados continuam guardados.'); },
   themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
   xferOut() { Transfer.openExport(); },
@@ -5062,9 +4883,9 @@ const Guide = {
   },
   /* Ilustrações: miniaturas dos componentes reais do app (não clicáveis) */
   mock: {
-    nav: () => `<div class="tour-mock tm-side"><div class="tm-top">${U.icon('menu', 20)}<strong>Início</strong></div><div class="tm-menu">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['tasks', 'Tarefas'], ['users', 'Reuniões'], ['chat', 'Feedbacks']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 16)}${l}</span>`).join('')}</div></div>`,
+    nav: () => `<div class="tour-mock tm-side"><div class="tm-top">${U.icon('menu', 20)}<strong>Início</strong></div><div class="tm-menu">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['tasks', 'Tarefas'], ['users', 'Reuniões e feedbacks'], ['alert', 'Imprevistos']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 16)}${l}</span>`).join('')}</div></div>`,
     agenda: () => `<div class="tour-mock"><div class="blk" style="--c:#7b3fe4"><div class="blk-time"><strong>09:00</strong><span>10:30</span></div>
-      <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><div class="blk-meta">${H.chip('Operacional', '#7b3fe4')} ${H.status('pendente')}</div></div>
+      <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><small class="blk-kind">Rotina do dia</small></div>
       <div class="blk-actions"><span class="icon-btn ok">${U.icon('check', 16)}</span><span class="icon-btn info">${U.icon('play', 14)}</span><span class="icon-btn">${U.icon('more', 16)}</span></div></div>
       <div class="tm-legend"><span>${U.icon('check', 13)} Concluir</span><span>${U.icon('play', 11)} Iniciar</span><span>${U.icon('more', 13)} Adiar, mover, excluir</span></div></div>`,
     task: () => `<div class="tour-mock"><div class="task dl-row-soon" style="--c:#e3a043"><label class="tk-check"><span></span></label><div class="tk-body"><div class="tk-title">Cobrar relatório da equipe</div>
@@ -5073,7 +4894,7 @@ const Guide = {
     occ: () => `<div class="tour-mock"><div class="occ card prio-border-urgente"><div class="occ-h"><h3>Câmeras offline no cliente</h3><span class="grow"></span>${H.prio('urgente')}</div>
       <div class="occ-actions"><span class="btn sm">${U.icon('calendar', 15)} Encaixar na agenda</span><span class="btn sm ghost ok-text">${U.icon('check', 15)} Resolver</span></div></div></div>`,
     dash: () => `<div class="tour-mock tm-kpis"><div class="kpi k-green"><span class="kpi-l">Progresso do dia</span><strong class="kpi-v">45%</strong></div><div class="kpi k-red"><span class="kpi-l">Atrasadas</span><strong class="kpi-v">2</strong></div><div class="kpi k-yellow"><span class="kpi-l">Imprevistos</span><strong class="kpi-v">1</strong></div></div>`,
-    plan: () => `<div class="tour-mock tm-grid">${[['calendar', 'Calendário', 'No Início e na Agenda'], ['users', 'Reuniões', 'Pauta, gravação e ata'], ['chat', 'Feedbacks', 'Registro com IA'], ['kanban', 'Projetos', 'Etapas e Kanban']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
+    plan: () => `<div class="tour-mock tm-grid">${[['calendar', 'Calendário', 'No Início e na Agenda'], ['users', 'Reuniões', 'Pauta, gravação e ata'], ['chat', 'Feedbacks', 'Registro com IA'], ['plus', 'Botão +', 'Cria o item da tela']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
     data: () => `<div class="tour-mock tm-data"><span class="btn sm primary">${U.icon('arrow', 15)} Enviar meus dados</span><span class="btn sm">${U.icon('download', 15)} Receber dados</span></div>`,
   },
 
@@ -5081,29 +4902,29 @@ const Guide = {
     const m = this.mock;
     return [
       { icon: 'dashboard', color: 'var(--primary)', title: 'Bem-vindo ao seu centro de controle',
-        text: 'Em poucos toques você vê o que fazer hoje, o que está atrasado, o que cobrar da equipe e quais projetos precisam de atenção.',
+        text: 'Em poucos toques você vê o que fazer hoje, o que está atrasado e o que cobrar da equipe.',
         mock: m.nav(),
-        points: ['No celular, a <strong>barra de baixo</strong> leva às telas do dia a dia: Início, Agenda, Tarefas e Imprevistos.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
+        points: ['No celular, a <strong>barra de baixo</strong> leva às telas do dia a dia: Início, Agenda, Tarefas e Imprevistos.', 'O botão redondo <strong>+</strong>, no canto de baixo, cria o item da tela em que você está (tarefa, reunião, imprevisto…). No Início e na Agenda ele pergunta o que criar.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
       { icon: 'dashboard', color: 'var(--primary)', title: 'Início: o resumo do seu dia',
         text: 'A primeira tela mostra a situação geral, atualizada automaticamente.',
         mock: m.dash(),
-        points: ['<strong>Calendário</strong>: bata o olho nos compromissos da semana e do mês. Toque num dia para ver a lista dele.', '<strong>O que fazer hoje</strong>: próximas atividades da agenda.', '<strong>O que resolver</strong>: urgentes, alta prioridade e atrasados.', '<strong>O que cobrar da equipe</strong>: itens com responsável definido.', 'Toque nos cartões para abrir a lista correspondente.'] },
-      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: dia, semana e mês',
-        text: 'Tudo da rotina num lugar só. Em <strong>Dia</strong>, sua rotina por horário; em <strong>Semana</strong> e <strong>Mês</strong>, a visão geral com compromissos e prazos.',
+        points: ['<strong>Calendário</strong>: bata o olho nos compromissos do mês. Toque num dia para ver a lista dele.', '<strong>O que fazer hoje</strong>: próximas atividades da agenda.', '<strong>O que resolver</strong>: urgentes, alta prioridade e atrasados.', '<strong>O que cobrar da equipe</strong>: itens com responsável definido.', 'Toque nos cartões para abrir a lista correspondente.'] },
+      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: o seu dia numa lista só',
+        text: 'Em cima, a semana (ou o mês inteiro, em <strong>Ver o mês inteiro</strong>). Embaixo, o dia escolhido por horário: rotina, reuniões, compromissos e prazos juntos.',
         mock: m.agenda(),
-        points: ['Toque na atividade para mudar horário, prioridade ou observações.', 'A faixa da semana no topo troca o dia com um toque.', '<strong>Intervalo agora</strong> marca o almoço na hora em que você for e empurra o resto do dia.', '<strong>Reorganizar</strong> move as atrasadas para o próximo dia útil.', '<strong>Horário fixo</strong> só impede que a atividade seja empurrada; ela continua contando no progresso.'] },
+        points: ['Toque na atividade para mudar horário, prioridade ou observações.', 'Toque num dia do calendário para ver a lista dele. Arraste para os lados para trocar de semana.', '<strong>+</strong> → <strong>Intervalo agora</strong> marca o almoço na hora em que você for e empurra o resto do dia.', '<strong>Reorganizar</strong> move as atrasadas para o próximo dia útil.', '<strong>Horário fixo</strong> só impede que a atividade seja empurrada; ela continua contando no progresso.'] },
       { icon: 'alert', color: 'var(--primary)', title: 'Imprevistos: o urgente sem bagunçar o dia',
-        text: 'Registre demandas que exigem atenção imediata pelo botão <strong>Imprevisto</strong>.',
+        text: 'Registre demandas que exigem atenção imediata pelo botão <strong>+</strong> da tela Imprevistos (ou da Agenda).',
         mock: m.occ(),
         points: ['<strong>Encaixar na agenda</strong> reserva um horário e empurra as atividades seguintes, sem mexer no intervalo.', 'Defina um <strong>responsável</strong> para acompanhar em “O que cobrar”.', '<strong>Resolver</strong> encerra o imprevisto e conclui o horário reservado.'] },
       { icon: 'tasks', color: 'var(--primary)', title: 'Tarefas com prazo e alertas',
         text: 'Cadastre pendências com prazo, prioridade e, se delegar, o responsável.',
         mock: m.task(),
         points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', 'Os contadores no topo funcionam como filtros (Abertas, Atrasadas, Concluídas…).', 'Com <strong>horário de prazo</strong>, o app pode te avisar na hora: ligue em Configurações → <strong>Lembretes</strong>.'] },
-      { icon: 'users', color: 'var(--primary)', title: 'Reuniões, feedbacks e projetos',
-        text: 'No menu ficam as ferramentas de gestão da equipe.',
+      { icon: 'users', color: 'var(--primary)', title: 'Reuniões e feedbacks',
+        text: 'As conversas com a equipe ficam numa tela só, com duas abas. Abra pelo menu ☰.',
         mock: m.plan(),
-        points: ['<strong>Reuniões</strong>: pauta antes; durante, gravação com transcrição ao vivo; depois, a IA escreve a ata.', '<strong>Feedbacks</strong>: grave a conversa com o colaborador e a IA escreve o registro no padrão do seu agente.', '<strong>Projetos</strong>: marque as etapas e o percentual é calculado sozinho.'] },
+        points: ['<strong>Reuniões</strong>: pauta antes; durante, gravação com transcrição ao vivo; depois, a IA escreve a ata.', '<strong>Feedbacks</strong>: grave a conversa com o colaborador e a IA escreve o registro no padrão do seu agente.'] },
       { icon: 'download', color: 'var(--primary)', title: 'Seus dados', final: true,
         text: `Tudo o que você cadastra fica salvo ${this.whereData()}.`,
         mock: m.data(),
@@ -5212,14 +5033,14 @@ Views.guia = {
       <li><strong>Configurações → Jornada</strong>: confira entrada, saída, intervalo e dias de trabalho.</li>
       <li><strong>Configurações → Rotina padrão</strong>: ajuste os blocos de horário do seu dia. Eles montam a agenda de cada dia útil.</li>
       <li><strong>Configurações → Técnicos</strong>: cadastre a equipe para usar como responsáveis e na produtividade individual.</li>
-      <li><strong>Tarefas</strong> e <strong>Projetos</strong>: cadastre as pendências e obras em andamento.</li>
-      <li>Opcional: em <strong>Agenda → Semana</strong>, dê um foco e um checklist a cada dia. Veja como no tema abaixo.</li>
+      <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
     ${sec('nav', 'menu', 'Navegação', li([
       'No celular, a <strong>barra de baixo</strong> tem os atalhos do dia a dia: Início, Agenda, Tarefas e Imprevistos.',
       'Toque em <strong>☰</strong> (canto superior esquerdo) para abrir o menu com todas as telas. No celular, também dá para <strong>arrastar o dedo a partir da borda esquerda</strong>; para fechar, arraste para a esquerda ou toque fora.',
-      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões, Imprevistos), <strong>Equipe e projetos</strong> (Feedbacks, Projetos) e <strong>Ajustes</strong>.',
+      'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início e na Agenda ele mostra a lista do que dá para criar: atividade, intervalo, tarefa, reunião, feedback, imprevisto ou compromisso.',
+      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões e feedbacks, Imprevistos) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
       'Um <strong>ponto vermelho</strong> no ☰ e os <strong>números</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
@@ -5227,11 +5048,11 @@ Views.guia = {
     ]))}
 
     ${sec('calendario', 'calendar', 'Calendário', li([
-      'Fica no <strong>Início</strong> e em <strong>Agenda → Mês</strong>. Mostra reuniões, compromissos e prazos de tarefas, projetos e imprevistos, cada tipo com uma cor (veja a legenda embaixo).',
+      'Fica no <strong>Início</strong> e no topo da <strong>Agenda</strong>. Mostra reuniões, compromissos e prazos de tarefas e imprevistos, cada tipo com uma cor (veja a legenda embaixo).',
       'No celular, cada dia mostra <strong>bolinhas coloridas</strong>; no computador, os títulos aparecem dentro dos dias.',
       'Toque num dia para ver a <strong>lista dele</strong> ao lado (ou embaixo). Toque num item para abri-lo.',
-      '<strong>Semana / Mês</strong> troca o tamanho do calendário. <strong>‹ ›</strong> ou <strong>arrastar o dedo</strong> para os lados troca de mês ou semana. <strong>Hoje</strong> volta para o dia atual.',
-      '<strong>+ Novo</strong> cria, no dia escolhido, uma reunião, um compromisso, uma tarefa ou uma atividade na agenda.',
+      '<strong>Semana / Mês</strong> (no Início) e <strong>Ver o mês inteiro</strong> (na Agenda) trocam o tamanho do calendário. <strong>‹ ›</strong> ou <strong>arrastar o dedo</strong> para os lados troca de mês ou semana. <strong>Hoje</strong> volta para o dia atual.',
+      'O botão <strong>+</strong> cria algo no dia escolhido: reunião, compromisso, tarefa ou atividade na agenda.',
       '<strong>Agenda do dia</strong>, no fim da lista, abre o cronograma por horário daquele dia.',
     ]))}
 
@@ -5240,26 +5061,26 @@ Views.guia = {
       '<strong>Tarefas concluídas / pendentes / atrasadas</strong>: toque no cartão para abrir a lista filtrada.',
       '<strong>O que fazer hoje</strong>: a atividade atual (marcada “Agora”) e as próximas.',
       '<strong>O que resolver</strong>: imprevistos abertos, tarefas urgentes, de alta prioridade ou atrasadas.',
-      '<strong>O que cobrar da equipe</strong>: tarefas, imprevistos e pendências de projeto com responsável definido.',
+      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido.',
       'A <strong>linha do tempo</strong> abaixo da data mostra o dia inteiro: blocos roxos estão concluídos, o claro é o que acontece agora e os vermelhos estão atrasados. Toque nela para abrir a agenda.',
       'Logo abaixo, o <strong>calendário</strong> (veja o tema Calendário).',
       `<strong>Resumo da semana</strong>${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,
     ]))}
 
-    ${sec('agenda', 'clock', 'Agenda (dia, semana e mês)', `<p>Tudo da rotina num lugar só. No topo, escolha <strong>Dia</strong> (cronograma por horário), <strong>Semana</strong> (foco, checklist, compromissos e prazos de cada dia) ou <strong>Mês</strong> (calendário e metas das 4 semanas).</p>${li([
-      'Em <strong>Dia</strong>, a faixa da semana no topo troca o dia com um toque (ou arrastando para os lados).',
-      '<strong>Intervalo agora</strong>: marca o almoço na hora em que você for (duração ajustável) e empurra as atividades seguintes. Em Configurações → Jornada dá para escolher intervalo flexível, em horário fixo ou sem intervalo.',
-      '<strong>✓</strong> conclui, <strong>▶</strong> marca “em andamento” (só uma por vez), <strong>↶</strong> reabre.',
-      '<strong>Toque na atividade</strong> para editar título, horário, categoria, prioridade, status e observações.',
+    ${sec('agenda', 'clock', 'Agenda', `<p>O seu dia numa tela só. Em cima, o <strong>calendário da semana</strong>; toque num dia para abri-lo, ou em <strong>Ver o mês inteiro</strong>. Embaixo, a <strong>lista do dia por horário</strong>: as atividades da rotina e, no meio delas, reuniões, compromissos e prazos.</p>${li([
+      'Toque num dia do calendário (ou arraste para os lados para trocar de semana). <strong>Hoje</strong> volta para o dia atual.',
+      '<strong>✓</strong> conclui e <strong>↶</strong> reabre. Toque na atividade para editar título, horário, categoria, prioridade, status e observações.',
+      'Reuniões, compromissos e prazos aparecem com a cor do tipo. Toque neles para abrir.',
+      'Botão <strong>+</strong>: nova atividade, <strong>Intervalo agora</strong> (marca o almoço na hora em que você for e empurra o que vem depois), tarefa, reunião, feedback, imprevisto ou compromisso, tudo no dia escolhido.',
       'Ao mudar um horário, deixe marcado <strong>“deslocar as atividades seguintes”</strong>: o resto do dia é empurrado na mesma ordem, e o intervalo fica no lugar.',
-      '<strong>⋯</strong> → Adiar 15/30 min, Mover para o próximo dia útil, Mover para outra data, Duplicar, Cancelar ou Excluir.',
+      '<strong>⋯</strong> da atividade → Começar agora, Adiar 15/30 min, Mover para o próximo dia útil, Mover para outra data, Duplicar, Cancelar ou Excluir.',
       '<strong>Reorganizar</strong> → mover todas as atrasadas de uma vez, encaixar imprevisto ou restaurar a rotina padrão do dia.',
-      '<strong>‹ ›</strong> e o campo de data trocam o dia; <strong>Hoje</strong> volta para o dia atual.',
+      'O intervalo pode ser flexível, em horário fixo ou desligado: Configurações → Jornada.',
     ])}<p class="guide-note"><strong>Horário fixo</strong> significa só que a atividade não é empurrada quando o dia é reorganizado. Ela continua contando no progresso normalmente.</p>
     <p class="guide-note"><strong>Rotina padrão × dia:</strong> cada dia começa com a rotina padrão. Mudanças feitas em um dia valem só para ele. Para mudar todos os dias, edite em Configurações → Rotina padrão, ou marque “Aplicar também à rotina padrão” ao editar.</p>`)}
 
     ${sec('imprevistos', 'alert', 'Imprevistos', li([
-      'Registre pelo botão <strong>Imprevisto</strong> (na Agenda) ou em <strong>Imprevistos → Registrar</strong>.',
+      'Registre pelo botão <strong>+</strong> na tela Imprevistos, ou pelo <strong>+</strong> da Agenda (aí ele já é encaixado no dia).',
       'Preencha título, prioridade, prazo e <strong>responsável</strong> (aparece em “O que cobrar”).',
       '<strong>Encaixar na agenda</strong>: escolha data, horário e duração. “Deslocar” empurra as atividades seguintes; “Apenas encaixar” mantém tudo como está.',
       '<strong>Iniciar</strong> e <strong>Resolver</strong> atualizam o status. Ao resolver, o horário reservado na agenda é concluído.',
@@ -5267,53 +5088,17 @@ Views.guia = {
     ]))}
 
     ${sec('tarefas', 'tasks', 'Tarefas', li([
-      '<strong>+ Nova tarefa</strong>: nome, descrição, categoria, prioridade, status, início, prazo, horário e observações.',
+      'Botão <strong>+</strong>: nome, descrição, categoria, prioridade, status, início, prazo, horário e observações.',
       'Toque no <strong>quadrado</strong> à esquerda para concluir (aparece “Desfazer” por alguns segundos).',
       'O seletor de status à direita muda para Pendente, Em andamento, Concluída ou Cancelada.',
       'Os <strong>contadores do topo</strong> filtram a lista. Abaixo, há busca e filtros por categoria, prioridade e prazo.',
       'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada.',
     ]))}
 
-    ${sec('semanal', 'week', 'Agenda → Semana (foco e checklist)', `
-      <p><strong>Para que serve:</strong> é a lista do que você quer garantir em cada dia da semana, e que se repete toda semana. Ajuda a não esquecer as rotinas de gestão, como revisar pendências na segunda ou fechar resultados na sexta.</p>
-      <p><strong>Como montar (uma vez só):</strong></p>
-      <ol>
-        <li>Abra <strong>Agenda → Semana</strong>. Cada dia útil tem um quadro com os compromissos e prazos do dia e, se você quiser, um foco e um checklist.</li>
-        <li>Toque no <strong>lápis</strong> de um dia e escreva o <strong>foco</strong>, um tema curto (ex.: “Planejamento”). É opcional.</li>
-        <li>Toque em <strong>Adicionar item</strong> e escreva o que precisa ser feito nesse dia. Repita para cada item.</li>
-      </ol>
-      <p><strong>No dia a dia:</strong></p>
-      ${li([
-        'Marque cada item quando fizer. O anel no topo mostra quanto da semana já foi cumprido.',
-        'O foco do dia também aparece no <strong>Início</strong> e na <strong>Agenda</strong>.',
-        'Na semana seguinte a lista volta desmarcada. As marcações antigas ficam guardadas: use <strong>‹ ›</strong> para ver outras semanas.',
-        'Para mudar ou excluir um item, toque no lápis ao lado dele.',
-      ])}
-      <p class="guide-note"><strong>Exemplo:</strong> Segunda, foco “Planejamento”, itens “Revisar pendências da semana passada” e “Distribuir atividades da equipe”. Sexta, foco “Resultados”, item “Preparar a próxima semana”.</p>
-      <p class="guide-note"><strong>Tarefas ou planejamento?</strong> Use <strong>Tarefas</strong> para algo que acontece uma vez e tem prazo. Use o <strong>planejamento semanal</strong> para o que se repete toda semana.</p>`)}
-
-    ${sec('mensal', 'target', 'Agenda → Mês (metas das 4 semanas)', `
-      <p><strong>Para que serve:</strong> é a mesma ideia do semanal, em escala de mês. O mês é dividido em <strong>4 semanas</strong>: dias 1 a 7, 8 a 14, 15 a 21 e 22 até o fim. Cada uma pode ter um foco e uma lista de entregas.</p>
-      <p><strong>Como montar (uma vez só):</strong></p>
-      <ol>
-        <li>Abra <strong>Agenda → Mês</strong> e, abaixo do calendário, toque em <strong>Metas das semanas</strong>. Os 4 quadros começam em branco.</li>
-        <li>Toque no <strong>lápis</strong> de uma semana e escreva o foco dela (ex.: “Diagnóstico”). É opcional.</li>
-        <li>Toque em <strong>Adicionar item</strong> para listar as entregas daquele período.</li>
-      </ol>
-      <p><strong>No dia a dia:</strong></p>
-      ${li([
-        'A semana em que você está fica destacada. Marque os itens conforme forem concluídos.',
-        'No mês seguinte a lista volta desmarcada. Use <strong>‹ ›</strong> para ver outros meses.',
-        'O <strong>calendário</strong> abaixo reúne compromissos e prazos de tarefas, projetos e imprevistos. No celular, cada cor de ponto é um tipo.',
-        'Toque em um dia do calendário para ver o que há nele, criar um compromisso ou abrir a agenda daquele dia.',
-        '<strong>Novo compromisso</strong> registra reuniões e visitas. Se quiser, ele já entra na agenda do dia.',
-      ])}
-`)}
-
     ${sec('reunioes', 'users', 'Reuniões (pauta, registro e IA)', `
-      <p>Fica em <strong>Menu → Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
+      <p>Fica em <strong>Menu → Reuniões e feedbacks</strong>, aba <strong>Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
       <ol>
-        <li><strong>Antes:</strong> toque em <strong>Nova reunião</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha. Ou descreva o tema em <strong>Gerar pauta com IA</strong>: ela monta a pauta e pode incluir os assuntos que ficaram pendentes nas últimas reuniões.</li>
+        <li><strong>Antes:</strong> toque em <strong>+</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha. Ou descreva o tema em <strong>Gerar pauta com IA</strong>: ela monta a pauta e pode incluir os assuntos que ficaram pendentes nas últimas reuniões.</li>
         <li><strong>Na hora:</strong> toque em <strong>Iniciar</strong> no cartão da reunião (ou abra a reunião e toque em <strong>Iniciar reunião</strong>). Dá para iniciar a qualquer momento, antes ou depois do horário marcado.</li>
         <li>Toque em <strong>Iniciar gravação</strong>. A transcrição aparece na tela a cada ~40 segundos, enquanto a conversa acontece. Marque os assuntos da pauta conforme forem tratados.</li>
         <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA escreve a <strong>ata</strong> no padrão do seu agente, marca a pauta e lista os combinados. Use <strong>Natural</strong>, <strong>Compactar</strong> ou <strong>Detalhar</strong> para ajustar a ata, e <strong>Copiar</strong> ou <strong>Compartilhar</strong> para enviar.</li>
@@ -5323,9 +5108,9 @@ Views.guia = {
       <p class="guide-note">Sem gravar também funciona: escreva ou dite (microfone do teclado) suas anotações e toque em <strong>Preencher com IA</strong>. A chave da IA fica em <strong>Configurações → IA</strong> (ou cole direto na tela da reunião).</p>`)}
 
     ${sec('feedbacks', 'chat', 'Feedbacks da equipe', `
-      <p>Fica em <strong>Menu → Feedbacks</strong>. Registra as conversas individuais com cada colaborador, com histórico por pessoa.</p>
+      <p>Fica em <strong>Menu → Reuniões e feedbacks</strong>, aba <strong>Feedbacks</strong>. Registra as conversas individuais com cada colaborador, com histórico por pessoa.</p>
       <ol>
-        <li>Toque em <strong>Novo feedback</strong>, escreva o nome do colaborador (ele entra na lista da equipe), o tipo (feedback, orientação verbal ou advertência formal) e o tom.</li>
+        <li>Toque em <strong>+</strong>, escreva o nome do colaborador (ele entra na lista da equipe), o tipo (feedback, orientação verbal ou advertência formal) e o tom.</li>
         <li>Na conversa, toque em <strong>Iniciar gravação</strong>. A transcrição aparece na tela enquanto vocês conversam. Também dá para só escrever ou ditar anotações.</li>
         <li>Toque em <strong>Encerrar gravação</strong>: a IA escreve o registro no padrão do seu agente (2 ou 3 parágrafos) e separa os <strong>acordos</strong>.</li>
         <li>Ajuste com <strong>Natural</strong>, <strong>Compactar</strong> ou <strong>Detalhar</strong>, marque se quer criar tarefas para os acordos (com o colaborador como responsável) e toque em <strong>Salvar feedback</strong>.</li>
@@ -5343,8 +5128,8 @@ Views.guia = {
       ])}
       ${Native.available() ? '<p class="guide-note"><strong>Xiaomi / Redmi:</strong> para os avisos tocarem com o app fechado, deixe tudo verde em Configurações → Lembretes: notificações, alarmes exatos, bateria sem restrição e <strong>inicialização automática</strong> ligada.</p>' : ''}`)}
 
-    ${sec('projetos', 'kanban', 'Projetos', li([
-      '<strong>+ Novo projeto</strong>: cliente, responsável, datas, status e etapas (uma por linha).',
+    ${!S.settings.showProjetos ? '' : sec('projetos', 'kanban', 'Projetos', li([
+      'Botão <strong>+</strong>: cliente, responsável, datas, status e etapas (uma por linha).',
       'Toque no cartão para abrir: marque as <strong>etapas</strong> (o % é calculado sozinho), registre <strong>pendências</strong> e mude o status.',
       '<strong>Kanban</strong>: no computador, arraste entre colunas. No celular, mude o status dentro do projeto.',
       '<strong>Linha do tempo</strong>: barras do início ao prazo, com a linha vermelha marcando hoje.',
@@ -5377,10 +5162,8 @@ Views.guia = {
 
     ${sec('faq', 'info', 'Dúvidas frequentes', `<dl class="faq">
       <dt>Concluí uma atividade, mas o progresso não mudou.</dt><dd>Só o <strong>Intervalo</strong> e atividades <strong>canceladas</strong> ficam fora do progresso. Confira se a atividade não está com status Cancelada.</dd>
-      <dt>Qual a diferença entre Tarefas e o checklist da semana?</dt><dd>Tarefa é algo que acontece uma vez e tem prazo. O checklist de Agenda → Semana é a lista que se repete toda semana, dia a dia.</dd>
-      <dt>Não tenho horário fixo de almoço. Como faço?</dt><dd>Em Configurações → Jornada, deixe o intervalo como <strong>Flexível</strong>. Quando for almoçar, toque em <strong>Intervalo agora</strong> na Agenda: o resto do dia é empurrado.</dd>
+      <dt>Não tenho horário fixo de almoço. Como faço?</dt><dd>Em Configurações → Jornada, deixe o intervalo como <strong>Flexível</strong>. Quando for almoçar, toque em <strong>+</strong> → <strong>Intervalo agora</strong> na Agenda: o resto do dia é empurrado.</dd>
       ${S.settings.showIndicadores ? '<dt>Por que um indicador aparece como “sem dados”?</dt><dd>Porque nada foi lançado para ele no período escolhido. O app não inventa nem assume zero.</dd>' : ''}
-      <dt>Uma atividade aparece “Fora do expediente”.</dt><dd>Ela termina depois do horário de saída (geralmente após deslocar o dia). Use ⋯ → Mover para o próximo dia útil.</dd>
       <dt>Como faço para que uma mudança valha para todos os dias?</dt><dd>Edite em Configurações → Rotina padrão, ou marque “Aplicar também à rotina padrão” ao editar uma atividade da agenda.</dd>
       <dt>Como levo meus dados do app para a web (ou para outro celular)?</dt><dd>Configurações → Dados → <strong>Enviar meus dados</strong>, copie o código e mande para você mesmo. Na outra versão: Configurações → Dados → <strong>Receber dados</strong>, cole e confirme. Os dados da versão de destino são substituídos.</dd>
     </dl>`)}`;
@@ -5465,15 +5248,29 @@ const Reports = {
   <script>/* js/app.js */
 'use strict';
 /* Inicialização, navegação e delegação de eventos */
-/* Menu lateral em grupos. "Indicadores" só aparece se ativado em Configurações → Aparência. */
+/* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
+   Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
   ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
-  ['Equipe e projetos', ['feedbacks', 'projetos', 'indicadores']],
+  ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
 /* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
-const routeVisible = id => id !== 'indicadores' || !!(S && S.settings && S.settings.showIndicadores);
+const routeVisible = id => {
+  const st = (S && S.settings) || {};
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : true;
+};
+/* Botão flutuante "+": o que ele cria depende da tela */
+const FAB = {
+  act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
+  render(route) {
+    const el = document.getElementById('fab'); if (!el) return;
+    const f = this.act(route);
+    el.hidden = !f;
+    if (f) { el.dataset.act = f.act; el.setAttribute('aria-label', f.label); el.title = f.label; Object.keys(el.dataset).filter(k => k !== 'act').forEach(k => delete el.dataset[k]); Object.assign(el.dataset, f.data || {}); }
+  },
+};
 
 const App = {
   ui: {},
@@ -5484,8 +5281,8 @@ const App = {
     const h = location.hash.replace(/^#\/?/, '');
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
-    const moved = { semanal: 'semana', mensal: 'mes' }[path];
-    if (moved) { this.ui.agendaMode = moved; this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
@@ -5494,10 +5291,11 @@ const App = {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].nav}</span>${badge(id)}</a>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    FAB.render(this.route);
     document.getElementById('storage-status').innerHTML =
       dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
@@ -5648,7 +5446,7 @@ const Theme = {
 function commit() { Store.save(); App.render(); }
 
 Actions.openMenu = () => App.openMenu();
-Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.ui.agendaMode = 'dia'; App.go('agenda'); };
+Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
 Actions.goTasks = ({ status }) => { App.ui.taskF = { q: '', status, priority: '', category: '', period: '', from: '', to: '' }; App.go('tarefas'); };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
