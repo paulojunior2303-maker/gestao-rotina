@@ -22,22 +22,18 @@ const FB = {
   },
 };
 
-Views.feedbacks = {
-  title: 'Feedbacks', icon: 'chat', nav: 'Feedbacks',
+/* Aba "Feedbacks" da tela Reuniões e feedbacks */
+const FBPage = {
   render() {
     const who = App.ui.fbWho;
     if (who) return this.person(who);
     const people = FB.people(), recent = [...FB.list()].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
     return `
-    <div class="toolbar">
-      <p class="plan-intro-p">Grave a conversa com o colaborador e a IA escreve o registro no padrão do seu agente. Os acordos podem virar tarefas.</p>
-      <button class="btn primary" data-act="fbNew">${U.icon('plus')} Novo feedback</button>
-    </div>
     ${people.length ? `<section class="mt-sec"><h3 class="mt-h">Equipe</h3><div class="fb-people">${people.map(p => `<div class="fb-person" role="button" tabindex="0" data-act="fbWho" data-n="${U.esc(p.name)}">
         <span class="fb-av">${U.esc(FB.initials(p.name))}</span>
         <span class="fb-p-body"><strong>${U.esc(p.name)}${H.demo(p)}</strong><small class="muted">${p.items.length ? `${U.plural(p.items.length, 'feedback')} · último em ${U.fmtShort(p.items[0].date)}` : 'Nenhum feedback ainda'}</small></span>
         ${p.items[0] ? H.chip(IA.TONS[p.items[0].tom] || 'Neutro', FB.TOM_COLOR[p.items[0].tom] || '#8e87a3') : ''}${U.icon('right', 15)}</div>`).join('')}</div></section>` : `<div class="card mt-empty"><h3>Como funciona</h3><ol class="mt-steps">
-        <li>Toque em <strong>Novo feedback</strong> e escreva o nome do colaborador (ele entra na lista da equipe).</li>
+        <li>Toque em <strong>+</strong> e escreva o nome do colaborador (ele entra na lista da equipe).</li>
         <li>Na conversa, toque em <strong>Iniciar gravação</strong> (avise o colaborador). A transcrição aparece na tela.</li>
         <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA escreve o registro e separa os acordos. Confira e salve.</li></ol></div>`}
     ${recent.length ? `<section class="mt-sec"><h3 class="mt-h">Recentes</h3><div class="mt-list">${recent.map(f => FB.card(f, true)).join('')}</div></section>` : ''}`;
@@ -46,11 +42,10 @@ Views.feedbacks = {
     const items = FB.list().filter(f => f.pessoa === name).sort((a, b) => b.date.localeCompare(a.date));
     const count = k => items.filter(f => f.tom === k).length;
     return `
-    <div class="toolbar"><button class="btn sm ghost" data-act="fbWho" data-n="">${U.icon('left', 15)} Equipe</button><span class="grow"></span>
-      <button class="btn primary" data-act="fbNew" data-n="${U.esc(name)}">${U.icon('plus')} Novo feedback</button></div>
+    <div class="toolbar"><button class="btn sm ghost" data-act="fbWho" data-n="">${U.icon('left', 15)} Equipe</button></div>
     <div class="card fb-head"><span class="fb-av big">${U.esc(FB.initials(name))}</span><div><h2>${U.esc(name)}</h2>
       <p class="muted small">${items.length ? `${U.plural(items.length, 'feedback')}: ${count('positivo')} positivos, ${count('neutro')} neutros, ${count('melhorar')} a melhorar` : 'Nenhum feedback registrado ainda.'}</p></div></div>
-    ${items.length ? `<div class="mt-list">${items.map(f => FB.card(f, false)).join('')}</div>` : H.empty('Toque em Novo feedback para registrar a primeira conversa.')}`;
+    ${items.length ? `<div class="mt-list">${items.map(f => FB.card(f, false)).join('')}</div>` : H.empty('Toque em + para registrar a primeira conversa.')}`;
   },
 };
 
@@ -99,7 +94,7 @@ Object.assign(FB, {
           S.tasks.push({ id: U.uid(), title, description: `Acordo do feedback com ${v.pessoa} (${U.fmtShort(v.date)}).`, category: 'equipe', priority: 'media', status: 'pendente', responsible: v.pessoa, createdAt: new Date().toISOString(), startDate: U.today(), dueDate: '', dueTime: '', notes: '', completedAt: null });
         });
         warned = true;
-        App.ui.fbWho = v.pessoa;
+        if (App.route === 'reunioes' && App.ui.mtTab === 'feedbacks') App.ui.fbWho = v.pessoa;
         commit();
         UI.toast(n ? `Feedback salvo e ${U.plural(n, 'tarefa criada', 'tarefas criadas')}.` : 'Feedback salvo.');
       },

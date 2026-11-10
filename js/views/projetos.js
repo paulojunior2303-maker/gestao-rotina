@@ -2,6 +2,7 @@
 /* Gestão de projetos — Kanban e linha do tempo */
 Views.projetos = {
   title: 'Gestão de projetos', icon: 'kanban', nav: 'Projetos',
+  fab: { act: 'pjNew', label: 'Novo projeto' },
   render() {
     const mode = App.ui.projMode || 'kanban';
     const ps = S.projects;
@@ -65,8 +66,6 @@ Views.projetos = {
         <button class="tab ${mode === 'timeline' ? 'active' : ''}" data-act="pjMode" data-v="timeline">${U.icon('timeline', 15)} Linha do tempo</button>
       </div>
       <span class="muted small">${cnt('andamento')} em andamento · ${cnt('planejamento')} em planejamento · ${cnt('concluido')} concluídos${ps.filter(D.projectLate).length ? ` · <span class="c-red">${ps.filter(D.projectLate).length} com prazo vencido</span>` : ''}</span>
-      <span class="grow"></span>
-      <button class="btn primary" data-act="pjNew">${U.icon('plus')} Novo projeto</button>
     </div>
     ${body}`;
   },

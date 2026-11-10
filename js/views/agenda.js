@@ -1,92 +1,80 @@
 'use strict';
-/* Agenda — tudo da rotina num lugar só: Dia (cronograma por horário), Semana (foco e checklist de cada dia,
-   compromissos e prazos) e Mês (calendário + planejamento das 4 semanas do mês) */
+/* Agenda — uma tela só: calendário compacto em cima (semana; "Ver mês" abre o mês inteiro) e, embaixo,
+   o dia escolhido numa lista única por horário: atividades da rotina + reuniões, compromissos e prazos. */
 Views.agenda = {
   title: 'Agenda', icon: 'clock', nav: 'Agenda',
-  render(params) {
-    const mode = App.ui.agendaMode || 'dia';
-    const tabs = `<div class="agenda-modes tabs" role="tablist">${[['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês']].map(([v, l]) => `<button class="tab ${mode === v ? 'active' : ''}" role="tab" aria-selected="${mode === v}" data-act="agMode" data-v="${v}">${l}</button>`).join('')}</div>`;
-    if (mode === 'semana') return tabs + WeekPlan.render();
-    if (mode === 'mes') return tabs + MonthPlan.render();
-    return tabs + this.renderDay(params);
-  },
-  renderDay(params) {
-    const k = App.ui.agendaDate || U.today();
-    const t = U.today();
+  fab: () => ({ act: 'quickAdd', label: 'Adicionar neste dia', data: { k: Agenda.day(), from: 'agenda' } }),
+  render() {
+    const k = Agenda.day(), t = U.today();
+    Cal.sync('agenda', k);
     const blocks = D.dayBlocks(k);
     const conflicts = D.conflicts(blocks);
     const prog = D.progress(k);
-    const endMin = U.toMin(S.settings.workEnd), startMin = U.toMin(S.settings.workStart);
     const late = blocks.filter(b => D.blockLate(b, k));
-    const focus = S.weekly.focus.find(f => f.day === U.weekday(k));
-    const counts = st => blocks.filter(b => !D.isBreak(b) && b.status === st).length;
-    const occ = S.occurrences.filter(o => OPEN(o.status) && !(o.scheduled && o.scheduled.date));
+    const items = Cal.itemsOn(k);
+    const d = U.parse(k), wd = U.WD[d.getDay()];
+    const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : '';
 
     const row = b => {
       const c = D.cat(b.category);
       const isLate = D.blockLate(b, k), isNow = D.blockNow(b, k);
-      const dur = U.toMin(b.end) - U.toMin(b.start);
-      const outside = U.toMin(b.start) < startMin || U.toMin(b.end) > endMin;
+      if (D.isBreak(b)) {
+        return `<div class="blk blk-break" style="--c:${c.color}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body" data-act="agEdit" data-id="${b.id}"><span class="blk-title">${U.esc(b.title)}</span></div></div>`;
+      }
       const badges = [
         isNow ? '<span class="badge b-blue">Agora</span>' : '',
         isLate ? '<span class="badge b-red">Atrasada</span>' : '',
-        conflicts.has(b.id) ? '<span class="badge b-yellow">Conflito de horário</span>' : '',
-        outside && !D.blockDone(b) ? '<span class="badge b-yellow">Fora do expediente</span>' : '',
-        b.occurrenceId ? '<span class="badge b-red">Imprevisto</span>' : '',
-        b.fixed ? '<span class="badge">Horário fixo</span>' : '',
+        conflicts.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
+        b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
-      if (D.isBreak(b)) {
-        return `<div class="blk blk-break" style="--c:${c.color}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body"><span class="blk-title">${U.esc(b.title)}</span></div><div class="blk-actions"><button class="icon-btn" data-act="agEdit" data-id="${b.id}" title="Editar">${U.icon('edit', 16)}</button></div></div>`;
-      }
       return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color}">
-        <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span><small>${U.fmtDur(dur)}</small></div>
+        <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div>
         <div class="blk-body" data-act="agEdit" data-id="${b.id}">
           <div class="blk-head"><span class="blk-title">${U.esc(b.title)}</span>${badges}</div>
-          <div class="blk-meta">${H.cat(b.category)} ${H.prio(b.priority)} ${H.status(b.status)}</div>
           ${b.notes ? `<p class="blk-notes">${U.esc(b.notes)}</p>` : ''}
         </div>
         <div class="blk-actions">
           ${b.status === 'concluida'
-            ? `<button class="icon-btn" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir">${U.icon('undo', 16)}</button>`
-            : `<button class="icon-btn ok" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir">${U.icon('check', 16)}</button>
-               ${b.status !== 'andamento' ? `<button class="icon-btn info" data-act="agStatus" data-id="${b.id}" data-s="andamento" title="Iniciar (em andamento)">${U.icon('play', 14)}</button>` : ''}`}
-          <button class="icon-btn" data-act="agMore" data-id="${b.id}" title="Mais opções">${U.icon('more', 16)}</button>
+            ? `<button class="icon-btn" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
+            : `<button class="icon-btn ok" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`}
+          <button class="icon-btn" data-act="agMore" data-id="${b.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
         </div>
       </div>`;
     };
+    // Reuniões, compromissos e prazos entram na mesma lista, pela hora
+    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+        <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
+        <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
+          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
+        <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
+    const list = [
+      ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
+      ...blocks.map(b => ({ t: b.start, h: row(b) })),
+      ...items.filter(i => i.time).map(i => ({ t: i.time, h: item(i) })),
+    ].map((x, n) => ({ ...x, n })).sort((a, b) => a.t.localeCompare(b.t) || a.n - b.n);
+
+    const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
+      : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`;
 
     return `
-    ${Cal.strip(k)}
-    <div class="toolbar">
-      <div class="date-nav">
-        <input type="date" value="${k}" data-change="agDate" aria-label="Ir para a data">
-        ${k !== t ? '<button class="btn sm ghost" data-act="agShift" data-n="0">Hoje</button>' : ''}
-      </div>
-      <span class="grow"></span>
-      <button class="btn ghost" data-act="agMenu">${U.icon('more')} Reorganizar</button>
-      ${(S.settings.breakMode || 'fixo') === 'flexivel' && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada') ? `<button class="btn" data-act="agBreak">${U.icon('pause')} Intervalo ${k === t ? 'agora' : ''}</button>` : ''}
-      <button class="btn warn" data-act="agImprevisto">${U.icon('alert')} Imprevisto</button>
-      <button class="btn primary" data-act="agNew">${U.icon('plus')} Nova atividade</button>
-    </div>
+    <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
-    <div class="card day-head">
-      <div>
-        <h2>${U.fmtLong(k)}</h2>
-        <p class="muted">${D.isWorkday(k) ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : 'Dia útil') : 'Dia não útil (folga). Você ainda pode adicionar atividades.'}${S.days[k] ? '' : (blocks.length ? ' · Rotina padrão' : '')}</p>
+    <section class="ag-day">
+      <div class="ag-head">
+        <div class="ag-head-t">
+          <small class="muted">${when ? `${when} · ` : ''}${wd}</small>
+          <h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2>
+          <p class="muted small">${summary}</p>
+        </div>
+        <span class="grow"></span>
+        ${blocks.length ? `<button class="btn sm ghost" data-act="agMenu" aria-label="Reorganizar o dia">${U.icon('more', 16)} Reorganizar</button>` : ''}
       </div>
-      <div class="day-prog">
-        ${blocks.length ? H.dayRail(k, { link: false }) : H.bar(prog.pct)}
-        <div class="day-counts"><span>${prog.pct === null ? '—' : prog.pct + '%'} concluído</span><span class="c-green">${counts('concluida')} concluídas</span><span class="c-blue">${counts('andamento')} em andamento</span><span class="c-gray">${counts('pendente')} pendentes</span>${late.length ? `<span class="c-red">${late.length} atrasadas</span>` : ''}</div>
+      ${blocks.length ? H.dayRail(k, { link: false }) : ''}
+      ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
+      <div class="timeline">
+        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', '<small class="muted">Toque em <strong>+</strong> para adicionar.</small>')}
       </div>
-    </div>
-
-    ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade atrasada', 'atividades atrasadas')}. Use <strong>Reorganizar</strong> para remanejá-las ou o menu ⋯ de cada uma.</span></div>` : ''}
-    ${occ.length ? `<div class="alert a-yellow">${U.icon('alert')} <span>${U.plural(occ.length, 'imprevisto aberto', 'imprevistos abertos')} sem horário na agenda.</span> <a class="link" href="#imprevistos">Ver imprevistos</a></div>` : ''}
-
-    <div class="timeline">
-      ${blocks.length ? blocks.map(row).join('') : H.empty('Nenhuma atividade neste dia.', '<button class="btn sm primary" data-act="agNew">Adicionar atividade</button>')}
-    </div>
-    <p class="muted small mt">Dica: clique em uma atividade para editar horário, prioridade e observações. Ao alterar um horário, você pode deslocar automaticamente as atividades seguintes, sem mexer no intervalo.</p>`;
+    </section>`;
   },
 };
 
@@ -168,10 +156,7 @@ const Agenda = {
 };
 
 Object.assign(Actions, {
-  agMode({ v }) { App.ui.agendaMode = v; App.render({ resetScroll: true }); },
-  agDay({ k }) { App.ui.agendaDate = k; App.render(); },
   agShift({ n }) { n = Number(n); App.ui.agendaDate = n === 0 ? U.today() : U.addDays(Agenda.day(), n); App.render(); },
-  agDate(_, el) { if (el.value) { App.ui.agendaDate = el.value; App.render(); } },
   agStatus({ id, s }) {
     const k = Agenda.day(); const b = D.findBlock(k, id); if (!b) return;
     b.status = s;
@@ -240,7 +225,8 @@ Object.assign(Actions, {
     };
     UI.sheet(b.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Actions.agEdit({ id }) },
-      { label: 'Marcar como pendente', icon: 'undo', onClick: () => Actions.agStatus({ id, s: 'pendente' }) },
+      b.status === 'andamento' ? { label: 'Marcar como pendente', icon: 'undo', onClick: () => Actions.agStatus({ id, s: 'pendente' }) }
+        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.agStatus({ id, s: 'andamento' }) },
       { label: 'Cancelar atividade', icon: 'x', onClick: () => Actions.agStatus({ id, s: 'cancelada' }) },
       { sep: true },
       { label: 'Adiar 15 minutos', hint: 'Desloca as seguintes, preservando o intervalo', icon: 'clock', onClick: delay(15) },

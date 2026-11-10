@@ -1,14 +1,28 @@
 'use strict';
 /* Inicialização, navegação e delegação de eventos */
-/* Menu lateral em grupos. "Indicadores" só aparece se ativado em Configurações → Aparência. */
+/* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
+   Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
   ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
-  ['Equipe e projetos', ['feedbacks', 'projetos', 'indicadores']],
+  ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
 /* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
-const routeVisible = id => id !== 'indicadores' || !!(S && S.settings && S.settings.showIndicadores);
+const routeVisible = id => {
+  const st = (S && S.settings) || {};
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : true;
+};
+/* Botão flutuante "+": o que ele cria depende da tela */
+const FAB = {
+  act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
+  render(route) {
+    const el = document.getElementById('fab'); if (!el) return;
+    const f = this.act(route);
+    el.hidden = !f;
+    if (f) { el.dataset.act = f.act; el.setAttribute('aria-label', f.label); el.title = f.label; Object.keys(el.dataset).filter(k => k !== 'act').forEach(k => delete el.dataset[k]); Object.assign(el.dataset, f.data || {}); }
+  },
+};
 
 const App = {
   ui: {},
@@ -19,8 +33,8 @@ const App = {
     const h = location.hash.replace(/^#\/?/, '');
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
-    const moved = { semanal: 'semana', mensal: 'mes' }[path];
-    if (moved) { this.ui.agendaMode = moved; this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
@@ -29,10 +43,11 @@ const App = {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].nav}</span>${badge(id)}</a>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    FAB.render(this.route);
     document.getElementById('storage-status').innerHTML =
       dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
@@ -183,7 +198,7 @@ const Theme = {
 function commit() { Store.save(); App.render(); }
 
 Actions.openMenu = () => App.openMenu();
-Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.ui.agendaMode = 'dia'; App.go('agenda'); };
+Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
 Actions.goTasks = ({ status }) => { App.ui.taskF = { q: '', status, priority: '', category: '', period: '', from: '', to: '' }; App.go('tarefas'); };
 
 document.addEventListener('DOMContentLoaded', () => App.init());

@@ -58,6 +58,8 @@ const U = (() => {
     trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
     left: '<path d="M15 18l-6-6 6-6"/>',
     right: '<path d="M9 18l6-6-6-6"/>',
+    down: '<path d="M6 9l6 6 6-6"/>',
+    up: '<path d="M18 15l-6-6-6 6"/>',
     menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
     x: '<path d="M18 6 6 18M6 6l12 12"/>',
     download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',

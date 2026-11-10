@@ -13,6 +13,8 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   const state = () => p.evaluate(() => JSON.parse(localStorage.getItem('gestao-rotina-wibicam:v1') || 'null'));
   const submit = async () => { await p.click('.modal-wrap.open [data-submit]'); await p.waitForTimeout(250); };
   const fill = async (name, v) => p.fill(`.modal-wrap.open [name="${name}"]`, v);
+  // Botão flutuante "+": abre a lista e escolhe o item (no Início e na Agenda)
+  const fab = async label => { await p.click('#fab'); await p.waitForTimeout(250); if (label) { await p.click(`.sheet-item:has-text("${label}")`); await p.waitForTimeout(250); } };
   const today = await p.evaluate(() => { const d = new Date(); return d.toISOString().slice(0,10); });
   await p.goto(B);
   await p.waitForTimeout(500); if (await p.locator('.tour-wrap').count()) { await p.locator('[data-tour=skip]').click(); await p.waitForTimeout(300); }
@@ -21,7 +23,12 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(!(await p.locator('#bottom-nav').isVisible()), 'no computador a barra de baixo fica escondida (menu lateral fixo)');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });
   await go('agenda');
-  assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes .tab').count() === 3, 'Agenda com Dia, Semana e Mês');
+  assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes, .calx-strip').count() === 0 && await p.locator('.ag-cal .calx-d').count() === 7, 'Agenda numa tela só: semana em cima, dia embaixo');
+  assert(await p.locator('#fab').isVisible(), 'botão flutuante + visível na Agenda');
+  await p.click('.ag-cal .calx-exp'); await p.waitForTimeout(150);
+  assert(await p.locator('.ag-cal .calx-d').count() >= 28, '"Ver o mês inteiro" abre o mês');
+  await p.click('.ag-cal .calx-exp'); await p.waitForTimeout(150);
+  assert(await p.locator('.ag-cal .calx-d').count() === 7, 'e volta para a semana');
   assert(await p.locator('.blk').count() === 12, 'agenda inicial tem 12 blocos (intervalo fixo)');
   await p.locator('.blk').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(150);
   let s = await state(); const tk = Object.keys(s.days)[0];
@@ -35,20 +42,19 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(f('Resolução de pendências').start === '13:00', 'bloco que cairia no intervalo pula para 13:00');
   assert(f('Gestão de projetos').start === '13:30', 'blocos da tarde deslocados em sequência');
   assert(f('Fechamento do expediente').end === '18:30', 'último bloco ultrapassa a saída (alerta esperado)');
-  assert(await p.locator('.badge', { hasText: 'Fora do expediente' }).count() >= 1, 'selo "Fora do expediente" exibido');
   // mover último para próximo dia útil
   await p.locator('.blk', { hasText: 'Fechamento do expediente' }).locator('[data-act=agMore]').click(); await p.waitForTimeout(200);
   await p.click('.sheet-item:has-text("Mover para o próximo dia útil")'); await p.waitForTimeout(200);
   s = await state();
   assert(!s.days[tk].find(b => b.title === 'Fechamento do expediente'), 'bloco removido do dia atual');
   assert(Object.values(s.days).some(d => d.some(b => b.title === 'Fechamento do expediente' && b.notes.includes('Remanejada'))), 'bloco movido para o próximo dia útil com nota');
-  // nova atividade
-  await p.click('[data-act=agNew]'); await p.waitForTimeout(200);
+  // nova atividade (pelo +)
+  await fab('Atividade na agenda');
   await fill('title', 'Visita técnica cliente X'); await fill('start', '07:00'); await fill('end', '07:30');
   await p.selectOption('.modal-wrap.open [name=category]', 'campo'); await submit();
   assert(await p.locator('.blk', { hasText: 'Visita técnica cliente X' }).count() === 1, 'nova atividade criada');
   // validação horário inválido
-  await p.click('[data-act=agNew]'); await p.waitForTimeout(200);
+  await fab('Atividade na agenda');
   await fill('title', 'x'); await fill('start', '10:00'); await fill('end', '09:00'); await submit();
   assert(await p.locator('.modal-wrap.open .form-error:not([hidden])').count() === 1, 'validação de horário fim < início');
   await p.click('.modal-wrap.open [data-cancel]'); await p.waitForTimeout(200);
@@ -58,12 +64,13 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await go('agenda');
   const nextDay = await p.evaluate(() => { let k = U.addDays(U.today(), 7); while (!D.isWorkday(k)) k = U.addDays(k, 1); App.ui.agendaDate = k; App.render(); return k; });
   assert(await p.locator('.blk').count() === 11 && await p.locator('.blk-break').count() === 0, 'intervalo flexível: dia começa sem o bloco de intervalo');
-  await p.click('[data-act=agBreak]'); await p.waitForTimeout(200);
+  await fab('Intervalo');
   await fill('start', '11:30'); await p.selectOption('.modal-wrap.open [name=dur]', '60'); await submit();
   s = await state(); const dfx = s.days[nextDay]; const g = t => dfx.find(b => b.title === t);
   assert(g('Intervalo').start === '11:30' && g('Intervalo').end === '12:30' && g('Intervalo').category === 'intervalo', '"Intervalo agora" marca o almoço no horário escolhido');
   assert(g('Resolução de pendências').start === '12:30', 'atividade que caía no almoço vai para depois dele');
-  assert(await p.locator('[data-act=agBreak]').count() === 0, 'botão some depois de marcar o intervalo do dia');
+  await fab(); assert(await p.locator('.sheet-item:has-text("Intervalo")').count() === 0, '"Intervalo" some do + depois de marcar o intervalo do dia');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(250);
   await go('config');
   assert(await p.inputValue('#cfg-break') === 'flexivel', 'Configurações → Jornada: intervalo flexível, fixo ou sem intervalo');
 
@@ -106,7 +113,10 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(200);
   assert((await state()).tasks.length === 1, 'excluir tarefa');
 
-  // ---- Projetos
+  // ---- Projetos (oculto por padrão; ativado em Configurações → Aparência)
+  assert(await p.locator('#nav a[href="#projetos"]').count() === 0, 'Projetos fica oculto no menu por padrão');
+  await go('config'); await p.click('[data-change=cfgProjetos]'); await p.waitForTimeout(250);
+  assert((await state()).settings.showProjetos === true && await p.locator('#nav a[href="#projetos"]').count() === 1, 'chave em Aparência mostra Projetos no menu');
   await go('projetos');
   await p.click('[data-act=pjNew]'); await p.waitForTimeout(200);
   await fill('name', 'CFTV Condomínio Z'); await fill('client', 'Condomínio Z'); await fill('startDate', '2026-11-01'); await fill('dueDate', '2026-12-15');
@@ -152,25 +162,19 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await dl.saveAs(OUT + '/relatorio.xlsx');
   console.log('ok - download Excel:', dl.suggestedFilename());
 
-  // ---- Semanal / Mensal
+  // ---- Endereços antigos e calendário do Início
   await go('semanal');
-  assert(await p.locator('input[data-change=wkCheck]').count() === 0 && await p.locator('.wk-col.is-empty').count() === 5, 'planejamento semanal começa em branco');
-  await p.click('[data-act=wkFocus][data-d="1"]'); await p.waitForTimeout(200); await fill('title', 'Planejamento'); await submit();
-  await p.click('[data-act=wkItemAdd][data-d="1"]'); await p.waitForTimeout(200); await fill('text', 'Distribuir atividades'); await submit();
-  assert((await p.locator('.wk-col').first().textContent()).includes('Planejamento'), 'definir foco do dia');
-  await p.locator('input[data-change=wkCheck]').first().check(); await p.waitForTimeout(150);
-  s = await state(); assert(Object.keys(Object.values(s.weekly.checks)[0]).length === 1, 'checklist semanal persiste');
-  await p.click('[data-act=guideOpen][data-id=semanal]'); await p.waitForTimeout(400);
-  assert(await p.textContent('#page-title') === 'Guia de uso' && await p.locator('#g-semanal[open]').count() === 1, '"Como funciona" abre o guia no tema certo');
+  assert(await p.textContent('#page-title') === 'Agenda', 'endereço antigo #semanal abre a Agenda');
   await go('mensal');
-  assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes .tab.active').textContent() === 'Mês', 'endereço antigo #mensal abre Agenda → Mês');
-  assert(await p.locator('.cycle.is-empty').count() === 4 && await p.locator('input[data-change=mcCheck]').count() === 0, 'planejamento mensal começa em branco');
-  await p.click('.calx-day [data-act=calAdd]'); await p.waitForTimeout(200);
-  await p.click('.sheet-item:has-text("Compromisso")'); await p.waitForTimeout(200);
+  assert(await p.textContent('#page-title') === 'Agenda', 'endereço antigo #mensal abre a Agenda');
+  await go('dashboard');
+  await fab('Compromisso');
   await fill('title', 'Reunião com fornecedor'); await fill('date', '2026-11-20'); await fill('time', '10:00'); await submit();
-  assert(await p.locator('.calx-chip.t-evento', { hasText: 'Reunião com fornecedor' }).count() === 1, 'compromisso aparece no calendário (com título no computador)');
-  await p.click('.calx-d[data-k="2026-11-20"]'); await p.waitForTimeout(200);
+  assert(await p.locator('.cal-home .calx-chip.t-evento', { hasText: 'Reunião com fornecedor' }).count() === 1, 'compromisso aparece no calendário (com título no computador)');
+  await p.click('.cal-home .calx-d[data-k="2026-11-20"]'); await p.waitForTimeout(200);
   assert(await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'tocar no dia mostra a lista do dia ao lado');
+  await go('agenda'); await p.evaluate(() => { App.ui.agendaDate = '2026-11-20'; App.render(); });
+  assert(await p.locator('.timeline .blk-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'na Agenda, o compromisso entra na lista do dia, pela hora');
   await go('dashboard');
   assert(await p.locator('.cal-home .calx-grid .calx-d').count() >= 28, 'calendário do mês na tela inicial');
   await p.click('.cal-home [data-act=calMode][data-v=week]'); await p.waitForTimeout(200);

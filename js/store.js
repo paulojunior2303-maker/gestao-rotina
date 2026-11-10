@@ -56,6 +56,7 @@ const Store = {
         alertDays: 2,
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
+        showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [

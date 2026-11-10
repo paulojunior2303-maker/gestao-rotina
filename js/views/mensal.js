@@ -1,50 +1,5 @@
 'use strict';
-/* Agenda → Mês (calendário + metas das 4 semanas) e compromissos/reuniões (Events) */
-const cycleOf = k => { const d = U.parse(k).getDate(); return d <= 7 ? 1 : d <= 14 ? 2 : d <= 21 ? 3 : 4; };
-const CYCLE_COLORS = ['var(--cy1)', 'var(--cy2)', 'var(--cy3)', 'var(--cy4)'];
-
-/* Agenda → Mês: o calendário (com a lista do dia escolhido) e, abaixo, o planejamento das 4 semanas do mês */
-const Month = {
-  itemsOn(k) { return Cal.itemsOn(k); },
-  TYPE: Cal.TYPES,
-};
-
-const MonthPlan = {
-  render() {
-    const cs = Cal.st('agenda');
-    cs.mode = 'month';   // a semana fica na aba Semana da Agenda
-    const mk = App.ui.month = U.monthKey(cs.anchor);
-    const t = U.today();
-    const chk = S.monthly.checks[mk] || {};
-    const curCycle = U.monthKey(t) === mk ? cycleOf(t) : null;
-    const planned = S.monthly.cycles.some(c => c.title || c.items.length);
-
-    const cycles = S.monthly.cycles.map((c, i) => {
-      const dn = c.items.filter(x => chk[x.id]).length;
-      const p = c.items.length ? Math.round(dn / c.items.length * 100) : null;
-      const range = [[1, 7], [8, 14], [15, 21], [22, Number(U.monthEnd(mk).slice(8))]][i];
-      return `<div class="cycle card ${curCycle === c.n ? 'is-current' : ''} ${!c.title && !c.items.length ? 'is-empty' : ''}" style="--cc:${CYCLE_COLORS[i]}">
-        <div class="wk-h"><div><small>Semana ${c.n}, dias ${range[0]} a ${range[1]}${curCycle === c.n ? ' · agora' : ''}</small><h3>${c.title ? U.esc(c.title) : '<span class="muted">Sem foco definido</span>'}</h3></div>
-        <button class="icon-btn" data-act="mcEdit" data-n="${c.n}" title="${c.title ? 'Editar foco' : 'Definir foco'}" aria-label="${c.title ? 'Editar foco' : 'Definir foco'}">${U.icon('edit', 15)}</button></div>
-        ${c.items.length ? `${H.bar(p, 'var(--cc)')}<small class="muted">${dn}/${c.items.length} concluídos</small>` : ''}
-        <ul class="checklist">${c.items.map(x => `<li><label class="check"><input type="checkbox" data-change="mcCheck" data-id="${x.id}" ${chk[x.id] ? 'checked' : ''}><span>${U.esc(x.text)}</span></label><button class="icon-btn xs" data-act="mcItemEdit" data-n="${c.n}" data-id="${x.id}" title="Editar item">${U.icon('edit', 13)}</button></li>`).join('')}</ul>
-        <button class="btn sm ghost add-item" data-act="mcItemAdd" data-n="${c.n}">${U.icon('plus', 15)} Adicionar item</button>
-      </div>`;
-    }).join('');
-
-    return `
-    <section class="card cal-card">${Cal.render('agenda')}${Cal.day('agenda')}</section>
-    <details class="card plan-month" ${planned || App.ui.planOpen ? 'open' : ''}>
-      <summary><span>${U.icon('target')} Metas das semanas de ${U.MONTHS[U.parse(mk + '-01').getMonth()].toLowerCase()}</span><small class="muted">${planned ? '' : 'opcional'}</small>${U.icon('right', 16)}</summary>
-      <div class="plan-month-body">
-        <div class="plan-intro"><p>O mês é dividido em <strong>4 semanas</strong>. Dê um foco a cada uma e liste as entregas do período. A lista se repete todo mês; as marcações valem só para o mês exibido.</p>
-        <button class="link" data-act="guideOpen" data-id="mensal">Como funciona</button></div>
-        <div class="cycles">${cycles}</div>
-      </div>
-    </details>`;
-  },
-};
-
+/* Compromissos e reuniões (S.events): formulário, visualização, registro com IA */
 const Events = {
   /* Pauta guardada como lista; no formulário, um assunto por linha (mantém os ids dos que já existiam) */
   pautaFromText(txt, old = []) {
@@ -282,48 +237,7 @@ const Events = {
 };
 
 Object.assign(Actions, {
-  mShift({ n }) { n = Number(n); App.ui.month = n === 0 ? U.monthKey(U.today()) : U.addMonths(App.ui.month || U.monthKey(U.today()), n); App.render(); },
-  mcCheck({ id }, el) {
-    const mk = App.ui.month || U.monthKey(U.today());
-    const c = S.monthly.checks[mk] = S.monthly.checks[mk] || {};
-    if (el.checked) c[id] = true; else delete c[id];
-    commit();
-  },
-  mcEdit({ n }) {
-    const c = S.monthly.cycles.find(x => x.n === Number(n));
-    UI.form({ title: `Foco da semana ${n} do mês`, fields: [{ name: 'title', label: 'Foco', value: c.title, placeholder: 'Ex.: Diagnóstico, Equipe, Fechamento…', hint: 'Um tema para essa parte do mês. Pode deixar em branco.' }], onSubmit(v) { c.title = v.title; commit(); } });
-  },
-  mcItemAdd({ n }) {
-    const c = S.monthly.cycles.find(x => x.n === Number(n));
-    UI.form({ title: `Novo item da semana ${n}`, fields: [{ name: 'text', label: 'Item', required: true, placeholder: 'Ex.: Fechar relatório do mês' }], onSubmit(v) { c.items.push({ id: U.uid(), text: v.text }); commit(); } });
-  },
-  mcItemEdit({ n, id }) {
-    const c = S.monthly.cycles.find(x => x.n === Number(n)); const it = c.items.find(i => i.id === id);
-    UI.form({
-      title: 'Editar item', fields: [{ name: 'text', label: 'Item', required: true, value: it.text }],
-      extra: [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); c.items = c.items.filter(i => i.id !== id); commit(); } }],
-      onSubmit(v) { it.text = v.text; commit(); },
-    });
-  },
   evNew() { Events.form(null); },
-  calDay({ k }) {
-    const items = Month.itemsOn(k);
-    const ag = D.dayBlocks(k);
-    const prog = D.progress(k);
-    const m = UI.modal({
-      title: U.fmtLong(k),
-      body: `
-        <p class="muted">${D.isWorkday(k) ? `Dia útil, semana ${cycleOf(k)} do mês${S.monthly.cycles[cycleOf(k) - 1]?.title ? ': ' + U.esc(S.monthly.cycles[cycleOf(k) - 1].title) : ''}` : 'Dia não útil'}</p>
-        <h4>Prazos e compromissos</h4>
-        ${items.length ? `<ul class="list">${items.map(i => `<li class="li"><span class="li-time">${i.time || '—'}</span><span class="li-main"><span class="cal-it-dot t-${i.type}"></span>${U.esc(i.label)}${H.demo(i)}</span><small class="muted">${Month.TYPE[i.type]}${i.done ? (i.type === 'evento' ? ' · registrado' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small>${i.type === 'evento' ? `<button class="btn sm" data-act="evView" data-id="${i.id}">Abrir</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted">Nada programado.</p>'}
-        <h4>Agenda</h4>
-        <p>${ag.length ? `${ag.length} atividades · ${prog.pct === null ? '—' : prog.pct + '% concluído'}` : 'Sem atividades na agenda.'}</p>`,
-      footer: `<button class="btn ghost" data-go>Abrir agenda do dia</button><span class="grow"></span><button class="btn primary" data-new>${U.icon('plus', 15)} Compromisso</button>`,
-    });
-    m.el.querySelector('[data-go]').onclick = () => { m.close(); App.ui.agendaDate = k; location.hash = '#agenda'; };
-    m.el.querySelector('[data-new]').onclick = () => { m.close(); Events.form(null, k); };
-    m.el.addEventListener('click', ev => { if (ev.target.closest('[data-act="evView"]')) m.close(); });
-  },
   evEdit({ id }) { Events.form(S.events.find(e => e.id === id)); },
   evView({ id }) { const e = S.events.find(e => e.id === id); if (e) Events.view(e); },
 });
