@@ -1,0 +1,37 @@
+# Publica o site (GitHub Pages) a cada mudança no main: app oficial na raiz e o site de teste em /teste/.
+# Requer Settings → Pages → Source = "GitHub Actions".
+name: Site (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Montar a pasta do site
+        run: |
+          mkdir -p _site
+          cp -r index.html css js fonts icon.svg manifest.webmanifest sw.js _site/
+          if [ -d teste ]; then cp -r teste _site/; fi
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v5
