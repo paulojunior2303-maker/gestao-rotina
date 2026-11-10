@@ -2,6 +2,7 @@
 /* Dashboard — centro de controle */
 Views.dashboard = {
   title: 'Início', icon: 'dashboard', nav: 'Início',
+  fab: () => ({ act: 'quickAdd', label: 'Adicionar', data: { k: Cal.st('home').sel, from: 'home' } }),
   render() {
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
@@ -35,7 +36,7 @@ Views.dashboard = {
     const charge = [
       ...open.filter(x => x.responsible).map(x => ({ who: x.responsible, what: x.title, kind: 'Tarefa', info: D.deadline(x.dueDate, x.dueTime, false), demo: x.demo })),
       ...openOcc.filter(o => o.responsible).map(o => ({ who: o.responsible, what: o.title, kind: 'Imprevisto', info: D.deadline(o.dueDate, o.dueTime, false), demo: o.demo })),
-      ...S.projects.filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status)).flatMap(p => (p.pendencias || []).filter(x => !x.done).map(x => ({ who: p.responsible || '—', what: x.text, kind: 'Pendência · ' + p.name, info: null, demo: p.demo }))),
+      ...(S.settings.showProjetos ? S.projects : []).filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status)).flatMap(p => (p.pendencias || []).filter(x => !x.done).map(x => ({ who: p.responsible || '—', what: x.text, kind: 'Pendência · ' + p.name, info: null, demo: p.demo }))),
     ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late'))).slice(0, 7);
 
     // Projetos
@@ -47,7 +48,7 @@ Views.dashboard = {
     for (let i = 0; i <= 7; i++) {
       const k = U.addDays(t, i);
       S.tasks.filter(x => OPEN(x.status) && x.dueDate === k).forEach(x => upcoming.push({ k, label: x.title, type: 'Prazo de tarefa', demo: x.demo }));
-      S.projects.filter(p => !['concluido', 'cancelado'].includes(p.status) && p.dueDate === k).forEach(p => upcoming.push({ k, label: p.name, type: 'Prazo de projeto', demo: p.demo }));
+      (S.settings.showProjetos ? S.projects : []).filter(p => !['concluido', 'cancelado'].includes(p.status) && p.dueDate === k).forEach(p => upcoming.push({ k, label: p.name, type: 'Prazo de projeto', demo: p.demo }));
       S.events.filter(e => e.date === k).forEach(e => upcoming.push({ k, label: e.title, type: 'Compromisso' + (e.time ? ' ' + e.time : '') + ((e.pautas || []).length ? `, ${U.plural(e.pautas.length, 'assunto')} na pauta` : ''), demo: e.demo, ev: e.id }));
       S.occurrences.filter(o => OPEN(o.status) && o.dueDate === k).forEach(o => upcoming.push({ k, label: o.title, type: 'Prazo de imprevisto', demo: o.demo }));
     }
@@ -67,7 +68,7 @@ Views.dashboard = {
 
     const dWd = U.WD[U.weekday(t)].replace('-feira', '');
     const dDate = `${dWd}, ${U.parse(t).getDate()} de ${U.MONTHS[U.parse(t).getMonth()].toLowerCase()}`;
-    const showGoals = !!S.settings.showIndicadores;
+    const showGoals = !!S.settings.showIndicadores, showProj = !!S.settings.showProjetos;
 
     return `
     ${Updater.banner()}
@@ -107,28 +108,28 @@ Views.dashboard = {
       </div>
     </section>
 
-    <section class="grid-2">
+    <section class="${showProj ? 'grid-2' : 'grid-1'}">
       <div class="card">
         <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3></div>
         ${charge.length ? `<ul class="list">${charge.map(c => `<li class="li li-stack"><div class="li-top"><strong>${U.esc(c.who)}</strong><small class="muted">${U.esc(c.kind)}</small>${H.deadline(c.info)}</div><div class="li-txt">${U.esc(c.what)}${H.demo(c)}</div></li>`).join('')}</ul>`
           : H.empty('Nada delegado em aberto. Defina um responsável em tarefas, imprevistos ou projetos para acompanhar aqui.')}
       </div>
-      <div class="card">
+      ${showProj ? `<div class="card">
         <div class="card-h"><h3>${U.icon('kanban')} Projetos em andamento</h3><a class="link" href="#projetos">Projetos</a></div>
         ${projects.length ? projects.map(p => { const pct = D.projectProgress(p); const dl = D.deadline(p.dueDate, null, false); return `<div class="proj-mini"><div class="pm-h"><a href="#projetos" class="pm-n">${U.esc(p.name)}</a>${H.demo(p)}${H.pstatus(p.status)}</div><div class="pm-b">${H.bar(pct, D.projectLate(p) ? 'var(--red)' : 'var(--accent)')}<strong>${pct}%</strong></div><div class="pm-f"><small class="muted">${U.esc(p.client || '')}</small>${H.deadline(dl)}</div></div>`; }).join('')
           : H.empty('Nenhum projeto ativo cadastrado.', '<a class="btn sm" href="#projetos">Cadastrar projeto</a>')}
-      </div>
+      </div>` : ''}
     </section>
 
     <section class="${showGoals ? 'grid-2' : 'grid-1'} dash-foot">
       <div class="card flat">
-        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#semanal">Semana</a></div>
+        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#agenda">Agenda</a></div>
         <div class="stat-row">
-          <div><small>Checklist semanal</small><strong>${wPct === null ? '—' : wPct + '%'}</strong></div>
+          ${wItems.length ? `<div><small>Checklist semanal</small><strong>${wPct}%</strong></div>` : ''}
           <div><small>Tarefas concluídas</small><strong>${doneWeek.length}</strong></div>
           <div><small>Imprevistos na semana</small><strong>${S.occurrences.filter(o => o.date >= ws && o.date <= we).length}</strong></div>
         </div>
-        ${H.bar(wPct)}
+        ${wItems.length ? H.bar(wPct) : ''}
         <p class="muted small mt">Conclusão da agenda por dia</p>
         ${dayVals.some(v => v !== null) ? Charts.bars({ labels: weekKeys.map(k => U.WD_SHORT[U.weekday(k)]), series: [{ name: 'Agenda concluída', color: 'var(--accent)', values: dayVals }], height: 150, unit: '%', maxValue: 100 }) : '<div class="chart-empty"><span>Sem dados ainda nesta semana</span></div>'}
       </div>

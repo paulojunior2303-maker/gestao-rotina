@@ -79,7 +79,9 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
     check(!r.length, `${name}: nada sai da largura da tela${r.length ? ' → ' + r.join('; ') : ''}`);
     await p.screenshot({ path: OUT + `/${name}.png` });
   };
-  const dayProgressText = () => p.locator('.day-counts').textContent();
+  const dayProgressText = () => p.locator('.ag-head p').textContent();
+  // Botão flutuante "+": abre a lista e escolhe o item (no Início e na Agenda)
+  const fab = async label => { await tap('#fab'); await W(300); if (label) { await tap(`.sheet-item:has-text("${label}")`); await W(300); } };
 
   await p.goto(URL); await W(600);
   await p.waitForTimeout(500); if (await p.locator('.tour-wrap').count()) { await p.locator('[data-tour=skip]').tap(); await p.waitForTimeout(300); }
@@ -88,7 +90,9 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   console.log('\n[1] Dashboard e navegação');
   check((await p.textContent('#storage-status')).includes('aparelho'), 'status "Dados salvos neste aparelho"');
   await overflow('01-dashboard');
-  check(await p.locator('#bottom-nav').count() === 0, 'sem barra embaixo: navegação só pelo menu lateral');
+  check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0, 'barra de baixo com Início, Agenda, Tarefas e Imprevistos, sem o botão Menu');
+  await tap('#bottom-nav a[href="#tarefas"]'); check(await p.textContent('#page-title') === 'Gestão de tarefas', 'barra de baixo → Tarefas');
+  await tap('#bottom-nav a[href="#dashboard"]');
   check(await p.locator('.cal-home .calx-grid').count() === 1, 'calendário em destaque na tela inicial');
   await tap('#menu-btn'); await W(300);
   check(await p.evaluate(() => document.body.classList.contains('menu-open')), '☰ abre o menu lateral');
@@ -100,7 +104,8 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   console.log('\n[2] Agenda (Dia) — concluir atividades (problema relatado)');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });   // estes passos usam o intervalo em horário fixo
   await go('agenda');
-  check(await p.locator('.calx-strip .calx-s').count() === 7, 'faixa da semana no topo do dia');
+  check(await p.locator('.ag-cal .calx-d').count() === 7 && await p.locator('.agenda-modes').count() === 0, 'Agenda numa tela só: semana em cima, o dia embaixo');
+  check(await p.locator('#fab').isVisible(), 'botão flutuante + na Agenda');
   check(await p.locator('.blk').count() === 12, 'rotina padrão com 12 blocos');
   await overflow('02-agenda');
   // reproduz o caso relatado: atividades com "Horário fixo"
@@ -108,22 +113,24 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
     await p.locator('.blk-body', { hasText: t }).tap(); await W(300);
     await p.locator(`${M} [name=fixed]`).check(); await save();
   }
-  check(await p.locator('.badge', { hasText: 'Horário fixo' }).count() >= 2, 'duas atividades marcadas como Horário fixo (como nas suas capturas)');
+  check((await st()).days[today].filter(x => x.fixed).length >= 2, 'duas atividades marcadas como Horário fixo (como nas suas capturas)');
   await p.locator('.blk', { hasText: 'Abertura e análise' }).locator('[data-s=concluida]').tap(); await W();
   await p.locator('.blk', { hasText: 'Alinhamento da equipe' }).locator('[data-s=concluida]').tap(); await W();
   let txt = await dayProgressText();
-  check(txt.includes('2 concluídas') && txt.includes('18%'), `progresso do dia atualiza com atividades de horário fixo → "${txt.trim().replace(/\s+/g, ' ')}"`);
+  check(txt.includes('2 de 11'), `progresso do dia atualiza com atividades de horário fixo → "${txt.trim().replace(/\s+/g, ' ')}"`);
   await p.locator('.blk', { hasText: 'Acompanhamento operacional' }).locator('[data-s=concluida]').tap(); await W();
   txt = await dayProgressText();
-  check(txt.includes('3 concluídas') && txt.includes('27%'), `concluir atividade comum atualiza na hora → "${txt.trim().replace(/\s+/g, ' ')}"`);
+  check(txt.includes('3 de 11'), `concluir atividade comum atualiza na hora → "${txt.trim().replace(/\s+/g, ' ')}"`);
   await go('dashboard');
   const ring = (await p.locator('.kpi-ring').textContent()).replace(/\s+/g, ' ');
   check(ring.includes('27%') && ring.includes('3 de 11'), `Dashboard mostra o progresso atualizado → "${ring.trim()}"`);
   await go('agenda');
   await p.locator('.blk', { hasText: 'Acompanhamento operacional' }).locator('[data-s=pendente]').tap(); await W();
-  check((await dayProgressText()).includes('2 concluídas'), 'reabrir atividade (desfazer) atualiza o progresso');
-  await p.locator('.blk', { hasText: 'Atividades administrativas' }).locator('[data-s=andamento]').tap(); await W();
-  await p.locator('.blk', { hasText: 'Resolução de pendências' }).locator('[data-s=andamento]').tap(); await W();
+  check((await dayProgressText()).includes('2 de 11'), 'reabrir atividade (desfazer) atualiza o progresso');
+  for (const t of ['Atividades administrativas', 'Resolução de pendências']) {
+    await p.locator('.blk', { hasText: t }).locator('[data-act=agMore]').tap(); await W(300);
+    await tap('.sheet-item:has-text("Começar agora")');
+  }
   let s = await st(); let day = s.days[today];
   check(day.filter(x => x.status === 'andamento').length === 1, 'só uma atividade fica "em andamento" por vez');
   // editar horário com deslocamento
@@ -140,17 +147,17 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await tap('.sheet-item:has-text("Mover para o próximo dia útil")');
   check(await p.locator('.blk', { hasText: 'Fechamento do expediente' }).count() === 0, 'mover para o próximo dia útil');
   // nova atividade + excluir + desfazer
-  await tap('[data-act=agNew]'); await fill('title', 'Visita técnica'); await fill('start', '07:00'); await fill('end', '07:40'); await save();
+  await fab('Atividade na agenda'); await fill('title', 'Visita técnica'); await fill('start', '07:00'); await fill('end', '07:40'); await save();
   check(await p.locator('.blk', { hasText: 'Visita técnica' }).count() === 1, 'criar atividade');
   await p.locator('.blk', { hasText: 'Visita técnica' }).locator('[data-act=agMore]').tap(); await W(300);
   await tap('.sheet-item.danger:has-text("Excluir")'); await tap(`${M} [data-yes]`);
   check(await p.locator('.blk', { hasText: 'Visita técnica' }).count() === 0, 'excluir atividade');
   await tap('.toast .link'); check(await p.locator('.blk', { hasText: 'Visita técnica' }).count() === 1, 'desfazer exclusão pelo aviso');
   // navegação de datas
-  const h0 = await p.textContent('.day-head h2');
-  await tap('.calx-s.sel + .calx-s, .calx-s.sel ~ .icon-btn'); check((await p.textContent('.day-head h2')) !== h0, 'faixa da semana: tocar no dia seguinte troca o dia');
-  check(await p.locator('.blk', { hasText: 'Fechamento do expediente' }).count() >= 1 || true, 'dia seguinte carregado');
-  await tap('[data-act=agShift][data-n="0"]'); check((await p.locator('.day-head h2').textContent()).length > 5, 'botão Hoje');
+  const h0 = await p.textContent('.ag-head h2');
+  await tap('.ag-cal [data-act=calNav][data-n="1"]'); check((await p.textContent('.ag-head h2')) !== h0, 'semana seguinte: troca o dia (mesmo dia da semana)');
+  await tap('.ag-cal .calx-d:not(.sel)'); check(await p.locator('.ag-cal .calx-d.sel').count() === 1, 'tocar num dia do calendário abre o dia');
+  await tap('.ag-cal [data-act=calToday]'); check((await p.textContent('.ag-head h2')) === h0, 'botão Hoje volta para hoje');
   // reorganizar: mover atrasadas
   const lateBefore = await p.locator('.blk.late').count();
   await tap('[data-act=agMenu]'); await tap('.sheet-item:has-text("Mover atrasadas")');
@@ -192,42 +199,27 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkDelete]').tap(); await W(); await tap(`${M} [data-yes]`);
   check(await p.locator('.task', { hasText: 'Conferir estoque' }).count() === 0, 'excluir tarefa');
 
-  console.log('\n[5] Planejamento semanal e mensal');
-  await go('semanal');
-  check(await p.locator('input[data-change=wkCheck]').count() === 0, 'planejamento semanal começa em branco');
-  await overflow('06a-semanal-vazio');
-  await tap('[data-act=wkFocus][data-d="1"]'); await fill('title', 'Planejamento'); await save();
-  await tap('[data-act=wkItemAdd][data-d="1"]'); await fill('text', 'Revisar escala'); await save();
-  await tap('[data-act=wkItemAdd][data-d="1"]'); await fill('text', 'Distribuir atividades'); await save();
-  check(await p.locator('.checklist li', { hasText: 'Revisar escala' }).count() === 1, 'adicionar item ao foco do dia');
-  await p.locator('input[data-change=wkCheck]').first().tap(); await W();
-  check((await p.locator('.wk-summary').textContent()).includes('1 de'), 'marcar item do checklist atualiza o progresso semanal');
-  await overflow('06-semanal');
-  await go('mensal');
-  check(await p.locator('.cycle.is-empty').count() === 4, 'metas das semanas do mês começam em branco');
-  await overflow('07a-agenda-mes');
-  await tap('.plan-month summary'); await W(200);
-  await tap('[data-act=mcItemAdd][data-n="1"]'); await fill('text', 'Levantar pendências'); await save();
-  await tap('[data-act=mcItemAdd][data-n="1"]'); await fill('text', 'Definir objetivos'); await save();
-  await p.locator('input[data-change=mcCheck]').first().tap(); await W();
-  check((await p.locator('.cycle').first().textContent()).includes('1/2'), 'checklist do ciclo mensal');
-  await overflow('07-mensal');
+  console.log('\n[5] Calendário (Início) e botão +');
+  await go('semanal'); check((await p.textContent('#page-title')) === 'Agenda', 'endereço antigo #semanal abre a Agenda');
+  await go('dashboard');
   await p.locator('.calx-d.today').first().tap(); await W(300);
   check(await p.locator('.calx-day h3').count() === 1, 'tocar no dia mostra a lista do dia');
-  await tap('.calx-day [data-act=calAdd]'); await tap('.sheet-item:has-text("Compromisso")'); await W(300);
+  await fab('Compromisso');
   await fill('title', 'Reunião com fornecedor'); await fill('time', '10:00'); await save();
-  check((await st()).events.length === 1 && await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'novo compromisso pelo "+ Novo" do calendário aparece na lista do dia');
-  // Semana: compromissos e prazos aparecem dentro de cada dia
-  await tap('.agenda-modes [data-v=semana]');
-  check(await p.locator('.wk-items li', { hasText: 'Reunião com fornecedor' }).count() === 1, 'Agenda → Semana mostra os compromissos de cada dia');
+  check((await st()).events.length === 1 && await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'novo compromisso pelo + do Início aparece na lista do dia');
+  await overflow('07-inicio-calendario');
+  await go('agenda');
+  check(await p.locator('.timeline .blk-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'Agenda: o compromisso entra na lista do dia, junto com a rotina');
+  await go('dashboard');
   // Arrastar o dedo no calendário troca de mês
-  await tap('.agenda-modes [data-v=mes]');
   const t0 = await p.textContent('.calx-t');
   await p.evaluate(() => { const g = document.querySelector('.calx-grid'), r = g.getBoundingClientRect(), y = r.top + 40; const mk = x => new Touch({ identifier: 1, target: g, clientX: x, clientY: y }); g.dispatchEvent(new TouchEvent('touchstart', { touches: [mk(300)], bubbles: true })); g.dispatchEvent(new TouchEvent('touchend', { changedTouches: [mk(120)], bubbles: true })); }); await W(300);
   check((await p.textContent('.calx-t')) !== t0, `arrastar para a esquerda vai para o próximo mês (${t0} → ${await p.textContent('.calx-t')})`);
   await tap('[data-act=calToday]');
 
   console.log('\n[6] Projetos');
+  check(await p.locator('#nav a[href="#projetos"]').count() === 0, 'Projetos fica oculto no menu por padrão');
+  await p.evaluate(() => { S.settings.showProjetos = true; commit(); });
   await go('projetos');
   await tap('[data-act=pjNew]'); await fill('name', 'CFTV Condomínio Z'); await fill('startDate', today); await fill('dueDate', '2026-12-20');
   await fill('stagesText', 'Vistoria\nInstalação\nConfiguração\nEntrega'); await p.selectOption(`${M} [name=status]`, 'andamento'); await save();
@@ -247,7 +239,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[7] Indicadores e relatórios');
   check(await p.locator('#nav a[href="#indicadores"]').count() === 0, 'Indicadores oculto no menu por padrão');
-  await go('config'); await p.locator('#cfg-aparencia .switch').tap(); await W();
+  await go('config'); await p.locator('[data-change=cfgIndicadores]').tap(); await W();
   await go('indicadores');
   check(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos → "sem dados"');
   await tap('[data-act=indNew]'); await fill('pontosCamera', '12'); await fill('manutencoes', '9'); await save();
@@ -302,9 +294,10 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(!sch || !sch[1].some(n => n.body.includes('Entregar relatório')), 'tarefa concluída sai dos avisos');
   // Reuniões: tela própria no menu, pauta, gravação com transcrição ao vivo, IA e combinados → tarefas
   await tap('#menu-btn'); await W(300);
-  check(await p.locator('#nav a[href="#reunioes"]').count() === 1, 'Reuniões aparece no menu (Dia a dia)');
+  check(await p.locator('#nav a[href="#reunioes"]').count() === 1 && await p.locator('#nav a[href="#feedbacks"]').count() === 0, 'Reuniões e feedbacks: uma entrada só no menu (Dia a dia)');
   await tap('#nav a[href="#reunioes"]'); await W(300);
-  check(await p.textContent('#page-title') === 'Reuniões' && (await p.textContent('#view')).includes('Na hora, toque em'), 'tela Reuniões explica como funciona');
+  check(await p.textContent('#page-title') === 'Reuniões e feedbacks' && await p.locator('.mt-tabs .tab').count() === 2, 'tela Reuniões e feedbacks, com as abas Reuniões e Feedbacks');
+  check(await p.getAttribute('#fab', 'data-act') === 'mtNew', 'na aba Reuniões, o + cria uma reunião');
   // Reunião mais tarde hoje: dá para iniciar ANTES do horário
   const later = await p.evaluate(() => U.nowMin() < 23 * 60 + 30 ? U.fromMin(U.nowMin() + 20) : null);
   if (later) {
@@ -318,7 +311,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
     await p.evaluate(() => __fire('backButton')); await W(300);
   }
   await tap('[data-act=mtNew]');
-  check((await p.textContent(`${M} .modal-head`)).includes('Nova reunião'), 'botão "Nova reunião"');
+  check((await p.textContent(`${M} .modal-head`)).includes('Nova reunião'), 'botão + abre "Nova reunião"');
   await fill('title', 'Reunião de equipe'); await fill('date', today); await fill('time', '00:05'); await fill('pauta', 'Escala do sábado\nUso de EPI\nMetas do mês'); await save();
   let ev = (await st()).events.find(e => e.title === 'Reunião de equipe');
   check(ev && ev.pautas.length === 3 && ev.reuniao, 'reunião com pauta (3 assuntos)');
@@ -395,8 +388,9 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[8c] Feedbacks');
   await go('feedbacks');
-  check(await p.textContent('#page-title') === 'Feedbacks' && await p.locator('#nav a[href="#feedbacks"]').count() === 1, 'tela Feedbacks no menu');
-  await tap('[data-act=fbNew]');
+  check(await p.textContent('#page-title') === 'Reuniões e feedbacks' && (await p.textContent('.mt-tabs .tab.active')).includes('Feedbacks'), 'endereço #feedbacks abre a aba Feedbacks');
+  check(await p.getAttribute('#fab', 'data-act') === 'fbNew', 'na aba Feedbacks, o + cria um feedback');
+  await tap('#fab');
   await fill('pessoa', 'Natan Krainer'); await p.locator(`${M} [name=tom][value=positivo]`).check();
   await p.evaluate(() => { Recorder.SEG_MS = 1500; });
   await tap(`${M} [data-rec]`); await W(3800);
@@ -411,7 +405,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(sf.feedbacks.length === 1 && sf.feedbacks[0].tom === 'positivo' && sf.feedbacks[0].transcricao, 'feedback salvo com tom e transcrição');
   check(sf.tasks.some(t => t.title.startsWith('Natan acompanha') && t.responsible === 'Natan Krainer'), 'acordos viram tarefas com o colaborador como responsável');
   check(sf.settings.technicians.some(t => t.name === 'Natan Krainer'), 'colaborador novo entra na lista da equipe');
-  check(await p.locator('.fb-card').count() === 1 && await p.textContent('#page-title') === 'Feedbacks', 'abre o histórico do colaborador');
+  check(await p.locator('.fb-card').count() === 1 && await p.locator('.fb-head', { hasText: 'Natan Krainer' }).count() === 1, 'abre o histórico do colaborador');
   await overflow('20-feedback-pessoa');
   await tap('.fb-card'); await W(300);
   check((await p.textContent(M)).includes('Natan manteve') && await p.locator(`${M} details.tx`).count() === 1, 'feedback mostra o registro, os acordos e a transcrição');
@@ -425,7 +419,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await go('tarefas'); await tap('[data-act=tkNew]'); await p.evaluate(() => __fire('backButton')); await W(300);
   check(await p.locator('.modal-wrap').count() === 0, 'voltar fecha formulário');
   await p.evaluate(() => __fire('backButton')); await W(300); check(await p.evaluate(() => location.hash) === '#dashboard', 'voltar → Início');
-  await go('agenda'); await tap('.agenda-modes [data-v=dia]'); const progBefore = (await dayProgressText()).replace(/\s+/g, ' ').trim();
+  await go('agenda'); const progBefore = (await dayProgressText()).replace(/\s+/g, ' ').trim();
   await p.reload(); await W(600); await go('tarefas');
   check(await p.locator('.task', { hasText: 'Cobrar relatório' }).count() === 1, 'dados preservados ao reabrir o app');
   await go('agenda'); const progAfter = (await dayProgressText()).replace(/\s+/g, ' ').trim();

@@ -1,6 +1,8 @@
 'use strict';
 /* Estado, persistência (LocalStorage) e regras de domínio */
-const STORAGE_KEY = 'gestao-rotina-wibicam:v1';
+/* Canal de teste (site …/teste/): dados guardados à parte, para nunca misturar com os reais */
+const CANAL_TESTE = typeof window !== 'undefined' && window.APP_CHANNEL === 'teste';
+const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_TESTE ? ':teste' : '');
 
 const METRICS = [
   { key: 'pontosCamera', label: 'Pontos de câmera instalados' },
@@ -54,6 +56,7 @@ const Store = {
         alertDays: 2,
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
+        showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [

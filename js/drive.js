@@ -18,7 +18,7 @@ const Drive = {
   error: '',
   token: null, tokenExp: 0, busy: false, again: false, timer: null, lastAuto: 0,
 
-  supported() { return !Cloud.available() && (Native.available() || /^https?:/.test(location.protocol)); },
+  supported() { return !CANAL_TESTE && !Cloud.available() && (Native.available() || /^https?:/.test(location.protocol)); },
   info() { try { return JSON.parse(localStorage.getItem(this.KEY)) || {}; } catch (e) { return {}; } },
   setInfo(o) { try { localStorage.setItem(this.KEY, JSON.stringify({ ...this.info(), ...o })); } catch (e) { /* sem armazenamento */ } },
   connected() { return !!this.info().email; },
@@ -229,6 +229,7 @@ const Drive = {
 
   /* Configurações → Google Drive */
   section(sec) {
+    if (CANAL_TESTE) return sec('drive', 'Google Drive', '', '<p class="muted small">No <strong>site de teste</strong> o Google Drive fica desligado, para nada do teste mexer nos seus dados reais. Para testar com os seus dados, use <strong>Dados → Receber dados</strong> com um código gerado no app oficial.</p>');
     if (!this.supported()) return sec('drive', 'Google Drive', '', '<p class="muted small">A sincronização pelo Google Drive funciona no app Android e no site. No link do Claude, os dados ficam salvos na sua conta Claude.</p>');
     const i = this.info();
     return sec('drive', 'Google Drive (sincronização)', 'Seus dados ficam no seu Google Drive e iguais no celular e no computador.', i.email ? `

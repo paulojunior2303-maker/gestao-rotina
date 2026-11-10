@@ -1,12 +1,28 @@
 'use strict';
 /* Inicialização, navegação e delegação de eventos */
-/* Menu lateral em grupos. "Indicadores" só aparece se ativado em Configurações → Aparência. */
+/* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
+   Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
   ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
-  ['Equipe e projetos', ['feedbacks', 'projetos', 'indicadores']],
+  ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
-const routeVisible = id => id !== 'indicadores' || !!(S && S.settings && S.settings.showIndicadores);
+/* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
+const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
+const routeVisible = id => {
+  const st = (S && S.settings) || {};
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : true;
+};
+/* Botão flutuante "+": o que ele cria depende da tela */
+const FAB = {
+  act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
+  render(route) {
+    const el = document.getElementById('fab'); if (!el) return;
+    const f = this.act(route);
+    el.hidden = !f;
+    if (f) { el.dataset.act = f.act; el.setAttribute('aria-label', f.label); el.title = f.label; Object.keys(el.dataset).filter(k => k !== 'act').forEach(k => delete el.dataset[k]); Object.assign(el.dataset, f.data || {}); }
+  },
+};
 
 const App = {
   ui: {},
@@ -17,8 +33,8 @@ const App = {
     const h = location.hash.replace(/^#\/?/, '');
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
-    const moved = { semanal: 'semana', mensal: 'mes' }[path];
-    if (moved) { this.ui.agendaMode = moved; this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
@@ -27,9 +43,11 @@ const App = {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    FAB.render(this.route);
     document.getElementById('storage-status').innerHTML =
       dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
@@ -52,7 +70,7 @@ const App = {
     const scroll = window.scrollY;
     document.getElementById('page-title').textContent = view.title;
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
-    document.title = `${view.title} · Gestão de Rotina`;
+    document.title = `${view.title} · Gestão de Rotina${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
     const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
       : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
@@ -69,6 +87,10 @@ const App = {
   },
 
   async init() {
+    if (CANAL_TESTE) {   // marca visível: é a versão de teste
+      document.body.classList.add('canal-teste');
+      document.querySelector('.topbar').insertAdjacentHTML('afterbegin', '<span class="teste-tag" title="Versão de teste: dados separados do app oficial">TESTE</span>');
+    }
     if (Native.available()) { await Native.restore(); Native.init(); document.body.classList.add('native'); }
     Store.load();
     Theme.init();
@@ -143,7 +165,7 @@ const App = {
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
     Drive.auto();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if (!CANAL_TESTE && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },
   openMenu() { document.body.classList.add('menu-open'); },
@@ -176,7 +198,7 @@ const Theme = {
 function commit() { Store.save(); App.render(); }
 
 Actions.openMenu = () => App.openMenu();
-Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.ui.agendaMode = 'dia'; App.go('agenda'); };
+Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
 Actions.goTasks = ({ status }) => { App.ui.taskF = { q: '', status, priority: '', category: '', period: '', from: '', to: '' }; App.go('tarefas'); };
 
 document.addEventListener('DOMContentLoaded', () => App.init());

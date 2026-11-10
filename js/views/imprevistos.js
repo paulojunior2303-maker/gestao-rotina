@@ -2,6 +2,7 @@
 /* Gestão de imprevistos — ocorrências que exigem atenção imediata */
 Views.imprevistos = {
   title: 'Imprevistos', icon: 'alert', nav: 'Imprevistos',
+  fab: { act: 'occNew', label: 'Registrar imprevisto' },
   render() {
     const f = App.ui.occFilter || 'abertas';
     const all = S.occurrences;
@@ -39,8 +40,6 @@ Views.imprevistos = {
     return `
     <div class="toolbar">
       <div class="tabs">${tab('abertas', 'Abertos', nOpen)}${tab('encerradas', 'Encerrados', all.length - nOpen)}${tab('todas', 'Todos', all.length)}</div>
-      <span class="grow"></span>
-      <button class="btn warn" data-act="occNew">${U.icon('plus')} Registrar imprevisto</button>
     </div>
     <p class="muted small">Registre aqui demandas urgentes que exigem sua atenção imediata. Use <strong>Encaixar na agenda</strong> para reservar um horário e reorganizar o dia automaticamente.</p>
     <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;

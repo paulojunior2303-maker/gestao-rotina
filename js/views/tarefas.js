@@ -2,6 +2,7 @@
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
   title: 'Gestão de tarefas', icon: 'tasks', nav: 'Tarefas',
+  fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
     const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
@@ -55,8 +56,6 @@ Views.tarefas = {
     return `
     <div class="toolbar">
       <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
-      <span class="grow"></span>
-      <button class="btn primary" data-act="tkNew">${U.icon('plus')} Nova tarefa</button>
     </div>
     <div class="filters card">
       <input type="search" placeholder="Buscar tarefa, descrição ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">

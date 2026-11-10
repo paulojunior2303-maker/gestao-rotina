@@ -28,14 +28,20 @@ e diga o que mudou e como testar no celular.
   Use sempre as variáveis de `:root` / `:root[data-theme="dark"]` em `css/styles.css` (`--primary`, `--accent`, `--lilac`, `--surface*`, …), nunca cores fixas.
   Tipografia: Geist (interface) e Bricolage Grotesque (títulos e números), em `fonts/` (OFL), embutidas no arquivo único pelo `build.py`.
   A "régua do dia" (`H.dayRail`, em `js/ui.js`) é o elemento de assinatura: Dashboard e Agenda. `tests/theme.test.js` verifica o contraste.
-- **Indicadores fica oculto** por padrão (`settings.showIndicadores`, chave em Configurações → Aparência). Oculto também esconde Metas e o card de metas do Dashboard.
-- **Navegação só pelo menu lateral** (☰ ou arrastar da borda esquerda). A barra inferior foi removida a pedido do usuário: não recriar.
-- **Agenda unificada** (`js/views/agenda.js`): abas Dia (cronograma + faixa da semana `Cal.strip`), Semana (`WeekPlan`, em `semanal.js`: foco/checklist + compromissos e prazos de cada dia)
-  e Mês (`MonthPlan`, em `mensal.js`: calendário + metas das 4 semanas, que começam em branco). `#semanal`/`#mensal` antigos redirecionam para a Agenda.
-- **Calendário** (`js/calendar.js`, `Cal`) é o recurso principal: no Início e em Agenda → Mês. Mês/semana, bolinhas no celular e títulos no computador,
-  lista do dia escolhido, arrastar para trocar de mês, "Hoje", "+ Novo" (reunião, compromisso, tarefa, atividade). Reuniões têm cor própria (`--t-reuniao`).
-- **Intervalo de almoço**: `settings.breakMode` = flexivel (padrão; botão "Intervalo agora" na Agenda, empurra o resto) | fixo (bloco da rotina) | nenhum.
-- **Feedbacks** (`js/views/feedbacks.js`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
+- **Projetos e Indicadores ficam ocultos** por padrão (`settings.showProjetos` / `settings.showIndicadores`, chaves em Configurações → Aparência; `routeVisible` em `app.js`).
+  Projetos oculto também tira os prazos de projeto do calendário e o card do Dashboard. Indicadores oculto esconde Metas e o card de metas.
+- **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Início, Agenda, Tarefas, Imprevistos), **sem** botão Menu.
+- **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Início e Agenda usam `quickAdd`
+  (lista: atividade, intervalo, tarefa, reunião, feedback, imprevisto, compromisso, no dia escolhido). Os botões "Novo…" das telas foram trocados pelo +.
+- **Agenda numa tela só** (`js/views/agenda.js`): calendário compacto em cima (`Cal.render('agenda')`, semana; "Ver o mês inteiro" expande) e, embaixo,
+  o dia escolhido numa lista única por horário: blocos da rotina + reuniões/compromissos/prazos (`.blk-it`). O dia da agenda é `App.ui.agendaDate`, sincronizado com `Cal.sync`.
+  O planejamento semanal/mensal (foco, checklist, metas das 4 semanas) foi retirado da interface a pedido do usuário; `S.weekly`/`S.monthly` continuam guardados.
+  `#semanal`/`#mensal` antigos redirecionam para a Agenda.
+- **Calendário** (`js/calendar.js`, `Cal`) é o recurso principal: no Início e no topo da Agenda. Mês/semana, bolinhas no celular e títulos no computador,
+  lista do dia escolhido, arrastar para trocar de mês/semana, "Hoje". Reuniões têm cor própria (`--t-reuniao`).
+- **Intervalo de almoço**: `settings.breakMode` = flexivel (padrão; "+" → "Intervalo agora" na Agenda, empurra o resto) | fixo (bloco da rotina) | nenhum.
+- **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.
+- **Feedbacks** (`js/views/feedbacks.js`, `FBPage` + `FB`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
   Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`

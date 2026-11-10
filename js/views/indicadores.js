@@ -51,6 +51,7 @@ const Ind = {
 
 Views.indicadores = {
   title: 'Indicadores e relatórios', icon: 'chart', nav: 'Indicadores',
+  fab: { act: 'indNew', label: 'Lançar dados' },
   render() {
     const [from, to, label] = Ind.range();
     const f = App.ui.indF;
@@ -87,7 +88,6 @@ Views.indicadores = {
       <span class="grow"></span>
       <button class="btn ghost" data-act="indXlsx">${U.icon('download')} Excel</button>
       <button class="btn ghost" data-act="indPdf">${U.icon('printer')} PDF</button>
-      <button class="btn primary" data-act="indNew">${U.icon('plus')} Lançar dados</button>
     </div>
     <p class="muted small">Período: <strong>${label}</strong> (${U.fmtDate(from)} a ${U.fmtDate(to)}) · ${U.plural(recs.length, 'lançamento')}</p>
 

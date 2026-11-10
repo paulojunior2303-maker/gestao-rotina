@@ -25,7 +25,9 @@ Views.config = {
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento de pontos de câmera, manutenções e retrabalhos, metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
-        <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>`)}
+        <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
+      <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
+        <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`)}
 
     ${Drive.section(sec)}
 
@@ -227,6 +229,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgProjetos(_, el) { S.settings.showProjetos = el.checked; commit(); UI.toast(el.checked ? 'Projetos aparece no menu, em Planejamento.' : 'Projetos ocultado. Os dados continuam guardados.'); },
   cfgIndicadores(_, el) { S.settings.showIndicadores = el.checked; commit(); UI.toast(el.checked ? 'Indicadores aparece no menu, em Planejamento.' : 'Indicadores ocultado. Os dados continuam guardados.'); },
   themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
   xferOut() { Transfer.openExport(); },

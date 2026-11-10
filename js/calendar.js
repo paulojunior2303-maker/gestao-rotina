@@ -1,7 +1,8 @@
 'use strict';
-/* Calendário — recurso principal do app (Início e Agenda → Mês).
+/* Calendário — recurso principal do app (Início e Agenda).
    Padrão mobile: mês compacto em cima (bolinhas coloridas por tipo; no computador, títulos dentro dos dias)
-   e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje". */
+   e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje".
+   Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
   TYPES: { reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Imprevisto' },
   WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
@@ -11,14 +12,20 @@ const Cal = {
     const out = [];
     S.events.filter(e => e.date === k).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
-    S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
+    if (S.settings.showProjetos) S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
     return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
   },
 
   st(id) {
     App.ui.cal = App.ui.cal || {};
-    return App.ui.cal[id] = App.ui.cal[id] || { mode: 'month', sel: U.today(), anchor: U.today() };
+    return App.ui.cal[id] = App.ui.cal[id] || { mode: id === 'agenda' ? 'week' : 'month', sel: U.today(), anchor: U.today() };
+  },
+  /* Mantém o calendário mostrando o dia escolhido (Agenda) */
+  sync(id, k) {
+    const s = this.st(id); s.sel = k;
+    const r = this.range(s);
+    if (k < r.cells[0] || k > r.cells[r.cells.length - 1] || (s.mode === 'month' && U.monthKey(k) !== r.mk)) s.anchor = k;
   },
   mondayOf(k) { return U.weekStart(k); },
   range(s) {
@@ -62,7 +69,8 @@ const Cal = {
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
-      <div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', projeto: 'Projeto', imprevisto: 'Imprevisto' }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>
+      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto' }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
+      ${id === 'agenda' ? `<button class="calx-exp" data-act="calMode" data-cal="${id}" data-v="${s.mode === 'week' ? 'month' : 'week'}" aria-expanded="${s.mode === 'month'}">${s.mode === 'week' ? `${U.icon('down', 16)} Ver o mês inteiro` : `${U.icon('up', 16)} Mostrar só a semana`}</button>` : ''}
     </div>`;
   },
 
@@ -76,8 +84,6 @@ const Cal = {
     return `<div class="calx-day">
       <div class="calx-day-h">
         <div><small class="muted">${when}</small><h3>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h3></div>
-        <span class="grow"></span>
-        <button class="btn sm primary" data-act="calAdd" data-k="${k}">${U.icon('plus', 15)} Novo</button>
       </div>
       ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}</span>
@@ -91,15 +97,6 @@ const Cal = {
     </div>`;
   },
 
-  /* Faixa da semana (Agenda → Dia): troca o dia com um toque */
-  strip(k) {
-    const a = this.mondayOf(k), t = U.today();
-    return `<div class="calx-strip" data-swipe="strip">
-      <button class="icon-btn" data-act="agShift" data-n="-7" aria-label="Semana anterior">${U.icon('left')}</button>
-      ${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = U.addDays(a, i), items = this.itemsOn(d); return `<button class="calx-s ${d === k ? 'sel' : ''} ${d === t ? 'today' : ''} ${D.isWorkday(d) ? '' : 'off'}" data-act="agDay" data-k="${d}"><small>${this.WD[i]}</small><strong>${U.parse(d).getDate()}</strong><span class="calx-dots">${items.slice(0, 3).map(x => `<i class="t-${x.type}"></i>`).join('')}</span></button>`; }).join('')}
-      <button class="icon-btn" data-act="agShift" data-n="7" aria-label="Próxima semana">${U.icon('right')}</button>
-    </div>`;
-  },
 };
 
 Object.assign(Actions, {
@@ -107,26 +104,43 @@ Object.assign(Actions, {
     const s = Cal.st(cal);
     s.sel = k;
     if (s.mode === 'month' && U.monthKey(k) !== U.monthKey(s.anchor)) s.anchor = k;
+    if (cal === 'agenda') App.ui.agendaDate = k;
     App.render();
   },
   calNav({ cal, n }) {
     const s = Cal.st(cal), t = U.today();
-    if (s.mode === 'week') s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
-    else s.anchor = U.addMonths(U.monthKey(s.anchor), Number(n)) + '-01';
-    const r = Cal.range(s);
-    s.sel = t >= r.from && t <= r.to ? t : (s.mode === 'week' ? r.from : U.monthStart(r.mk));
+    if (s.mode === 'week') {
+      s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
+      // Na Agenda, mantém o mesmo dia da semana (ou hoje, se a semana for a atual)
+      const r = Cal.range(s);
+      s.sel = t >= r.from && t <= r.to ? t : cal === 'agenda' ? U.addDays(s.sel, Number(n) * 7) : r.from;
+    } else {
+      s.anchor = U.addMonths(U.monthKey(s.anchor), Number(n)) + '-01';
+      const r = Cal.range(s);
+      s.sel = t >= r.from && t <= r.to ? t : U.monthStart(r.mk);
+    }
+    if (cal === 'agenda') App.ui.agendaDate = s.sel;
     App.render();
   },
-  calToday({ cal }) { const s = Cal.st(cal); s.anchor = s.sel = U.today(); App.render(); },
+  calToday({ cal }) { const s = Cal.st(cal); s.anchor = s.sel = U.today(); if (cal === 'agenda') App.ui.agendaDate = s.sel; App.render(); },
   calMode({ cal, v }) { const s = Cal.st(cal); s.mode = v; s.anchor = s.sel; App.render(); },
-  /* "+ Novo" no dia escolhido */
-  calAdd({ k }) {
-    UI.sheet(`Novo em ${U.fmtShort(k)}`, [
+  /* Botão flutuante "+" no Início e na Agenda: escolhe o que criar (no dia escolhido) */
+  quickAdd({ k, from }) {
+    const t = U.today(); k = k || t;
+    const onAgenda = from === 'agenda';
+    const dated = onAgenda || k !== t;   // prazo da tarefa: só se o dia foi escolhido
+    const breakOk = onAgenda && (S.settings.breakMode || 'fixo') === 'flexivel' && !D.dayBlocks(k).some(b => D.isBreak(b) && b.status !== 'cancelada');
+    const activity = { label: 'Atividade na agenda', hint: 'Um horário no cronograma do dia', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
+    const items = [
+      { label: dated ? 'Tarefa com prazo neste dia' : 'Tarefa', icon: 'tasks', onClick: () => Tasks.form(null, dated ? { dueDate: k } : {}) },
       { label: 'Reunião', hint: 'Com pauta, gravação e ata', icon: 'users', onClick: () => Events.form(null, k, { reuniao: true }) },
+      { label: 'Feedback', hint: 'Conversa individual com o colaborador', icon: 'chat', onClick: () => FB.form(null) },
+      { label: 'Imprevisto', hint: onAgenda ? 'E já encaixa na agenda' : 'Demanda urgente', icon: 'alert', onClick: () => onAgenda ? Actions.agImprevisto() : Occ.form(null) },
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
-      { label: 'Tarefa com prazo neste dia', icon: 'tasks', onClick: () => Tasks.form(null, { dueDate: k }) },
-      { label: 'Atividade na agenda do dia', icon: 'clock', onClick: () => { App.ui.agendaDate = k; App.ui.agendaMode = 'dia'; App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } },
-    ]);
+    ];
+    if (onAgenda) items.unshift(activity); else items.push(activity);
+    if (breakOk) items.splice(1, 0, { label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
+    UI.sheet(k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`, items);
   },
 });
 
@@ -142,6 +156,6 @@ Object.assign(Actions, {
     const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy); sx = null;
     if (Math.abs(dx) < 50 || dy > Math.abs(dx) * 0.7) return;
     const id = el.dataset.swipe, n = dx < 0 ? 1 : -1;
-    if (id === 'strip') Actions.agShift({ n: n * 7 }); else Actions.calNav({ cal: id, n });
+    Actions.calNav({ cal: id, n });
   }, { passive: true });
 })();
