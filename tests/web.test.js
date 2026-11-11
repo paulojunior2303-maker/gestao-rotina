@@ -209,8 +209,8 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
 
   // ---- App genérico (para qualquer equipe): nome da empresa opcional; quem já usava mantém o seu
   assert((await p.textContent('#brand-sub')).trim() === 'Rotina e equipe' && !(await p.content()).includes('Wi-bicam'), 'instalação nova sem marca de empresa');
-  const v4 = await p.evaluate(() => { const old = JSON.parse(JSON.stringify(S)); delete old.meta.v4; old.settings.empresa = ''; old.settings.metricNames = {}; const m = Store.migrate(old); return [m.settings.empresa, m.settings.metricNames.pontosCamera]; });
-  assert(v4[0] === 'Wi-bicam, CFTV IP' && v4[1] === 'Pontos de câmera instalados', 'migração v4: dados antigos mantêm o nome da empresa e dos indicadores');
+  const v4 = await p.evaluate(() => { const old = JSON.parse(JSON.stringify(S)); delete old.meta.v4; delete old.meta.v5; old.settings.empresa = 'Wi-bicam, CFTV IP'; old.settings.metricNames = {}; const m = Store.migrate(old); return [m.settings.empresa, m.settings.metricNames.pontosCamera]; });
+  assert(v4[0] === '' && v4[1] === 'Pontos de câmera instalados', 'migração: tira "Wi-bicam, CFTV IP" de quem já usava e mantém os nomes dos indicadores');
   await go('config');
   await p.fill('[data-change=cfgEmpresa]', 'Equipe Alfa'); await p.press('[data-change=cfgEmpresa]', 'Tab'); await p.waitForTimeout(200);
   assert((await p.textContent('#brand-sub')).trim() === 'Equipe Alfa', 'nome da empresa aparece no menu');
