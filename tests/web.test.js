@@ -114,12 +114,12 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.fill('[data-input=tkSearch]', 'planilha'); await p.waitForTimeout(500);
   assert(await p.locator('.task').count() === 1 && await p.evaluate(() => document.activeElement.dataset.input) === 'tkSearch', 'busca filtra e mantém o foco');
   await p.fill('[data-input=tkSearch]', ''); await p.waitForTimeout(500);
-  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('.tk-check span').click(); await p.waitForTimeout(200);
+  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(200);
   s = await state();
   assert(s.tasks.find(t => t.title === 'Cobrar relatório do técnico').status === 'concluida' && s.tasks.find(t => t.title === 'Cobrar relatório do técnico').completedAt, 'concluir tarefa registra data de conclusão');
   await p.click('[data-act=tkStatusF][data-v=concluida]'); await p.waitForTimeout(150);
   assert(await p.locator('.task').count() === 1, 'filtro por status concluída');
-  await p.locator('.task').first().locator('[data-act=tkDelete]').click(); await p.waitForTimeout(200);
+  await p.locator('.task').first().locator('[data-act=tkMore]').click(); await p.waitForTimeout(250); await p.click('.sheet-item.danger:has-text("Excluir")'); await p.waitForTimeout(200);
   await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(200);
   assert((await state()).tasks.length === 1, 'excluir tarefa');
 
@@ -222,10 +222,32 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.locator('.jg-card').count() === 1 && await p.locator('#nav a[href="#jornada"]').count() === 1, 'modo jogo ligado: cartão no Início e Jornada no menu');
   const xp0 = await p.evaluate(() => Jogo.calc().total);
   await p.evaluate(() => { S.tasks.push({ id: 'jg1', title: 'Teste XP', status: 'pendente', priority: 'media', category: 'equipe', dueDate: U.addDays(U.today(), 2), createdAt: new Date().toISOString() }); commit(); });
-  await go('tarefas'); await p.click('[data-act=tkStatusF][data-v=abertas]'); await p.waitForTimeout(150); await p.locator('.task', { hasText: 'Teste XP' }).locator('.tk-check span').click(); await p.waitForTimeout(300);
+  await go('tarefas'); await p.click('[data-act=tkStatusF][data-v=abertas]'); await p.waitForTimeout(150); await p.locator('.task', { hasText: 'Teste XP' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(300);
   assert(await p.evaluate(() => Jogo.calc().total) === xp0 + 15 && (await p.textContent('#xp-pop')).includes('+15 XP'), 'concluir tarefa no prazo dá +15 XP e mostra o aviso');
   await go('jornada');
-  assert(await p.textContent('#page-title') === 'Jornada' && await p.locator('.jg-cls').count() === 4 && await p.locator('.jg-badge').count() === 12 && await p.locator('.jg-miss li').count() >= 2, 'Jornada: áreas, missões e conquistas');
+  assert(await p.textContent('#page-title') === 'Jornada' && await p.locator('.jg-cls').count() === 4 && await p.locator('.jg-badge').count() === 13, 'Jornada: áreas e conquistas');
+  // Missões: criar para mim ("Outra", marcada à mão) dá o XP definido
+  await p.click('[data-act=msNova]'); await p.waitForTimeout(250);
+  await p.selectOption('.ms-row .ms-tipo', 'manual'); await p.fill('.ms-row .ms-txt', 'Revisar 1 POP'); await p.fill('.ms-row .ms-xp', '30');
+  await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
+  const xp1 = await p.evaluate(() => Jogo.calc().total);
+  await p.click('[data-act=msFeita][data-v="1"]'); await p.waitForTimeout(300);
+  assert(await p.evaluate(() => Jogo.calc().total) === xp1 + 30 && (await p.textContent('#xp-pop')).includes('Missão cumprida'), 'missão marcada como feita dá o XP e avisa');
+  // Enviar missões: gera link; quem abre o link aceita e a contagem é automática
+  await p.click('[data-act=msEnviar]'); await p.waitForTimeout(250);
+  await p.fill('.modal-wrap.open [name=para]', 'Carlos'); await p.fill('.modal-wrap.open [name=de]', 'Victor'); await p.fill('.ms-row .ms-n', '2'); await p.fill('.ms-row .ms-xp', '40');
+  await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
+  const msTxt = await p.inputValue('.ms-share'); const msLink = msTxt.match(/https:\S+/)[0];
+  assert(msTxt.includes('Victor te enviou 1 missão') && msLink.includes('#missoes?p='), 'enviar missões gera o texto com o link');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  await p.goto(B + msLink.slice(msLink.indexOf('#'))); await p.waitForTimeout(700);
+  assert((await p.textContent('.modal-wrap.open')).includes('Concluir 2 tarefas'), 'abrir o link mostra as missões para aceitar');
+  await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(400);
+  assert(await p.evaluate(() => location.hash) === '#jornada' && await p.evaluate(() => S.missoes.some(m => m.de_ === 'Victor' && m.tipo === 'tarefa' && m.alvo === 2)), 'missões aceitas entram na Jornada');
+  const xp2 = await p.evaluate(() => Jogo.calc().total);
+  await p.evaluate(() => { for (const i of [1, 2]) S.tasks.push({ id: 'ms' + i, title: 'M' + i, status: 'concluida', completedAt: new Date().toISOString(), priority: 'media', category: 'equipe', createdAt: new Date().toISOString() }); commit(); });
+  assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.de_ === 'Victor').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp2 + 20 + 40, 'missão automática conclui sozinha (2 tarefas = 20 XP + 40 da missão)');
+  assert(await p.evaluate(() => Missoes.decodificar('lixo<script>') === null), 'link inválido é recusado');
   await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
   assert((await state()).settings.jogo === false && await p.locator('#nav a[href="#jornada"]').count() === 0, 'desligar o modo jogo tira a Jornada do menu');
   await go('dashboard'); assert(await p.locator('.jg-card').count() === 0, 'e o cartão do Início');

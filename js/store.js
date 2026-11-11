@@ -28,6 +28,7 @@ const OPEN = s => s === 'pendente' || s === 'andamento';
 
 const Store = {
   state: null,
+  rev: 0,             // muda a cada salvamento (cache de cálculos, ex.: Jornada)
   persistent: true,   // LocalStorage disponível
   lastSaved: null,
   warned: false,
@@ -95,6 +96,7 @@ const Store = {
       events: [],
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
+      missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
       meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
@@ -174,6 +176,7 @@ const Store = {
 
   /* touch = alteração feita aqui (marca o horário e envia ao Google Drive). Dados vindos de fora usam touch: false. */
   save({ cloud = true, touch = true } = {}) {
+    this.rev++;
     if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }

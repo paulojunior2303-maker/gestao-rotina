@@ -34,6 +34,7 @@ const App = {
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
     if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
     if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
@@ -84,6 +85,11 @@ const App = {
     }
     this.renderNav();
     if (opts.resetScroll) window.scrollTo(0, 0); else window.scrollTo(0, scroll);
+    if (this.ui.msPend !== undefined && this.ui.msPend !== null) {   // abriu um link de missões
+      const q = this.ui.msPend; this.ui.msPend = null;
+      history.replaceState(null, '', '#jornada');
+      setTimeout(() => Missoes.receber('?' + q), 300);
+    }
     if (focus) { const el = root.querySelector(focus.sel); if (el) { el.focus(); try { el.setSelectionRange(focus.pos, focus.pos); } catch (e) { /* tipo sem seleção */ } } }
   },
 

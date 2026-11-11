@@ -16,9 +16,9 @@ const Guide = {
       <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><small class="blk-kind">Rotina do dia</small></div>
       <div class="blk-actions"><span class="icon-btn ok">${U.icon('check', 16)}</span><span class="icon-btn info">${U.icon('play', 14)}</span><span class="icon-btn">${U.icon('more', 16)}</span></div></div>
       <div class="tm-legend"><span>${U.icon('check', 13)} Concluir</span><span>${U.icon('play', 11)} Iniciar</span><span>${U.icon('more', 13)} Adiar, mover, excluir</span></div></div>`,
-    task: () => `<div class="tour-mock"><div class="task dl-row-soon" style="--c:#e3a043"><label class="tk-check"><span></span></label><div class="tk-body"><div class="tk-title">Cobrar relatório da equipe</div>
-      <div class="tk-meta">${H.prio('alta')} <span class="muted">${U.icon('user', 13)} Carlos</span> <span class="dl dl-today">${U.icon('clock', 13)} Vence hoje</span></div></div></div>
-      <div class="tm-legend"><span>Toque no quadrado para concluir</span><span>Toque no texto para editar</span></div></div>`,
+    task: () => `<div class="tour-mock"><div class="task dl-row-soon" style="--c:#e3a043"><div class="tk-body"><div class="tk-title">Cobrar relatório da equipe</div>
+      <div class="tk-meta">${H.prio('alta')} <span class="muted">${U.icon('user', 13)} Carlos</span> <span class="dl dl-today">${U.icon('clock', 13)} Vence hoje</span></div></div><div class="tk-side"><span class="icon-btn ok">${U.icon('check', 16)}</span><span class="icon-btn">${U.icon('more', 16)}</span></div></div>
+      <div class="tm-legend"><span>${U.icon('check', 13)} Concluir</span><span>${U.icon('more', 13)} Começar, cancelar, excluir</span><span>Toque no texto para editar</span></div></div>`,
     occ: () => `<div class="tour-mock"><div class="occ card prio-border-urgente"><div class="occ-h"><h3>Sistema fora do ar no cliente</h3><span class="grow"></span>${H.prio('urgente')}</div>
       <div class="occ-actions"><span class="btn sm">${U.icon('calendar', 15)} Encaixar na agenda</span><span class="btn sm ghost ok-text">${U.icon('check', 15)} Resolver</span></div></div></div>`,
     dash: () => `<div class="tour-mock tm-kpis"><div class="kpi k-green"><span class="kpi-l">Progresso do dia</span><strong class="kpi-v">45%</strong></div><div class="kpi k-red"><span class="kpi-l">Atrasadas</span><strong class="kpi-v">2</strong></div><div class="kpi k-yellow"><span class="kpi-l">Imprevistos</span><strong class="kpi-v">1</strong></div></div>`,
@@ -218,8 +218,8 @@ Views.guia = {
 
     ${sec('tarefas', 'tasks', 'Tarefas', li([
       'Botão <strong>+</strong>: nome, descrição, categoria, prioridade, status, início, prazo, horário e observações.',
-      'Toque no <strong>quadrado</strong> à esquerda para concluir (aparece “Desfazer” por alguns segundos).',
-      'O seletor de status à direita muda para Pendente, Em andamento, Concluída ou Cancelada.',
+      '<strong>✓</strong> conclui (aparece “Desfazer” por alguns segundos) e <strong>↶</strong> reabre, como na Agenda.',
+      '<strong>⋯</strong> → Editar, Começar agora (em andamento), Cancelar ou Excluir.',
       'Os <strong>contadores do topo</strong> filtram a lista. Abaixo, há busca e filtros por categoria, prioridade e prazo.',
       'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada.',
     ]))}
@@ -251,7 +251,9 @@ Views.guia = {
       ${li([
         `<strong>XP</strong> vem do que você já faz no app: atividade da agenda concluída (+${Jogo.PONTOS.bloco}), dia com 80% da agenda (+${Jogo.PONTOS.diaBom}), tarefa concluída (+${Jogo.PONTOS.tarefa}, e +${Jogo.PONTOS.noPrazo} se no prazo), imprevisto resolvido (+${Jogo.PONTOS.imprevisto}), reunião registrada (+${Jogo.PONTOS.reuniao}) e feedback (+${Jogo.PONTOS.feedback}).`,
         `<strong>Sequência</strong>: dias seguidos batendo a meta de ${Jogo.META} XP. Folga e fim de semana não quebram.`,
-        '<strong>Áreas</strong> (Rotina, Execução, Equipe, Imprevistos) sobem de nível separadas. <strong>Missões do dia</strong> e <strong>Conquistas</strong> são montadas com os seus dados.',
+        '<strong>Áreas</strong> (Rotina, Execução, Equipe, Imprevistos) sobem de nível separadas. As <strong>Conquistas</strong> são liberadas sozinhas.',
+        '<strong>Missões</strong>: quem lidera a equipe toca em <strong>Enviar missões para alguém</strong>, escolhe o tipo (ex.: concluir 10 tarefas, registrar 4 feedbacks, bater a meta em 5 dias), a quantidade, o XP e o prazo, e manda o link pelo WhatsApp. Quem recebe abre o link (no app do celular: Missões → <strong>Receber</strong> e cola o link) e aceita: o progresso conta sozinho a partir daí. Em <strong>Outra</strong>, a missão é livre e a pessoa marca <strong>Concluí</strong>.',
+        '<strong>Enviar meu progresso</strong> monta um resumo das missões para mandar de volta a quem passou.',
         'O XP é calculado com o que está salvo: vale o histórico, fica igual em todos os aparelhos e reabrir algo concluído tira o XP dele.',
         'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
       ])}`)}

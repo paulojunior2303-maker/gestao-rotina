@@ -43,6 +43,11 @@ e diga o que mudou e como testar no celular.
 - **Modo jogo / Jornada** (`js/jogo.js`, `Jogo` + `Views.jornada`): XP, níveis, sequência, missões e conquistas **calculados** dos dados
   (agenda, tarefas `completedAt`, imprevistos `resolvedAt`, `registro.at` das reuniões, feedbacks); nada guardado à parte. `settings.jogo` (padrão ligado,
   Configurações → Aparência). Cartão no Início (`Jogo.card`), aviso "+XP" em `commit()` (`Jogo.check`). Sem mascote (decisão do usuário).
+  **Missões** (`Missoes` em `jogo.js`, `S.missoes`): o líder monta um pacote e envia por link `#missoes?p=<base64url JSON>` (sem servidor);
+  quem abre aceita, e o progresso é contado a partir de `desde` (até o `prazo`). Tipos automáticos usam os mesmos pontos do XP; "manual" a pessoa marca.
+  `Jogo.calc()` fica em cache até o próximo `Store.save()` (`Store.rev`).
+- **Tarefas**: botões como na Agenda (✓ conclui, ↶ reabre, ⋯ começar/cancelar/excluir); não há mais seletor de status na lista.
+- `tests/run.sh` roda os arquivos em paralelo (4 por vez).
 - **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.
 - **Feedbacks** (`js/views/feedbacks.js`, `FBPage` + `FB`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
   Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).
@@ -80,7 +85,7 @@ bash tests/run.sh android  # só um arquivo
 ## Fluxo de trabalho: canal de teste (pedido do usuário)
 - **Nada vai para o app oficial sem aprovação do usuário.** Toda mudança nova é feita no ramo `teste` e publicada só no
   **site de teste**: https://paulojunior2303-maker.github.io/gestao-rotina/teste/
-- Publicar o teste: no ramo `teste`, `python3 build.py --teste` → copiar `dist/gestao-rotina-teste.html` para `teste/index.html`
+- Publicar o teste: `bash tools/publicar-teste.sh "mensagem"` (faz tudo abaixo). Manualmente: no ramo `teste`, `python3 build.py --teste` → copiar `dist/gestao-rotina-teste.html` para `teste/index.html`
   no ramo `main` (só essa pasta; não dispara o APK) e enviar. O build de teste usa outra chave no LocalStorage (`…:teste`),
   desliga o Google Drive e mostra a marca TESTE (`CANAL_TESTE` em `js/store.js`).
 - Cada recurso num commit separado, para dar para aprovar só uma parte. Quando o usuário aprovar, levar os commits

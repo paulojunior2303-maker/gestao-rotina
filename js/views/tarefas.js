@@ -38,17 +38,18 @@ Views.tarefas = {
     const row = x => {
       const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
       return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
-        <label class="tk-check" title="${x.status === 'concluida' ? 'Reabrir' : 'Concluir'}"><input type="checkbox" data-change="tkDone" data-id="${x.id}" ${x.status === 'concluida' ? 'checked' : ''} ${x.status === 'cancelada' ? 'disabled' : ''}><span></span></label>
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
-          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
+          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
           <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
             ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : '<span class="muted">Sem prazo</span>'}
             ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
         </div>
         <div class="tk-side">
-          <select class="status-sel" data-change="tkStatus" data-id="${x.id}" style="--c:${D.status(x.status).color}">${UI.opts(H.statusOptions(), x.status)}</select>
-          <button class="icon-btn" data-act="tkDelete" data-id="${x.id}" title="Excluir">${U.icon('trash', 16)}</button>
+          ${x.status === 'concluida' || x.status === 'cancelada'
+            ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
+            : `<button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`}
+          <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
         </div>
       </div>`;
     };
@@ -110,8 +111,25 @@ const Tasks = {
 Object.assign(Actions, {
   tkNew() { Tasks.form(null); },
   tkEdit({ id }) { Tasks.form(S.tasks.find(x => x.id === id)); },
-  tkDone({ id }, el) { const x = S.tasks.find(y => y.id === id); Tasks.setStatus(x, el.checked ? 'concluida' : 'pendente'); commit(); if (el.checked) UI.toast('Tarefa concluída.', 'ok', { label: 'Desfazer', onClick: () => { Tasks.setStatus(x, 'pendente'); commit(); } }); },
-  tkStatus({ id }, el) { const x = S.tasks.find(y => y.id === id); Tasks.setStatus(x, el.value); commit(); },
+  /* Botões da lista (como na Agenda): ✓ conclui, ↶ reabre, ⋯ mais opções */
+  tkSet({ id, s }) {
+    const x = S.tasks.find(y => y.id === id); if (!x) return;
+    const prev = x.status, prevAt = x.completedAt;
+    Tasks.setStatus(x, s); commit();
+    if (s === 'concluida') UI.toast('Tarefa concluída.', 'ok', { label: 'Desfazer', onClick: () => { x.status = prev; x.completedAt = prevAt; commit(); } });
+  },
+  tkMore({ id }) {
+    const x = S.tasks.find(y => y.id === id); if (!x) return;
+    UI.sheet(x.title, [
+      { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
+      x.status === 'andamento' ? { label: 'Marcar como pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
+        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) },
+      x.status === 'cancelada' ? { label: 'Reabrir tarefa', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
+        : { label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) },
+      { sep: true },
+      { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
+    ]);
+  },
   tkDelete({ id }) {
     const x = S.tasks.find(y => y.id === id);
     UI.confirm(`Excluir a tarefa <strong>${U.esc(x.title)}</strong>?`, () => {
