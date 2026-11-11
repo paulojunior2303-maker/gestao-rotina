@@ -623,6 +623,7 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 /* ---------- Formulários / modal ---------- */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.rt-empty { color: var(--muted); white-space: normal; padding: 16px 12px; }
 .cfg-empresa { max-width: 420px; margin-top: 16px; }
 .metric-names { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .field.full, .form-grid .full { grid-column: 1 / -1; }
@@ -1178,9 +1179,10 @@ const Store = {
   lastSaved: null,
   warned: false,
 
-  defaults() {
+  /* Modelo de exemplo da rotina (Configurações → Rotina padrão → Usar modelo de exemplo). Instalação nova começa em branco. */
+  sampleRoutine() {
     const id = U.uid;
-    const routine = [
+    return [
       ['08:00', '08:30', 'Abertura e análise de demandas', 'demandas'],
       ['08:30', '09:00', 'Alinhamento da equipe', 'equipe'],
       ['09:00', '10:30', 'Acompanhamento operacional', 'operacional'],
@@ -1194,7 +1196,10 @@ const Store = {
       ['17:15', '17:40', 'Janela flexível para imprevistos', 'imprevistos'],
       ['17:40', '18:00', 'Fechamento do expediente', 'administrativo'],
     ].map(([start, end, title, category, fixed]) => ({ id: id(), start, end, title, category, priority: 'media', notes: '', fixed: !!fixed, freq: 'semanal', days: [1, 2, 3, 4, 5], monthDay: 1 }));
+  },
 
+  defaults() {
+    const routine = [];   // em branco: cada pessoa monta a sua (ou usa o modelo de exemplo)
     return {
       version: 1,
       settings: {
@@ -3394,7 +3399,7 @@ Views.agenda = {
       ${blocks.length ? H.dayRail(k, { link: false }) : ''}
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
       <div class="timeline">
-        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', '<small class="muted">Toque em <strong>+</strong> para adicionar.</small>')}
+        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
       </div>
     </section>`;
   },
@@ -4714,10 +4719,10 @@ Views.config = {
     ${sec('rotina', 'Rotina padrão (horários das atividades)', 'Modelo usado para montar a agenda de cada dia útil. Alterações valem para os dias que ainda não foram editados.', `
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Horário</th><th>Atividade</th><th>Categoria</th><th>Prioridade</th><th>Frequência</th><th></th></tr></thead>
-        <tbody>${routine.map(r => `<tr><td class="nowrap">${r.start}–${r.end}</td><td>${U.esc(r.title)}${r.fixed ? ' <span class="badge">fixo</span>' : ''}</td><td>${H.cat(r.category)}</td><td>${H.prio(r.priority)}</td><td>${freqTxt(r)}</td>
+        <tbody>${routine.length ? '' : `<tr><td colspan="6" class="rt-empty">Sua rotina está em branco. Adicione as atividades que se repetem no seu dia (ex.: alinhamento com a equipe às 08:30), ou comece pelo <strong>modelo de exemplo</strong> e ajuste.</td></tr>`}${routine.map(r => `<tr><td class="nowrap">${r.start}–${r.end}</td><td>${U.esc(r.title)}${r.fixed ? ' <span class="badge">fixo</span>' : ''}</td><td>${H.cat(r.category)}</td><td>${H.prio(r.priority)}</td><td>${freqTxt(r)}</td>
           <td class="nowrap"><button class="icon-btn xs" data-act="rtEdit" data-id="${r.id}" title="Editar">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="rtDel" data-id="${r.id}" title="Excluir">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody>
       </table></div>
-      <div class="row-actions"><button class="btn sm" data-act="rtNew">${U.icon('plus', 15)} Nova atividade recorrente</button><button class="btn sm ghost" data-act="rtReset">${U.icon('undo', 15)} Restaurar rotina original</button></div>`)}
+      <div class="row-actions"><button class="btn sm" data-act="rtNew">${U.icon('plus', 15)} Nova atividade recorrente</button><button class="btn sm ghost" data-act="rtReset">${U.icon('undo', 15)} Usar modelo de exemplo</button></div>`)}
 
     ${sec('categorias', 'Categorias de atividades', 'Usadas na agenda e nas tarefas. A cor identifica a categoria em todo o aplicativo.', `
       <div class="cfg-list">${st.categories.map(c => `<div class="cfg-item"><input type="color" value="${c.color}" data-change="catColor" data-id="${c.id}" aria-label="Cor"><input type="text" value="${U.esc(c.name)}" data-change="catName" data-id="${c.id}" aria-label="Nome"><button class="icon-btn xs" data-act="catDel" data-id="${c.id}" title="Excluir">${U.icon('trash', 14)}</button></div>`).join('')}</div>
@@ -4844,13 +4849,18 @@ Object.assign(Actions, {
     if (fd.get('syncBreak') && v.breakStart && v.breakEnd) {
       const br = S.routine.find(r => r.category === 'intervalo' && r.start === old.breakStart) || S.routine.find(r => r.category === 'intervalo');
       if (br) { br.start = v.breakStart; br.end = v.breakEnd; }
+      else if (v.breakMode === 'fixo') S.routine.push({ id: U.uid(), start: v.breakStart, end: v.breakEnd, title: 'Intervalo', category: 'intervalo', priority: 'media', notes: '', fixed: true, freq: 'semanal', days: [...v.workDays], monthDay: 1 });
     }
     commit(); UI.toast('Jornada salva.');
   },
   rtNew() { Routine.form(null); },
   rtEdit({ id }) { Routine.form(S.routine.find(r => r.id === id)); },
   rtDel({ id }) { const r = S.routine.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(r.title)}</strong> da rotina padrão?`, () => { S.routine = S.routine.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
-  rtReset() { UI.confirm('Restaurar a rotina padrão original (12 blocos de 08:00 às 18:00)? Os dias já editados não mudam.', () => { S.routine = Store.defaults().routine; commit(); }); },
+  rtReset() {
+    const use = () => { S.routine = Store.sampleRoutine(); commit(); UI.toast('Modelo de exemplo carregado. Edite ou exclua as atividades como quiser.'); };
+    if (!S.routine.length) return use();
+    UI.confirm('Trocar a sua rotina padrão pelo modelo de exemplo (12 atividades de 08:00 às 18:00)? Os dias já editados não mudam.', use, { okLabel: 'Usar modelo' });
+  },
   catColor({ id }, el) { D.cat(id).color = el.value; commit(); },
   catName({ id }, el) { if (el.value.trim()) { S.settings.categories.find(c => c.id === id).name = el.value.trim(); commit(); } },
   catAdd(_, form) { const name = form.elements.name.value.trim(); S.settings.categories.push({ id: U.uid(), name, color: form.elements.color.value }); commit(); },
@@ -5050,7 +5060,7 @@ Views.guia = {
 
     ${sec('inicio', 'flag', 'Primeiros passos (5 minutos)', `<ol>
       <li><strong>Configurações → Jornada</strong>: confira entrada, saída, intervalo e dias de trabalho.</li>
-      <li><strong>Configurações → Rotina padrão</strong>: ajuste os blocos de horário do seu dia. Eles montam a agenda de cada dia útil.</li>
+      <li><strong>Configurações → Rotina padrão</strong>: cadastre as atividades que se repetem no seu dia (ou toque em <strong>Usar modelo de exemplo</strong> e ajuste). Elas montam a agenda de cada dia útil.</li>
       <li><strong>Configurações → Equipe</strong>: cadastre as pessoas da equipe para usar como responsáveis e nos feedbacks.</li>
       <li>Opcional: <strong>Configurações → Aparência</strong>: escreva o nome da sua empresa ou equipe (aparece no menu).</li>
       <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
