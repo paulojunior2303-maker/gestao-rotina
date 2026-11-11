@@ -236,7 +236,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.evaluate(() => Jogo.calc().total) === xp1 + 30 && (await p.textContent('#xp-pop')).includes('Missão cumprida'), 'missão marcada como feita dá o XP e avisa');
   // Enviar missões: gera link; quem abre o link aceita e a contagem é automática
   await p.click('[data-act=msEnviar]'); await p.waitForTimeout(250);
-  await p.fill('.modal-wrap.open [name=para]', 'Carlos'); await p.fill('.modal-wrap.open [name=de]', 'Victor'); await p.fill('.ms-row .ms-n', '2');
+  await p.fill('.modal-wrap.open [name=para]', 'Carlos'); await p.fill('.modal-wrap.open [name=de]', 'Victor'); await p.selectOption('.ms-row .ms-tipo', 'tarefa'); await p.fill('.ms-row .ms-n', '2');
   assert((await p.textContent('.ms-row .ms-sum')).includes('Concluir 2 tarefas · +20 XP'), 'a missão mostra o título e o XP calculado');
   await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
   const msTxt = await p.inputValue('.ms-share'); const msLink = msTxt.match(/https:\S+/)[0];
@@ -250,6 +250,23 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.evaluate(() => { for (const i of [1, 2]) S.tasks.push({ id: 'ms' + i, title: 'M' + i, status: 'concluida', completedAt: new Date().toISOString(), priority: 'media', category: 'equipe', createdAt: new Date().toISOString() }); commit(); });
   assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.de_ === 'Victor').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp2 + 20 + 20, 'missão automática conclui sozinha (2 tarefas = 20 XP + 20 da missão)');
   assert(await p.evaluate(() => Missoes.decodificar('lixo<script>') === null), 'link inválido é recusado');
+  // Missões de atribuição criam o item no app de quem recebe (tarefa em Tarefas, reunião na agenda, pessoa em Feedbacks)
+  const amanha = await p.evaluate(() => U.addDays(U.today(), 1));
+  const pac = await p.evaluate(d => Missoes.link({ id: 'pk-int', de: 'Victor', para: 'Paulo', prazo: '', missoes: [
+    { tipo: 'tarefaItem', alvo: 1, titulo: 'Atualizar planilha', data: d, hora: '10:00' },
+    { tipo: 'reuniaoItem', alvo: 1, titulo: 'Alinhamento da escala', data: d, hora: '09:30' },
+    { tipo: 'feedbackItem', alvo: 1, titulo: 'Natan', data: d, hora: '' },
+    { tipo: 'imprevistoItem', alvo: 1, titulo: 'Câmera offline', data: d, hora: '' }] }), amanha);
+  await p.goto(B + pac.slice(pac.indexOf('#'))); await p.waitForTimeout(700); await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(400);
+  const integ = await p.evaluate(d => ({
+    tarefa: S.tasks.find(t => t.title === 'Atualizar planilha'), reuniao: S.events.find(e => e.title === 'Alinhamento da escala'),
+    imp: S.occurrences.find(o => o.title === 'Câmera offline'), natan: D.techNames().includes('Natan'), cal: Cal.itemsOn(d).map(i => i.type).sort().join(',') }), amanha);
+  assert(integ.tarefa && integ.tarefa.dueDate === amanha && integ.tarefa.dueTime === '10:00' && integ.reuniao && integ.reuniao.reuniao && integ.reuniao.date === amanha && integ.imp && integ.natan, 'aceitar cria a tarefa, a reunião, o imprevisto e a pessoa na equipe');
+  assert(integ.cal === 'imprevisto,missao,reuniao,tarefa', 'tudo aparece no calendário do dia (' + integ.cal + ')');
+  await go('feedbacks'); assert((await p.textContent('#view')).includes('Feedback com Natan'), 'o feedback pedido aparece em Feedbacks → Para fazer');
+  const xp3 = await p.evaluate(() => Jogo.calc().total);
+  await p.evaluate(() => { const t = S.tasks.find(x => x.title === 'Atualizar planilha'); Tasks.setStatus(t, 'concluida'); commit(); });
+  assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.titulo === 'Atualizar planilha').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp3 + 15 + 20, 'concluir a tarefa conclui a missão (+15 da tarefa no prazo, +20 da missão)');
   await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
   assert((await state()).settings.jogo === false && await p.locator('#nav a[href="#jornada"]').count() === 0, 'desligar o modo jogo tira a Jornada do menu');
   await go('dashboard'); assert(await p.locator('.jg-card').count() === 0, 'e o cartão do Início');
@@ -261,7 +278,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert((await state()).settings.workEnd === '17:30', 'jornada editável');
   await p.fill('form[data-submit=tecAdd] input', 'Carlos'); await p.click('form[data-submit=tecAdd] button'); await p.waitForTimeout(150);
   await p.fill('form[data-submit=catAdd] [name=name]', 'Treinamentos'); await p.click('form[data-submit=catAdd] button'); await p.waitForTimeout(150);
-  s = await state(); assert(s.settings.technicians[0].name === 'Carlos' && s.settings.categories.some(c => c.name === 'Treinamentos'), 'técnico e categoria cadastrados');
+  s = await state(); assert(s.settings.technicians.some(t => t.name === 'Carlos') && s.settings.categories.some(c => c.name === 'Treinamentos'), 'técnico e categoria cadastrados');
   await p.click('[data-act=goalNew]'); await p.waitForTimeout(200); await fill('target', '5'); await submit();
   assert((await state()).settings.goals.length === 1, 'meta cadastrada');
   await p.click('[data-act=rtNew]'); await p.waitForTimeout(200);
@@ -275,7 +292,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('[data-act=demoLoad]'); await p.waitForTimeout(150);
   s = await state(); const nTasks = s.tasks.length;
   await p.click('.view [data-act=demoRemove] >> nth=0'); await p.waitForTimeout(150); await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(150);
-  s = await state(); assert(s.tasks.length === nTasks - 4 && !s.tasks.some(t => t.demo) && s.settings.technicians.length === 1, 'remover demonstração preserva dados reais');
+  s = await state(); assert(s.tasks.length === nTasks - 4 && !s.tasks.some(t => t.demo) && s.settings.technicians.length === 2, 'remover demonstração preserva dados reais');
 
   // ---- Persistência após recarregar
   await p.reload(); await go('tarefas');

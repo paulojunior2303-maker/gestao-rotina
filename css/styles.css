@@ -125,7 +125,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand { display: flex; gap: 12px; align-items: center; padding: 24px 22px 14px; color: #fff; }
 .brand strong { font-family: var(--font-d); font-size: 17px; font-weight: 650; letter-spacing: -.015em; display: block; line-height: 1.15; }
 .brand small { display: block; color: var(--side-muted); font-size: 11.5px; margin-top: 2px; }
-.brand-logo { width: 34px; height: 34px; color: #9461f5; flex-shrink: 0; }
+.brand-logo { width: 38px; height: 38px; flex-shrink: 0; }
 .nav { padding: 4px 12px 12px; display: flex; flex-direction: column; overflow-y: auto; flex: 1; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: 18px; }
 .nav-g { font-size: 11.5px; color: var(--side-muted); padding: 0 12px 6px; font-weight: 500; }
@@ -632,7 +632,7 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 .modal-wrap { position: fixed; inset: 0; background: rgba(9, 6, 15, .55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; opacity: 0; transition: opacity .2s; }
 .modal-wrap.open { opacity: 1; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 540px; max-height: calc(100vh - 40px); display: flex; flex-direction: column; box-shadow: var(--shadow-pop); transform: translateY(10px) scale(.985); transition: transform .26s var(--ease); }
-.modal.wide { max-width: 780px; }
+.modal.wide { max-width: 860px; }
 .modal-wrap.open .modal { transform: none; }
 .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 22px 12px; }
 .modal-head h2 { font-size: 19px; letter-spacing: -.02em; }
@@ -898,6 +898,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 :root { --t-reuniao: #c77deb; }
 :root[data-theme="dark"] { --t-reuniao: #e29cf5; }
 .calx-chip.t-evento, .calx-chip.t-tarefa, .calx-chip.t-projeto, .calx-chip.t-imprevisto, .calx-chip.t-reuniao { border-left-style: solid; }
+:root { --t-missao: var(--gold); }
+.calx-dots i.t-missao, i.t-missao, .legend i.t-missao { background: var(--gold); } .calx-chip.t-missao { border-color: var(--gold) !important; } .calx-it.t-missao::before { background: var(--gold); }
 .calx-dots i.t-evento { background: var(--t-evento); } .calx-dots i.t-tarefa { background: var(--t-tarefa); } .calx-dots i.t-projeto { background: var(--t-projeto); } .calx-dots i.t-imprevisto { background: var(--t-imprevisto); }
 
 .calx-day { border-left: 1px solid var(--border); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
@@ -1093,7 +1095,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .jg-done { margin-top: 12px; } .jg-done summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
 .jg-miss-actions { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
 .ms-rows { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-.ms-row { display: grid; grid-template-columns: minmax(0, 1.3fr) 110px minmax(0, 1.5fr) auto; gap: 4px 10px; align-items: end; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.ms-row { display: grid; grid-template-columns: minmax(0, 1.8fr) 90px minmax(0, 1.4fr) 150px 108px auto; gap: 4px 10px; align-items: end; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .ms-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ms-f > span { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .ms-f[hidden] { display: flex; visibility: hidden; }
@@ -1109,5 +1111,6 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .ms-rm { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; margin: 0; }
   .ms-f-tipo { grid-column: 1; grid-row: 1; }
   .ms-f-n { grid-column: 1; grid-row: 2; max-width: 140px; }
-  .ms-f-n[hidden] { display: none; }
+  .ms-f[hidden] { display: none; }
+  .ms-f-data { grid-column: 1; } .ms-f-hora { grid-column: 2; }
 }

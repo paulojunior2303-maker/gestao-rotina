@@ -47,6 +47,9 @@ e diga o que mudou e como testar no celular.
   quem abre aceita, e o progresso é contado a partir de `desde` (até o `prazo`). Tipos automáticos usam os mesmos pontos do XP; "manual" a pessoa marca.
   `Jogo.calc()` fica em cache até o próximo `Store.save()` (`Store.rev`).
 - **Tarefas**: botões na linha (▶ começar, ✓ concluir, ✕ cancelar, ↶ reabrir; ⋯ só Editar e Excluir); não há seletor de status na lista.
+- **Nome do app: FlowFire** (tudo junto), ícone em `icon.svg` (chama roxa com miolo laranja, arco e estrela) e PNGs do Android em `res/mipmap-*` e `splash.png`.
+  **Não renomear**: a pasta do Drive (`Drive.FOLDER = 'Gestão de Rotina'`, senão a sincronização perde o arquivo), a chave do LocalStorage, o pacote Android e o arquivo `GestaoRotina.apk` (o aviso de atualização das versões instaladas procura esse nome).
+- **Missões de atribuição** (`Missoes.ITENS`): tarefa, reunião, imprevisto e feedback com alguém. Ao aceitar, o item é criado no app de quem recebe (`m.ref`), com data entra no calendário; a missão conclui quando o item conclui (`Missoes.itemFeito`). Feedback pedido aparece em Feedbacks → Para fazer.
 - **XP das missões é automático** (`Missoes.xpDe`: valor por unidade × quantidade); o XP que vier no link é ignorado e recalculado.
 - `tests/run.sh` roda os arquivos em paralelo (4 por vez).
 - **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.

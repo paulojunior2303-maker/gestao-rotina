@@ -4,7 +4,7 @@
    e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje".
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
-  TYPES: { reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Imprevisto' },
+  TYPES: { reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Imprevisto', missao: 'Missão' },
   WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
 
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
@@ -14,6 +14,9 @@ const Cal = {
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
     if (S.settings.showProjetos) S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
+    // Missões com data que não criam item próprio (feedback com alguém, missão livre)
+    if (typeof Missoes !== 'undefined') Missoes.list().filter(m => m.data === k && (m.tipo === 'feedbackItem' || m.tipo === 'manual') && !(m.tipo === 'manual' ? m.feitaEm : Missoes.itemFeito(m)))
+      .forEach(m => out.push({ type: 'missao', label: m.titulo, time: '', id: m.id, act: 'msAbrir' }));
     return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
   },
 
@@ -69,7 +72,7 @@ const Cal = {
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
-      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto' }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
+      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto', ...((S.missoes || []).length ? { missao: 'Missão' } : {}) }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
       ${id === 'agenda' ? `<button class="calx-exp" data-act="calMode" data-cal="${id}" data-v="${s.mode === 'week' ? 'month' : 'week'}" aria-expanded="${s.mode === 'month'}">${s.mode === 'week' ? `${U.icon('down', 16)} Ver o mês inteiro` : `${U.icon('up', 16)} Mostrar só a semana`}</button>` : ''}
     </div>`;
   },

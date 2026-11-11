@@ -188,9 +188,17 @@ Views.jornada = {
   },
 };
 
-/* Missões da Jornada: quem lidera monta um pacote e envia por link (WhatsApp); quem recebe abre o link,
-   aceita, e o progresso é contado sozinho a partir do que a pessoa faz no app. Sem servidor: o pacote vai no link. */
+/* Missões da Jornada: quem lidera monta um pacote e envia por link (WhatsApp); quem recebe abre o link e aceita.
+   Missões de ATRIBUIÇÃO criam o item de verdade no app de quem recebe (tarefa, reunião na agenda, imprevisto,
+   pessoa em Feedbacks) e ficam concluídas quando esse item é concluído. Missões de META contam o que a pessoa faz. */
 const Missoes = {
+  /* Atribuições: [rótulo, título, rótulo do campo de texto, exemplo, usa data, usa hora] */
+  ITENS: {
+    tarefaItem: ['Tarefa (entra em Tarefas)', x => x.titulo, 'Tarefa', 'Ex.: Atualizar a planilha de materiais', true, true],
+    reuniaoItem: ['Reunião (entra na agenda)', x => 'Reunião: ' + x.titulo, 'Assunto da reunião', 'Ex.: Alinhamento da escala', true, true],
+    feedbackItem: ['Feedback com alguém (entra em Feedbacks)', x => 'Feedback com ' + x.titulo, 'Com quem', 'Nome do colaborador', true, false],
+    imprevistoItem: ['Imprevisto para resolver', x => 'Resolver: ' + x.titulo, 'O que resolver', 'Ex.: Câmera offline no cliente X', true, true],
+  },
   TIPOS: {
     tarefa: ['Concluir tarefas', n => `Concluir ${U.plural(n, 'tarefa', 'tarefas')}`],
     noPrazo: ['Concluir tarefas no prazo', n => `Concluir ${U.plural(n, 'tarefa', 'tarefas')} dentro do prazo`],
@@ -202,11 +210,13 @@ const Missoes = {
     imprevisto: ['Resolver imprevistos', n => `Resolver ${U.plural(n, 'imprevisto', 'imprevistos')}`],
     manual: ['Outra (a pessoa marca quando fizer)', () => ''],
   },
+  valido(tipo) { return !!(this.ITENS[tipo] || this.TIPOS[tipo]); },
   SITE: 'https://paulojunior2303-maker.github.io/gestao-rotina/',
   /* XP da missão é automático: valor de cada unidade × quantidade (arredondado de 5 em 5, entre 10 e 500) */
   VALOR: { tarefa: 10, noPrazo: 12, bloco: 3, diaBom: 15, meta: 15, reuniao: 15, feedback: 15, imprevisto: 12 },
   MANUAL_XP: 30,
-  xpDe(tipo, alvo) { return tipo === 'manual' ? this.MANUAL_XP : Math.min(500, Math.max(10, Math.round(this.VALOR[tipo] * alvo / 5) * 5)); },
+  ITEM_XP: { tarefaItem: 20, reuniaoItem: 30, feedbackItem: 30, imprevistoItem: 25 },
+  xpDe(tipo, alvo) { return this.ITEM_XP[tipo] || (tipo === 'manual' ? this.MANUAL_XP : Math.min(500, Math.max(10, Math.round(this.VALOR[tipo] * alvo / 5) * 5))); },
   list() { return S.missoes || (S.missoes = []); },
 
   /* Progresso de cada missão: conta o que foi feito desde que ela foi aceita (e até o prazo, se houver) */
@@ -216,6 +226,7 @@ const Missoes = {
       const fim = m.prazo || '9999-12-31', dentro = d => d >= m.desde && d <= fim;
       let n = 0, feitaEm = null;
       if (m.tipo === 'manual') { n = m.feitaEm ? 1 : 0; feitaEm = m.feitaEm || null; }
+      else if (this.ITENS[m.tipo]) { feitaEm = this.itemFeito(m); n = feitaEm ? 1 : 0; }
       else {
         const datas = m.tipo === 'meta'
           ? Object.keys(baseDia).filter(d => dentro(d) && baseDia[d] >= Jogo.META)
@@ -223,19 +234,42 @@ const Missoes = {
         datas.sort(); n = Math.min(datas.length, m.alvo);
         if (datas.length >= m.alvo) feitaEm = datas[m.alvo - 1];
       }
-      const de = m.tipo === 'manual' ? 1 : m.alvo;
+      const de = m.tipo === 'manual' || this.ITENS[m.tipo] ? 1 : m.alvo;
       return { ...m, n, de, feitaEm, expirada: !feitaEm && !!m.prazo && t > m.prazo };
     });
+  },
+
+  /* Dia em que o item criado pela missão foi concluído (ou null) */
+  itemFeito(m) {
+    const ref = m.ref || {}, day = iso => iso ? U.key(new Date(iso)) : U.today();
+    if (m.tipo === 'tarefaItem') { const x = S.tasks.find(y => y.id === ref.id); return x && x.status === 'concluida' ? day(x.completedAt) : null; }
+    if (m.tipo === 'reuniaoItem') { const e = S.events.find(y => y.id === ref.id); return e && e.registro ? day(e.registro.at) : null; }
+    if (m.tipo === 'imprevistoItem') { const o = S.occurrences.find(y => y.id === ref.id); return o && o.status === 'concluida' ? day(o.resolvedAt) : null; }
+    if (m.tipo === 'feedbackItem') {
+      const nome = (m.pessoa || '').trim().toLowerCase();
+      const ds = (S.feedbacks || []).filter(f => (f.pessoa || '').trim().toLowerCase() === nome).map(f => f.createdAt ? day(f.createdAt) : f.date).filter(d => d >= m.desde).sort();
+      return ds[0] || null;
+    }
+    return null;
+  },
+  /* Abrir o item da missão (tarefa, reunião, imprevisto ou registrar o feedback) */
+  abrir(m) {
+    const ref = m.ref || {};
+    if (m.tipo === 'tarefaItem') { const x = S.tasks.find(y => y.id === ref.id); if (x) return Tasks.form(x); }
+    if (m.tipo === 'reuniaoItem') { const e = S.events.find(y => y.id === ref.id); if (e) return Events.view(e); }
+    if (m.tipo === 'imprevistoItem') { const o = S.occurrences.find(y => y.id === ref.id); if (o) return Occ.form(o); }
+    if (m.tipo === 'feedbackItem') return FB.form(null, m.pessoa);
+    UI.toast('O item desta missão foi excluído.', 'warn');
   },
 
   card(r) {
     const ativas = r.miss.filter(m => !m.feitaEm && !m.expirada), feitas = r.miss.filter(m => m.feitaEm), fora = r.miss.filter(m => m.expirada);
     const item = m => `<li class="${m.feitaEm ? 'ok' : m.expirada ? 'exp' : ''}">
         <span class="jg-chk">${m.feitaEm ? U.icon('check', 15) : ''}</span>
-        <span class="jg-miss-t"><span>${U.esc(m.titulo)}</span>
-          <small class="muted">${m.de_ ? `De ${U.esc(m.de_)} · ` : ''}${m.prazo ? `até ${U.fmtShort(m.prazo)} · ` : ''}+${m.xp} XP${m.expirada ? ' · prazo encerrado' : ''}</small>
-          ${!m.feitaEm && m.tipo !== 'manual' ? `<span class="jg-bar sm"><i style="width:${Math.max(Math.round(m.n / m.de * 100), 3)}%"></i></span>` : ''}</span>
-        ${m.tipo === 'manual' && !m.expirada ? (m.feitaEm ? `<button class="icon-btn" data-act="msFeita" data-id="${m.id}" data-v="" title="Desmarcar">${U.icon('undo', 15)}</button>` : `<button class="btn sm" data-act="msFeita" data-id="${m.id}" data-v="1">Concluí</button>`) : `<span class="jg-miss-n num">${m.n}/${m.de}</span>`}
+        <span class="jg-miss-t">${this.ITENS[m.tipo] ? `<a href="#jornada" data-act="msAbrir" data-id="${m.id}">${U.esc(m.titulo)}</a>` : `<span>${U.esc(m.titulo)}</span>`}
+          <small class="muted">${m.de_ ? `De ${U.esc(m.de_)} · ` : ''}${m.data ? `${U.fmtShort(m.data)}${m.hora ? ' ' + m.hora : ''} · ` : ''}${m.prazo ? `até ${U.fmtShort(m.prazo)} · ` : ''}+${m.xp} XP${m.expirada ? ' · prazo encerrado' : ''}</small>
+          ${!m.feitaEm && m.tipo !== 'manual' && !this.ITENS[m.tipo] ? `<span class="jg-bar sm"><i style="width:${Math.max(Math.round(m.n / m.de * 100), 3)}%"></i></span>` : ''}</span>
+        ${this.ITENS[m.tipo] ? (m.feitaEm ? '' : `<button class="btn sm" data-act="msAbrir" data-id="${m.id}">${m.tipo === 'feedbackItem' ? 'Registrar' : 'Abrir'}</button>`) : m.tipo === 'manual' && !m.expirada ? (m.feitaEm ? `<button class="icon-btn" data-act="msFeita" data-id="${m.id}" data-v="" title="Desmarcar">${U.icon('undo', 15)}</button>` : `<button class="btn sm" data-act="msFeita" data-id="${m.id}" data-v="1">Concluí</button>`) : `<span class="jg-miss-n num">${m.n}/${m.de}</span>`}
         <button class="icon-btn xs" data-act="msDel" data-id="${m.id}" title="Remover missão" aria-label="Remover missão">${U.icon('x', 14)}</button></li>`;
     return `<div class="card jg-miss-card">
       <div class="card-h"><h3>${U.icon('target')} Missões</h3><span class="muted small">${feitas.length} de ${r.miss.length}</span></div>
@@ -253,34 +287,47 @@ const Missoes = {
 
   /* Formulário de uma ou mais missões (para mim ou para enviar) */
   form(paraOutro) {
-    const tipos = Object.entries(this.TIPOS).map(([k, [l]]) => `<option value="${k}">${l}</option>`).join('');
+    const opt = (k, l) => `<option value="${k}">${l}</option>`;
+    const tipos = `<optgroup label="Atribuir (cria no app da pessoa)">${Object.entries(this.ITENS).map(([k, [l]]) => opt(k, l)).join('')}</optgroup>
+      <optgroup label="Metas (o app conta sozinho)">${Object.entries(this.TIPOS).filter(([k]) => k !== 'manual').map(([k, [l]]) => opt(k, l)).join('')}</optgroup>
+      <optgroup label="Livre">${opt('manual', this.TIPOS.manual[0])}</optgroup>`;
     const linha = () => `<div class="ms-row">
         <label class="ms-f ms-f-tipo"><span>Missão</span><select class="ms-tipo">${tipos}</select></label>
         <label class="ms-f ms-f-n"><span>Quantidade</span><input class="ms-n" type="number" min="1" max="999" value="5" inputmode="numeric"></label>
-        <label class="ms-f ms-f-txt"><span class="ms-txt-l">Título (opcional)</span><input class="ms-txt" type="text" maxlength="90" placeholder="Usa o título automático"></label>
+        <label class="ms-f ms-f-txt"><span class="ms-txt-l">Título</span><input class="ms-txt" type="text" maxlength="90" list="ms-pessoas"></label>
+        <label class="ms-f ms-f-data"><span>Data</span><input class="ms-data" type="date" min="${U.today()}"></label>
+        <label class="ms-f ms-f-hora"><span>Horário</span><input class="ms-hora" type="time"></label>
         <button type="button" class="icon-btn xs ms-rm" title="Remover esta missão" aria-label="Remover esta missão">${U.icon('x', 14)}</button>
         <p class="ms-sum"></p></div>`;
     const m = UI.modal({
       title: paraOutro ? 'Enviar missões' : 'Criar missão para mim',
       wide: true,
       body: `${paraOutro ? `<div class="form-grid">
-          <div class="field"><label>Para quem</label><input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa"><datalist id="ms-pessoas">${D.techNames().map(n => `<option value="${U.esc(n)}">`).join('')}</datalist></div>
+          <div class="field"><label>Para quem</label><input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa"></div>
           <div class="field"><label>Seu nome (aparece para a pessoa)</label><input name="de" maxlength="60" value="${U.esc(S.settings.meuNome || '')}" placeholder="Ex.: Victor"></div></div>` : ''}
-        <p class="muted small">Escolha a missão e a quantidade (ex.: concluir <strong>5</strong> tarefas). O app conta sozinho o que ${paraOutro ? 'a pessoa fizer depois de aceitar' : 'você fizer a partir de hoje'} e calcula o XP. Em <strong>Outra</strong>, escreva a missão; ela é marcada à mão.</p>
+        <datalist id="ms-pessoas">${D.techNames().map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>
+        <p class="muted small"><strong>Atribuir</strong> cria o item ${paraOutro ? 'no app da pessoa' : 'no seu app'} (a tarefa em Tarefas, a reunião na agenda, o feedback em Feedbacks) e, com data, ele aparece no calendário. A missão fica concluída quando o item for concluído. <strong>Metas</strong> contam o que for feito a partir de ${paraOutro ? 'quando a pessoa aceitar' : 'hoje'}. O XP é calculado sozinho.</p>
         <div class="ms-rows">${linha()}</div>
         <button type="button" class="btn sm ghost ms-add">${U.icon('plus', 15)} Adicionar outra missão</button>
-        <div class="field ms-prazo"><label>Prazo (opcional)</label><input type="date" name="prazo" min="${U.today()}"></div>
+        <div class="field ms-prazo"><label>Prazo para tudo (opcional)</label><input type="date" name="prazo" min="${U.today()}"></div>
         <p class="form-error" hidden></p>`,
       footer: `<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-ok>${paraOutro ? `${U.icon('arrow', 15)} Gerar link` : 'Salvar'}</button>`,
     });
     const el = m.el, rows = el.querySelector('.ms-rows');
-    // Mostra o que a pessoa vai ver e o XP calculado
+    const ler = row => {
+      const tipo = row.querySelector('.ms-tipo').value;
+      return { tipo, alvo: Math.min(999, Math.max(1, Math.round(Number(row.querySelector('.ms-n').value) || 1))), titulo: row.querySelector('.ms-txt').value.trim(), data: row.querySelector('.ms-data').value || '', hora: row.querySelector('.ms-hora').value || '' };
+    };
+    // Mostra só os campos de cada tipo, o que a pessoa vai ver e o XP calculado
     const sync = row => {
-      const tipo = row.querySelector('.ms-tipo').value, manual = tipo === 'manual', alvo = Math.max(1, Number(row.querySelector('.ms-n').value) || 1), txt = row.querySelector('.ms-txt').value.trim();
-      row.querySelector('.ms-f-n').hidden = manual;
-      row.querySelector('.ms-txt-l').textContent = manual ? 'Escreva a missão' : 'Título (opcional)';
-      row.querySelector('.ms-txt').placeholder = manual ? 'Ex.: revisar 1 POP' : 'Usa o título automático';
-      row.querySelector('.ms-sum').innerHTML = `${U.esc(txt || this.titulo({ tipo, alvo }) || 'Escreva a missão')} · <b>+${this.xpDe(tipo, alvo)} XP</b>${manual ? ' <small>(a pessoa marca quando fizer)</small>' : ''}`;
+      const x = ler(row), it = this.ITENS[x.tipo], manual = x.tipo === 'manual';
+      row.querySelector('.ms-f-n').hidden = !!it || manual;
+      row.querySelector('.ms-f-data').hidden = !(it || manual);
+      row.querySelector('.ms-f-hora').hidden = !(it && it[5]);
+      row.querySelector('.ms-txt-l').textContent = it ? it[2] : manual ? 'Escreva a missão' : 'Título (opcional)';
+      row.querySelector('.ms-txt').placeholder = it ? it[3] : manual ? 'Ex.: revisar 1 POP' : 'Usa o título automático';
+      const tit = this.titulo(x);
+      row.querySelector('.ms-sum').innerHTML = `${U.esc(tit || '(preencha o campo acima)')}${x.data && (it || manual) ? ` · ${U.fmtShort(x.data)}${x.hora && it && it[5] ? ' ' + x.hora : ''}` : ''} · <b>+${this.xpDe(x.tipo, x.alvo)} XP</b>${manual ? ' <small>(marcada à mão)</small>' : ''}`;
     };
     rows.querySelectorAll('.ms-row').forEach(sync);
     el.addEventListener('input', e => { const r = e.target.closest('.ms-row'); if (r) sync(r); });
@@ -291,8 +338,15 @@ const Missoes = {
     el.querySelector('[data-ok]').onclick = () => {
       const err = el.querySelector('.form-error'), fail = msg => { err.textContent = msg; err.hidden = false; };
       const prazo = el.querySelector('[name=prazo]').value || '';
-      const lista = [...rows.querySelectorAll('.ms-row')].map(r => { const tipo = r.querySelector('.ms-tipo').value, alvo = Math.min(999, Math.max(1, Math.round(Number(r.querySelector('.ms-n').value) || 1))); return { tipo, alvo, titulo: r.querySelector('.ms-txt').value.trim(), xp: this.xpDe(tipo, alvo) }; });
-      if (lista.some(x => x.tipo === 'manual' && !x.titulo)) return fail('Escreva a missão no título quando o tipo for "Outra".');
+      const lista = [...rows.querySelectorAll('.ms-row')].map(r => {
+        const x = ler(r), it = this.ITENS[x.tipo];
+        if (!it && x.tipo !== 'manual') { x.data = ''; x.hora = ''; }
+        if (!(it && it[5])) x.hora = '';
+        if (it || x.tipo === 'manual') x.alvo = 1;
+        return { ...x, xp: this.xpDe(x.tipo, x.alvo) };
+      });
+      if (lista.some(x => (this.ITENS[x.tipo] || x.tipo === 'manual') && !x.titulo)) return fail('Preencha o campo de cada missão (ex.: o nome da tarefa ou de quem recebe o feedback).');
+      if (lista.some(x => x.tipo === 'reuniaoItem' && !x.data)) return fail('Informe a data da reunião.');
       if (!paraOutro) { this.aceitar({ de: '', prazo, missoes: lista }); m.close(); UI.toast(U.plural(lista.length, 'missão criada', 'missões criadas') + '.'); return; }
       const para = el.querySelector('[name=para]').value.trim(), de = el.querySelector('[name=de]').value.trim();
       if (!para) return fail('Informe para quem são as missões.');
@@ -312,9 +366,10 @@ const Missoes = {
       const o = JSON.parse(decodeURIComponent(escape(atob(b + '==='.slice((b.length + 3) % 4)))));
       const cut = (s, n) => String(s || '').slice(0, n);
       const missoes = (Array.isArray(o.missoes) ? o.missoes : []).slice(0, 30)
-        .filter(x => x && this.TIPOS[x.tipo])
-        .map(x => { const alvo = Math.min(999, Math.max(1, Math.round(Number(x.alvo) || 1))); return { tipo: x.tipo, alvo, titulo: cut(x.titulo, 90), xp: this.xpDe(x.tipo, alvo) }; })
-        .filter(x => x.tipo !== 'manual' || x.titulo);
+        .filter(x => x && this.valido(x.tipo))
+        .map(x => { const alvo = Math.min(999, Math.max(1, Math.round(Number(x.alvo) || 1))), dt = /^\d{4}-\d{2}-\d{2}$/.test(x.data || '') ? x.data : '', hr = /^\d{2}:\d{2}$/.test(x.hora || '') ? x.hora : '';
+          return { tipo: x.tipo, alvo, titulo: cut(x.titulo, 90), data: dt, hora: hr, xp: this.xpDe(x.tipo, alvo) }; })
+        .filter(x => !(this.ITENS[x.tipo] || x.tipo === 'manual') || x.titulo);
       if (!missoes.length) return null;
       return { id: cut(o.id, 40) || U.uid(), de: cut(o.de, 60), para: cut(o.para, 60), prazo: /^\d{4}-\d{2}-\d{2}$/.test(o.prazo || '') ? o.prazo : '', missoes };
     } catch (e) { return null; }
@@ -323,7 +378,7 @@ const Missoes = {
 
   async compartilhar(p) {
     const url = this.link(p);
-    const txt = `${p.de ? p.de + ' te enviou' : 'Você recebeu'} ${U.plural(p.missoes.length, 'missão', 'missões')} no Gestão de Rotina:\n${p.missoes.map(x => '• ' + this.titulo(x)).join('\n')}${p.prazo ? `\nPrazo: ${U.fmtDate(p.prazo)}` : ''}\n\nAbra o link para aceitar (no app do celular: Jornada → Missões → Receber e cole o link):\n${url}`;
+    const txt = `${p.de ? p.de + ' te enviou' : 'Você recebeu'} ${U.plural(p.missoes.length, 'missão', 'missões')} no FlowFire:\n${p.missoes.map(x => '• ' + this.titulo(x)).join('\n')}${p.prazo ? `\nPrazo: ${U.fmtDate(p.prazo)}` : ''}\n\nAbra o link para aceitar (no app do celular: Jornada → Missões → Receber e cole o link):\n${url}`;
     UI.modal({
       title: `Missões para ${p.para}`,
       body: `<p>Mande este texto para <strong>${U.esc(p.para)}</strong> pelo WhatsApp ou e-mail. Quando a pessoa abrir o link e aceitar, as missões entram na Jornada dela e o progresso conta sozinho.</p>
@@ -332,22 +387,40 @@ const Missoes = {
     }).el.querySelector('[data-copy]').onclick = async () => { try { await navigator.clipboard.writeText(txt); UI.toast('Copiado.'); } catch (e) { UI.toast('Selecione o texto e copie.', 'warn'); } };
   },
 
-  titulo(x) { return x.titulo || this.TIPOS[x.tipo][1](x.alvo); },
+  titulo(x) { const it = this.ITENS[x.tipo]; return it ? (x.titulo ? it[1](x) : '') : (x.titulo || this.TIPOS[x.tipo][1](x.alvo)); },
 
   /* Recebe um pacote: confirma e guarda as missões (a contagem começa hoje) */
   receber(txt) {
     const p = this.decodificar(txt);
     if (!p) { UI.toast('Link ou código de missões inválido.', 'error'); return false; }
-    const ja = this.list().some(m => m.pacote === p.id);
-    UI.confirm(`${p.de ? `<strong>${U.esc(p.de)}</strong> te enviou` : 'Você recebeu'} ${U.plural(p.missoes.length, 'missão', 'missões')}${p.para ? ` (para ${U.esc(p.para)})` : ''}:<ul class="ms-prev">${p.missoes.map(x => `<li>${U.esc(this.titulo(x))} <b>+${x.xp} XP</b></li>`).join('')}</ul>${p.prazo ? `Prazo: ${U.fmtDate(p.prazo)}<br>` : ''}<small class="muted">${ja ? 'Você já aceitou este pacote antes; aceitar de novo substitui.' : 'O progresso conta a partir de hoje.'}</small>`,
+    if (this.list().some(m => m.pacote === p.id)) { App.go('jornada'); UI.toast('Você já aceitou essas missões.'); return true; }
+    UI.confirm(`${p.de ? `<strong>${U.esc(p.de)}</strong> te enviou` : 'Você recebeu'} ${U.plural(p.missoes.length, 'missão', 'missões')}${p.para ? ` (para ${U.esc(p.para)})` : ''}:<ul class="ms-prev">${p.missoes.map(x => `<li>${U.esc(this.titulo(x))}${x.data ? ` (${U.fmtShort(x.data)}${x.hora ? ' ' + x.hora : ''})` : ''} <b>+${x.xp} XP</b></li>`).join('')}</ul>${p.prazo ? `Prazo: ${U.fmtDate(p.prazo)}<br>` : ''}<small class="muted">Tarefas, reuniões e imprevistos já entram no seu app${p.missoes.some(x => x.data) ? ' e no calendário' : ''}. As metas contam a partir de hoje.</small>`,
       () => { this.aceitar(p); App.go('jornada'); UI.toast('Missões aceitas. Boa jornada!'); }, { title: 'Novas missões', okLabel: 'Aceitar missões' });
     return true;
   },
   aceitar(p) {
     const t = U.today(), pacote = p.id || null;
     S.settings.jogo = true;   // quem aceita missões usa a Jornada
-    if (pacote) S.missoes = this.list().filter(m => m.pacote !== pacote);
-    p.missoes.forEach(x => this.list().push({ id: U.uid(), pacote, de_: p.de || '', titulo: this.titulo(x), tipo: x.tipo, alvo: x.alvo, xp: x.xp, prazo: p.prazo || '', desde: t, feitaEm: null }));
+    const now = new Date().toISOString(), origem = p.de ? `Missão de ${p.de}.` : 'Missão da Jornada.';
+    const cat = id => (S.settings.categories.some(c => c.id === id) ? id : (S.settings.categories[0] || {}).id || '');
+    p.missoes.forEach(x => {
+      const m = { id: U.uid(), pacote, de_: p.de || '', titulo: this.titulo(x), tipo: x.tipo, alvo: x.alvo, xp: x.xp, prazo: p.prazo || '', data: x.data || '', hora: x.hora || '', desde: t, feitaEm: null };
+      const quando = x.data || p.prazo || '';
+      if (x.tipo === 'tarefaItem') {
+        const k = { id: U.uid(), title: x.titulo, description: origem, category: cat('equipe'), priority: 'alta', status: 'pendente', startDate: '', dueDate: quando, dueTime: x.hora || '', responsible: '', notes: '', createdAt: now, completedAt: null, missao: m.id };
+        S.tasks.push(k); m.ref = { id: k.id };
+      } else if (x.tipo === 'reuniaoItem') {
+        const e = { id: U.uid(), title: x.titulo, date: x.data || quando || t, time: x.hora || '', pautas: [], notes: origem, reuniao: true, missao: m.id };
+        S.events.push(e); m.ref = { id: e.id };
+      } else if (x.tipo === 'imprevistoItem') {
+        const o = { id: U.uid(), createdAt: now, scheduled: null, title: x.titulo, description: origem, priority: 'alta', date: t, time: U.fromMin(U.nowMin()), dueDate: quando, dueTime: x.hora || '', responsible: '', notes: '', status: 'pendente', missao: m.id };
+        S.occurrences.push(o); m.ref = { id: o.id };
+      } else if (x.tipo === 'feedbackItem') {
+        m.pessoa = x.titulo;
+        if (!D.techNames().some(n => n.toLowerCase() === x.titulo.toLowerCase())) S.settings.technicians.push({ id: U.uid(), name: x.titulo });
+      }
+      this.list().push(m);
+    });
     commit();
   },
 
@@ -376,4 +449,5 @@ Object.assign(Actions, {
   msFeita({ id, v }) { const m = Missoes.list().find(x => x.id === id); if (!m) return; m.feitaEm = v ? U.today() : null; commit(); },
   msDel({ id }) { const m = Missoes.list().find(x => x.id === id); if (!m) return; UI.confirm(`Remover a missão <strong>${U.esc(m.titulo)}</strong>?`, () => { S.missoes = Missoes.list().filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
   msProgresso() { Missoes.progresso(); },
+  msAbrir({ id }) { const m = Missoes.list().find(x => x.id === id); if (m) Missoes.abrir(m); },
 });

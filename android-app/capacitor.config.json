@@ -1,6 +1,6 @@
 {
   "appId": "app.gestaorotina.lideranca",
-  "appName": "Gestão de Rotina",
+  "appName": "FlowFire",
   "webDir": "www",
   "plugins": {
     "SystemBars": {

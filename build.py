@@ -16,7 +16,7 @@ def inline(m):
     return f'<script>/* {m.group(1)} */\n{js}\n</script>'
 html = re.sub(r'<script src="([^"]+)"></script>', inline, html)
 if TESTE:
-    html = html.replace('<title>Gestão de Rotina</title>', '<title>Gestão de Rotina (TESTE)</title>')
+    html = html.replace('<title>FlowFire</title>', '<title>FlowFire (TESTE)</title>')
     html = html.replace('<script>/* js/utils.js */', "<script>window.APP_CHANNEL = 'teste';</script>\n<script>/* js/utils.js */", 1)
 (root / 'dist').mkdir(exist_ok=True)
 out = 'dist/gestao-rotina-teste.html' if TESTE else 'dist/gestao-rotina.html'

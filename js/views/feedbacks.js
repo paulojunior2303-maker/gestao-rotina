@@ -28,7 +28,13 @@ const FBPage = {
     const who = App.ui.fbWho;
     if (who) return this.person(who);
     const people = FB.people(), recent = [...FB.list()].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+    // Feedbacks pedidos em missões (ainda não registrados)
+    const pend = (S.missoes || []).filter(m => m.tipo === 'feedbackItem' && !Missoes.itemFeito(m));
     return `
+    ${pend.length ? `<section class="mt-sec"><h3 class="mt-h">Para fazer <span class="badge b-yellow">${pend.length}</span></h3><div class="mt-list">${pend.map(m => `<div class="mt-card" role="button" tabindex="0" data-act="msAbrir" data-id="${m.id}">
+        <span class="fb-av">${U.esc(FB.initials(m.pessoa || '?'))}</span>
+        <span class="mt-body"><span class="mt-title">${U.esc(m.titulo)}</span><span class="mt-meta">Missão${m.de_ ? ` de ${U.esc(m.de_)}` : ''}${m.data ? ` · ${U.fmtShort(m.data)}` : ''} · +${m.xp} XP</span></span>
+        <span class="btn sm primary">Registrar</span></div>`).join('')}</div></section>` : ''}
     ${people.length ? `<section class="mt-sec"><h3 class="mt-h">Equipe</h3><div class="fb-people">${people.map(p => `<div class="fb-person" role="button" tabindex="0" data-act="fbWho" data-n="${U.esc(p.name)}">
         <span class="fb-av">${U.esc(FB.initials(p.name))}</span>
         <span class="fb-p-body"><strong>${U.esc(p.name)}${H.demo(p)}</strong><small class="muted">${p.items.length ? `${U.plural(p.items.length, 'feedback')} · último em ${U.fmtShort(p.items[0].date)}` : 'Nenhum feedback ainda'}</small></span>

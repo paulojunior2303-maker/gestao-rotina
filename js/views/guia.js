@@ -153,7 +153,7 @@ Views.guia = {
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
     return `
     <div class="card guide-hero">
-      <div><h2>Como usar o Gestão de Rotina</h2><p class="muted">Toque em um tema para abrir. As instruções valem para o celular e para o computador.</p></div>
+      <div><h2>Como usar o FlowFire</h2><p class="muted">Toque em um tema para abrir. As instruções valem para o celular e para o computador.</p></div>
       <button class="btn primary" data-act="tourOpen">${U.icon('play', 14)} Rever tutorial</button>
     </div>
 
@@ -252,7 +252,7 @@ Views.guia = {
         `<strong>XP</strong> vem do que você já faz no app: atividade da agenda concluída (+${Jogo.PONTOS.bloco}), dia com 80% da agenda (+${Jogo.PONTOS.diaBom}), tarefa concluída (+${Jogo.PONTOS.tarefa}, e +${Jogo.PONTOS.noPrazo} se no prazo), imprevisto resolvido (+${Jogo.PONTOS.imprevisto}), reunião registrada (+${Jogo.PONTOS.reuniao}) e feedback (+${Jogo.PONTOS.feedback}).`,
         `<strong>Sequência</strong>: dias seguidos batendo a meta de ${Jogo.META} XP. Folga e fim de semana não quebram.`,
         '<strong>Áreas</strong> (Rotina, Execução, Equipe, Imprevistos) sobem de nível separadas. As <strong>Conquistas</strong> são liberadas sozinhas.',
-        '<strong>Missões</strong>: quem lidera a equipe toca em <strong>Enviar missões para alguém</strong>, escolhe o tipo (ex.: concluir 10 tarefas, registrar 4 feedbacks, bater a meta em 5 dias), a quantidade, o XP e o prazo, e manda o link pelo WhatsApp. Quem recebe abre o link (no app do celular: Missões → <strong>Receber</strong> e cola o link) e aceita: o progresso conta sozinho a partir daí. Em <strong>Outra</strong>, a missão é livre e a pessoa marca <strong>Concluí</strong>.',
+        '<strong>Missões</strong>: quem lidera a equipe toca em <strong>Enviar missões para alguém</strong> e escolhe: <strong>Atribuir</strong> uma tarefa, reunião, imprevisto ou feedback com alguém (o item é criado no app da pessoa e, com data, aparece no calendário dela; a missão termina quando o item for concluído) ou uma <strong>Meta</strong> (ex.: concluir 10 tarefas, registrar 4 feedbacks, bater a meta em 5 dias). O XP é calculado sozinho. Depois é só mandar o link pelo WhatsApp. Quem recebe abre o link (no app do celular: Missões → <strong>Receber</strong> e cola o link) e aceita: o progresso conta sozinho a partir daí. Em <strong>Outra</strong>, a missão é livre e a pessoa marca <strong>Concluí</strong>.',
         '<strong>Enviar meu progresso</strong> monta um resumo das missões para mandar de volta a quem passou.',
         'O XP é calculado com o que está salvo: vale o histórico, fica igual em todos os aparelhos e reabrir algo concluído tira o XP dele.',
         'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',

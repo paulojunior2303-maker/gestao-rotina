@@ -120,7 +120,7 @@ const Reminders = {
     if (LN) {
       let p = await LN.checkPermissions();
       if (p.display !== 'granted') p = await LN.requestPermissions();
-      if (p.display !== 'granted') { UI.toast('Sem permissão para notificações. Libere em Configurações do celular → Apps → Gestão de Rotina → Notificações.', 'warn'); return false; }
+      if (p.display !== 'granted') { UI.toast('Sem permissão para notificações. Libere em Configurações do celular → Apps → FlowFire → Notificações.', 'warn'); return false; }
       return true;
     }
     if (!this.webSupported()) { UI.toast('Este navegador não permite avisos.', 'warn'); return false; }
@@ -186,7 +186,7 @@ Object.assign(Reminders, {
     let xiaomi = false;
     try { const s = await Sis.status(); xiaomi = /xiaomi|redmi|poco/.test(s.fabricante); rows.push([s.bateriaLiberada, 'Bateria sem restrição', 'Economia de bateria pode bloquear os avisos', 'lemOpen', 'Liberar', 'bateria']); } catch (e) { /* sem plugin */ }
     box.innerHTML = rows.map(([ok, yes, no, act, lbl, tela]) => `<div class="lem-row ${ok ? 'ok' : 'warn'}">${U.icon(ok ? 'check' : 'alert', 16)}<span>${ok ? yes : no}</span>${ok ? '' : `<button class="btn sm" data-act="${act}" ${tela ? `data-tela="${tela}"` : ''}>${lbl}</button>`}</div>`).join('')
-      + (xiaomi ? `<div class="lem-row info">${U.icon('info', 16)}<span>Celular Xiaomi: ative a <strong>Inicialização automática</strong> do Gestão de Rotina, senão o sistema impede os avisos com o app fechado.</span><button class="btn sm" data-act="lemOpen" data-tela="autostart">Abrir</button></div>` : '');
+      + (xiaomi ? `<div class="lem-row info">${U.icon('info', 16)}<span>Celular Xiaomi: ative a <strong>Inicialização automática</strong> do FlowFire, senão o sistema impede os avisos com o app fechado.</span><button class="btn sm" data-act="lemOpen" data-tela="autostart">Abrir</button></div>` : '');
   },
 });
 
@@ -206,7 +206,7 @@ Object.assign(Actions, {
   },
   async lemPerm() { await Reminders.enable(); App.render(); },
   async lemExact() { try { await Reminders.LN().changeExactNotificationSetting(); } catch (e) { /* tela indisponível */ } },
-  async lemOpen({ tela }) { try { await Native.P().Sistema.abrir({ tela }); } catch (e) { UI.toast('Abra Configurações do celular → Apps → Gestão de Rotina.', 'warn'); } },
+  async lemOpen({ tela }) { try { await Native.P().Sistema.abrir({ tela }); } catch (e) { UI.toast('Abra Configurações do celular → Apps → FlowFire.', 'warn'); } },
 });
 
 /* Aviso de versão nova do APK (só no app Android): compara com a última Release do GitHub */
