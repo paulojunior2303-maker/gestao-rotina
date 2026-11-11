@@ -40,6 +40,9 @@ e diga o que mudou e como testar no celular.
 - **Calendário** (`js/calendar.js`, `Cal`) é o recurso principal: no Início e no topo da Agenda. Mês/semana, bolinhas no celular e títulos no computador,
   lista do dia escolhido, arrastar para trocar de mês/semana, "Hoje". Reuniões têm cor própria (`--t-reuniao`).
 - **Intervalo de almoço**: `settings.breakMode` = flexivel (padrão; "+" → "Intervalo agora" na Agenda, empurra o resto) | fixo (bloco da rotina) | nenhum.
+- **Modo jogo / Jornada** (`js/jogo.js`, `Jogo` + `Views.jornada`): XP, níveis, sequência, missões e conquistas **calculados** dos dados
+  (agenda, tarefas `completedAt`, imprevistos `resolvedAt`, `registro.at` das reuniões, feedbacks); nada guardado à parte. `settings.jogo` (padrão ligado,
+  Configurações → Aparência). Cartão no Início (`Jogo.card`), aviso "+XP" em `commit()` (`Jogo.check`). Sem mascote (decisão do usuário).
 - **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.
 - **Feedbacks** (`js/views/feedbacks.js`, `FBPage` + `FB`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
   Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).

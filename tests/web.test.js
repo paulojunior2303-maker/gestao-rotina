@@ -153,7 +153,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.textContent('#page-title') === 'Início', 'endereço #indicadores oculto volta ao Início');
   await go('config');
   assert(await p.locator('#cfg-metas').count() === 0, 'Metas ocultas junto com Indicadores');
-  await p.click('#cfg-aparencia .switch'); await p.waitForTimeout(250);
+  await p.click('[data-change=cfgIndicadores]'); await p.waitForTimeout(250);
   assert((await state()).settings.showIndicadores === true && await p.locator('#nav a[href="#indicadores"]').count() === 1, 'chave em Aparência mostra Indicadores no menu');
   await go('indicadores');
   assert(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos: indicadores aparecem como "sem dados"');
@@ -216,6 +216,20 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert((await p.textContent('#brand-sub')).trim() === 'Equipe Alfa', 'nome da empresa aparece no menu');
   await p.fill('[data-change=cfgMetricName][data-k=pontosCamera]', 'Visitas realizadas'); await p.press('[data-change=cfgMetricName][data-k=pontosCamera]', 'Tab'); await p.waitForTimeout(200);
   assert((await state()).settings.metricNames.pontosCamera === 'Visitas realizadas', 'nome do indicador personalizável');
+
+  // ---- Modo jogo (Jornada): ligado por padrão, XP calculado do que foi feito, desliga em Aparência
+  await go('dashboard');
+  assert(await p.locator('.jg-card').count() === 1 && await p.locator('#nav a[href="#jornada"]').count() === 1, 'modo jogo ligado: cartão no Início e Jornada no menu');
+  const xp0 = await p.evaluate(() => Jogo.calc().total);
+  await p.evaluate(() => { S.tasks.push({ id: 'jg1', title: 'Teste XP', status: 'pendente', priority: 'media', category: 'equipe', dueDate: U.addDays(U.today(), 2), createdAt: new Date().toISOString() }); commit(); });
+  await go('tarefas'); await p.click('[data-act=tkStatusF][data-v=abertas]'); await p.waitForTimeout(150); await p.locator('.task', { hasText: 'Teste XP' }).locator('.tk-check span').click(); await p.waitForTimeout(300);
+  assert(await p.evaluate(() => Jogo.calc().total) === xp0 + 15 && (await p.textContent('#xp-pop')).includes('+15 XP'), 'concluir tarefa no prazo dá +15 XP e mostra o aviso');
+  await go('jornada');
+  assert(await p.textContent('#page-title') === 'Jornada' && await p.locator('.jg-cls').count() === 4 && await p.locator('.jg-badge').count() === 12 && await p.locator('.jg-miss li').count() >= 2, 'Jornada: áreas, missões e conquistas');
+  await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
+  assert((await state()).settings.jogo === false && await p.locator('#nav a[href="#jornada"]').count() === 0, 'desligar o modo jogo tira a Jornada do menu');
+  await go('dashboard'); assert(await p.locator('.jg-card').count() === 0, 'e o cartão do Início');
+  await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
 
   // ---- Configurações
   await go('config');

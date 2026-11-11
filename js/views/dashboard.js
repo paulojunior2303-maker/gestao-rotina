@@ -72,6 +72,7 @@ Views.dashboard = {
 
     return `
     ${Updater.banner()}
+    ${Jogo.card()}
     <section class="today">
       <div class="today-top">
         <div class="today-txt">

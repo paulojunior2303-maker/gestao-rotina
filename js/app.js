@@ -3,7 +3,7 @@
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
@@ -11,7 +11,7 @@ const NAV_GROUPS = [
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
   const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : true;
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : true;
 };
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
@@ -161,6 +161,7 @@ const App = {
 
     document.body.classList.add('intro');
     this.render();
+    Jogo.check();   // ponto de partida do aviso de "+XP"
     setTimeout(() => document.body.classList.remove('intro'), 1600);
     Tutorial.maybeShow();
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
@@ -196,7 +197,7 @@ const Theme = {
 };
 
 /* Salva e redesenha a tela atual */
-function commit() { Store.save(); App.render(); }
+function commit() { Store.save(); App.render(); Jogo.check(); }
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };

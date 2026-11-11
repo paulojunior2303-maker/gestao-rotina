@@ -246,6 +246,16 @@ Views.guia = {
       </ol>
       <p class="guide-note">Avise o colaborador antes de gravar. O áudio não fica guardado, só o texto. Toque no nome de uma pessoa para ver todo o histórico dela.</p>`)}
 
+    ${!Jogo.on() ? '' : sec('jornada', 'trophy', 'Jornada (modo jogo)', `
+      <p>Um jeito leve de manter a rotina em dia. O cartão no topo do <strong>Início</strong> mostra a sequência ${U.icon('flame', 14)}, o XP, o nível e a meta de hoje; toque nele para abrir a <strong>Jornada</strong>.</p>
+      ${li([
+        `<strong>XP</strong> vem do que você já faz no app: atividade da agenda concluída (+${Jogo.PONTOS.bloco}), dia com 80% da agenda (+${Jogo.PONTOS.diaBom}), tarefa concluída (+${Jogo.PONTOS.tarefa}, e +${Jogo.PONTOS.noPrazo} se no prazo), imprevisto resolvido (+${Jogo.PONTOS.imprevisto}), reunião registrada (+${Jogo.PONTOS.reuniao}) e feedback (+${Jogo.PONTOS.feedback}).`,
+        `<strong>Sequência</strong>: dias seguidos batendo a meta de ${Jogo.META} XP. Folga e fim de semana não quebram.`,
+        '<strong>Áreas</strong> (Rotina, Execução, Equipe, Imprevistos) sobem de nível separadas. <strong>Missões do dia</strong> e <strong>Conquistas</strong> são montadas com os seus dados.',
+        'O XP é calculado com o que está salvo: vale o histórico, fica igual em todos os aparelhos e reabrir algo concluído tira o XP dele.',
+        'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
+      ])}`)}
+
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>
       ${li([

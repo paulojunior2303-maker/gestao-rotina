@@ -46,6 +46,7 @@ const Store = {
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
+        jogo: true,              // modo jogo: XP, sequência e conquistas (Configurações → Aparência)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
@@ -193,6 +194,7 @@ const Store = {
   replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
+    if (typeof Jogo !== 'undefined') Jogo.last = null;   // dados vindos de fora não geram o aviso de "+XP"
     this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 
