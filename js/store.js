@@ -4,11 +4,14 @@
 const CANAL_TESTE = typeof window !== 'undefined' && window.APP_CHANNEL === 'teste';
 const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_TESTE ? ':teste' : '');
 
-const METRICS = [
-  { key: 'pontosCamera', label: 'Pontos de câmera instalados' },
-  { key: 'manutencoes', label: 'Manutenções realizadas' },
-  { key: 'retrabalhos', label: 'Retrabalhos' },
-];
+/* Indicadores lançados por dia. As chaves são fixas (dados guardados); os nomes podem ser trocados em
+   Configurações → Metas (settings.metricNames). Os nomes padrão são genéricos, para qualquer equipe. */
+const METRIC_DEFAULT_NAMES = { pontosCamera: 'Serviços concluídos', manutencoes: 'Manutenções realizadas', retrabalhos: 'Retrabalhos' };
+const METRICS = Object.keys(METRIC_DEFAULT_NAMES).map(key => ({
+  key,
+  get label() { const n = typeof S !== 'undefined' && S && S.settings && S.settings.metricNames; return (n && n[key] || '').trim() || METRIC_DEFAULT_NAMES[key]; },
+}));
+const mLabel = key => METRICS.find(m => m.key === key).label;
 const GOAL_METRICS = [...METRICS.filter(m => !m.snapshot), { key: 'tarefasConcluidas', label: 'Tarefas concluídas' }, { key: 'projetosConcluidos', label: 'Projetos concluídos' }];
 /* Indicadores de O.S. foram retirados do app (v1.2). Lançamentos e metas antigos continuam guardados. */
 const LEGACY_METRICS = { osRecebidas: 'O.S. recebidas', osConcluidas: 'O.S. concluídas', osPendentes: 'O.S. pendentes', osAtrasadas: 'O.S. atrasadas' };
@@ -57,6 +60,8 @@ const Store = {
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
+        empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
+        metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
@@ -103,7 +108,7 @@ const Store = {
       events: [],
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
-      meta: { v2: true, v3: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
+      meta: { v2: true, v3: true, v4: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -127,7 +132,15 @@ const Store = {
     for (const k of Object.keys(d.settings)) if (s.settings[k] === undefined) s.settings[k] = d.settings[k];
     if (needV2) { this.migrateV2(s); s.meta = { ...(s.meta || {}), v2: true }; }
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
+    if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
     return s;
+  },
+
+  /* v4: o app ficou genérico (para qualquer equipe). Quem já usava mantém o nome da empresa e os nomes dos indicadores de antes. */
+  migrateV4(s) {
+    if (!s.settings) return;
+    if (!s.settings.empresa) s.settings.empresa = 'Wi-bicam, CFTV IP';
+    s.settings.metricNames = { pontosCamera: 'Pontos de câmera instalados', ...(s.settings.metricNames || {}) };
   },
 
   /* v3: intervalo de almoço flexível (o usuário não tem horário fixo). Tira o intervalo da rotina dos dias futuros já montados. */
@@ -207,18 +220,18 @@ const Store = {
     const tk = (title, category, priority, status, due, extra = {}) => ({ id: U.uid(), demo: true, title: '[Exemplo] ' + title, description: 'Registro de demonstração — pode ser removido em Configurações.', category, priority, status, createdAt: now, startDate: t, dueDate: due, dueTime: '', notes: '', completedAt: status === 'concluida' ? now : null, ...extra });
     S.tasks.push(
       tk('Revisar pendências da semana', 'pendencias', 'alta', 'pendente', U.addDays(t, 1)),
-      tk('Conferir estoque de câmeras e NVRs', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
+      tk('Conferir estoque de materiais', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
       tk('Enviar relatório semanal', 'indicadores', 'urgente', 'pendente', U.addDays(t, -1)),
-      tk('Agendar treinamento de configuração de NVR', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
+      tk('Agendar treinamento da equipe', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
     );
-    const t1 = { id: U.uid(), demo: true, name: 'Técnico Exemplo A' }, t2 = { id: U.uid(), demo: true, name: 'Técnico Exemplo B' };
+    const t1 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo A' }, t2 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo B' };
     S.settings.technicians.push(t1, t2);
     const st = names => names.map((n, i) => ({ id: U.uid(), name: n, done: i < 2 }));
     S.projects.push(
-      { id: U.uid(), demo: true, name: '[Exemplo] Ampliação de CFTV IP', client: 'Cliente Exemplo', description: 'Projeto de demonstração.', responsible: t1.name, startDate: U.addDays(t, -20), dueDate: U.addDays(t, 15), status: 'andamento', manualProgress: null, notes: '', stages: st(['Vistoria técnica', 'Projeto e orçamento', 'Instalação de câmeras', 'Configuração do NVR', 'Entrega e treinamento']), pendencias: [{ id: U.uid(), text: 'Aguardando liberação de acesso ao telhado', done: false }], createdAt: now, completedAt: null },
-      { id: U.uid(), demo: true, name: '[Exemplo] Controle de acesso — portaria', client: 'Empreendimento Exemplo', description: 'Projeto de demonstração.', responsible: t2.name, startDate: U.addDays(t, 3), dueDate: U.addDays(t, 40), status: 'planejamento', manualProgress: 0, notes: '', stages: [], pendencias: [], createdAt: now, completedAt: null },
+      { id: U.uid(), demo: true, name: '[Exemplo] Implantação no cliente', client: 'Cliente Exemplo', description: 'Projeto de demonstração.', responsible: t1.name, startDate: U.addDays(t, -20), dueDate: U.addDays(t, 15), status: 'andamento', manualProgress: null, notes: '', stages: st(['Vistoria técnica', 'Projeto e orçamento', 'Instalação de câmeras', 'Configuração do NVR', 'Entrega e treinamento']), pendencias: [{ id: U.uid(), text: 'Aguardando liberação de acesso ao telhado', done: false }], createdAt: now, completedAt: null },
+      { id: U.uid(), demo: true, name: '[Exemplo] Melhoria de processo interno', client: 'Empreendimento Exemplo', description: 'Projeto de demonstração.', responsible: t2.name, startDate: U.addDays(t, 3), dueDate: U.addDays(t, 40), status: 'planejamento', manualProgress: 0, notes: '', stages: [], pendencias: [], createdAt: now, completedAt: null },
     );
-    S.occurrences.push({ id: U.uid(), demo: true, title: '[Exemplo] Câmeras offline em cliente', description: 'Ocorrência de demonstração.', priority: 'urgente', date: t, time: '09:40', dueDate: t, dueTime: '17:00', responsible: t1.name, status: 'pendente', notes: '', scheduled: null, createdAt: now });
+    S.occurrences.push({ id: U.uid(), demo: true, title: '[Exemplo] Sistema fora do ar no cliente', description: 'Ocorrência de demonstração.', priority: 'urgente', date: t, time: '09:40', dueDate: t, dueTime: '17:00', responsible: t1.name, status: 'pendente', notes: '', scheduled: null, createdAt: now });
     S.events.push({ id: U.uid(), demo: true, title: '[Exemplo] Reunião com cliente', date: U.addDays(t, 2), time: '10:00', notes: '' });
     // Lançamentos de indicadores de exemplo nos últimos 10 dias úteis
     let k = t, n = 0, seed = 7;
@@ -231,7 +244,7 @@ const Store = {
         S.indicators.push({ id: U.uid(), demo: true, date: k, technician: tec.name, notes: '', values: { pontosCamera: rnd(0, 8), manutencoes: rnd(0, 3), retrabalhos: rnd(0, 1) } });
       }
     }
-    S.settings.goals.push({ id: U.uid(), demo: true, name: '[Exemplo] Pontos de câmera na semana', metric: 'pontosCamera', period: 'semanal', target: 30, direction: 'min' });
+    S.settings.goals.push({ id: U.uid(), demo: true, name: '[Exemplo] Serviços concluídos na semana', metric: 'pontosCamera', period: 'semanal', target: 30, direction: 'min' });
     return true;
   },
   removeDemo() {

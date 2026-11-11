@@ -243,7 +243,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await go('indicadores');
   check(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos → "sem dados"');
   await tap('[data-act=indNew]'); await fill('pontosCamera', '12'); await fill('manutencoes', '9'); await save();
-  check((await p.locator('.kpi', { hasText: 'Pontos de câmera' }).locator('.kpi-v').textContent()).trim() === '12', 'lançar dados atualiza KPIs (12 pontos de câmera)');
+  check((await p.locator('.kpi', { hasText: 'Serviços concluídos' }).locator('.kpi-v').textContent()).trim() === '12', 'lançar dados atualiza KPIs (12 serviços concluídos)');
   check(!(await p.textContent('#view')).includes('O.S.'), 'Indicadores sem campos de O.S.');
   await overflow('10-indicadores');
   await tap('[data-act=indXlsx]'); await W(400);

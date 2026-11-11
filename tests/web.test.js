@@ -154,7 +154,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await fill('manutencoes', '8'); await fill('retrabalhos', '1'); await submit();
   const kv = await p.locator('.kpi', { hasText: 'Manutenções' }).locator('.kpi-v').textContent();
   assert(kv.trim() === '8', 'KPI de manutenções = 8');
-  assert((await p.locator('.kpi', { hasText: 'Pontos de câmera' }).locator('.kpi-s').textContent()).includes('Sem dados'), 'campo não preenchido continua "sem dados" (não vira zero)');
+  assert((await p.locator('.kpi', { hasText: 'Serviços concluídos' }).locator('.kpi-s').textContent()).includes('Sem dados'), 'campo não preenchido continua "sem dados" (não vira zero)');
   assert(!(await p.textContent('#view')).includes('O.S.'), 'tela de Indicadores sem nenhuma menção a O.S.');
   await p.selectOption('select[data-k=gran]', 'semanal'); await p.waitForTimeout(150);
   assert(await p.locator('svg.chart rect[style]').count() >= 1, 'gráfico semanal renderizado');
@@ -196,6 +196,16 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(mig.focus.length === 1 && mig.focus[0].items.length === 1 && mig.focus[0].items[0].text === 'Meu item' && mig.focus[0].title === '', 'migração: remove o modelo antigo e mantém o item criado pelo usuário');
   assert(mig.c1.title === '' && mig.c1.items.length === 0, 'migração: ciclo mensal padrão fica em branco');
   assert(mig.theme === 'escuro' && mig.op === '#7b3fe4' && mig.v2, 'migração: tema escuro e nova paleta de cores');
+
+  // ---- App genérico (para qualquer equipe): nome da empresa opcional; quem já usava mantém o seu
+  assert((await p.textContent('#brand-sub')).trim() === 'Rotina e equipe' && !(await p.content()).includes('Wi-bicam'), 'instalação nova sem marca de empresa');
+  const v4 = await p.evaluate(() => { const old = JSON.parse(JSON.stringify(S)); delete old.meta.v4; old.settings.empresa = ''; old.settings.metricNames = {}; const m = Store.migrate(old); return [m.settings.empresa, m.settings.metricNames.pontosCamera]; });
+  assert(v4[0] === 'Wi-bicam, CFTV IP' && v4[1] === 'Pontos de câmera instalados', 'migração v4: dados antigos mantêm o nome da empresa e dos indicadores');
+  await go('config');
+  await p.fill('[data-change=cfgEmpresa]', 'Equipe Alfa'); await p.press('[data-change=cfgEmpresa]', 'Tab'); await p.waitForTimeout(200);
+  assert((await p.textContent('#brand-sub')).trim() === 'Equipe Alfa', 'nome da empresa aparece no menu');
+  await p.fill('[data-change=cfgMetricName][data-k=pontosCamera]', 'Visitas realizadas'); await p.press('[data-change=cfgMetricName][data-k=pontosCamera]', 'Tab'); await p.waitForTimeout(200);
+  assert((await state()).settings.metricNames.pontosCamera === 'Visitas realizadas', 'nome do indicador personalizável');
 
   // ---- Configurações
   await go('config');

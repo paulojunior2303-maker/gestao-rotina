@@ -12,7 +12,7 @@ const Events = {
     const noun = meet ? 'reunião' : 'compromisso';
     const pend = Events.pendencias(e.id);
     const pautaIA = IA.supported() ? `<div class="pauta-ia"><span class="lbl">${U.icon('spark', 15)} Gerar pauta com IA</span>
-      <div class="inline-add"><input name="pautaTema" placeholder="Sobre o que é a reunião? Ex.: escala de fim de ano, EPI, novo técnico"><button type="button" class="btn sm primary" data-pauta-ia>Gerar</button></div>
+      <div class="inline-add"><input name="pautaTema" placeholder="Sobre o que é a reunião? Ex.: escala de fim de ano, metas do mês, novo colaborador"><button type="button" class="btn sm primary" data-pauta-ia>Gerar</button></div>
       ${pend.length ? `<label class="check small"><input type="checkbox" name="pautaPend" checked> <span>Incluir ${U.plural(pend.length, 'assunto pendente', 'assuntos pendentes')} das últimas reuniões</span></label>` : ''}</div>` : '';
     const m = UI.form({
       title: isNew ? (meet ? 'Nova reunião' : 'Novo compromisso') : `Editar ${noun}`,

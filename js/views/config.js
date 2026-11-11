@@ -1,5 +1,5 @@
 'use strict';
-/* Configurações — jornada, rotina, categorias, prioridades, status, técnicos, metas e dados */
+/* Configurações — jornada, rotina, categorias, prioridades, status, equipe, metas e dados */
 Views.config = {
   title: 'Configurações', icon: 'settings', nav: 'Configurações',
   mount(root) {
@@ -15,7 +15,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -24,7 +24,8 @@ Views.config = {
         ['auto', 'Automático', 'Segue o aparelho'],
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
-      <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento de pontos de câmera, manutenções e retrabalhos, metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
+      <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>
+      <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento diário de números da equipe (serviços, manutenções, retrabalhos), metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`)}
@@ -84,15 +85,16 @@ Views.config = {
         <div><h4>Status</h4><div class="cfg-list">${['pendente', 'andamento', 'concluida', 'cancelada'].map(k => `<div class="cfg-item"><input type="color" value="${st.statuses[k].color}" data-change="stColor" data-k="${k}"><input type="text" value="${U.esc(st.statuses[k].label)}" data-change="stLabel" data-k="${k}"></div>`).join('')}</div></div>
       </div>`)}
 
-    ${sec('tecnicos', 'Técnicos da equipe', 'Usados como responsáveis e na produtividade individual.', `
-      <div class="cfg-list">${st.technicians.length ? st.technicians.map(t => `<div class="cfg-item"><input type="text" value="${U.esc(t.name)}" data-change="tecName" data-id="${t.id}">${H.demo(t)}<button class="icon-btn xs" data-act="tecDel" data-id="${t.id}">${U.icon('trash', 14)}</button></div>`).join('') : '<p class="muted small">Nenhum técnico cadastrado.</p>'}</div>
-      <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome do técnico…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
+    ${sec('tecnicos', 'Equipe', 'As pessoas da sua equipe: usadas como responsáveis, nos feedbacks e na produtividade individual.', `
+      <div class="cfg-list">${st.technicians.length ? st.technicians.map(t => `<div class="cfg-item"><input type="text" value="${U.esc(t.name)}" data-change="tecName" data-id="${t.id}">${H.demo(t)}<button class="icon-btn xs" data-act="tecDel" data-id="${t.id}">${U.icon('trash', 14)}</button></div>`).join('') : '<p class="muted small">Ninguém cadastrado ainda.</p>'}</div>
+      <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome da pessoa…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
 
-    ${!st.showIndicadores ? '' : sec('metas', 'Metas', 'Comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
+    ${!st.showIndicadores ? '' : sec('metas', 'Indicadores e metas', 'Dê aos indicadores os nomes que fazem sentido para a sua equipe. As metas são comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
+      <div class="metric-names">${METRICS.map(m => `<label class="field"><span class="lbl">Indicador ${METRICS.indexOf(m) + 1}</span><input type="text" value="${U.esc(m.label)}" placeholder="${U.esc(METRIC_DEFAULT_NAMES[m.key])}" data-change="cfgMetricName" data-k="${m.key}" maxlength="40"></label>`).join('')}</div>
       ${st.goals.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Meta</th><th>Indicador</th><th>Período</th><th>Alvo</th><th></th></tr></thead><tbody>${st.goals.map(g => `<tr><td>${U.esc(g.name || '—')}${H.demo(g)}</td><td>${metricLabel(g.metric)}</td><td>${g.period}</td><td>${g.direction === 'max' ? 'no máximo' : 'no mínimo'} ${g.target}</td><td class="nowrap"><button class="icon-btn xs" data-act="goalEdit" data-id="${g.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="goalDel" data-id="${g.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nenhuma meta cadastrada.</p>'}
       <div class="row-actions"><button class="btn sm" data-act="goalNew">${U.icon('plus', 15)} Nova meta</button></div>`)}
 
-    ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos ${Guide.whereData()} (~${lsSize} KB)${Drive.connected() ? ' e sincronizados com o seu Google Drive.' : '. Cada versão (app Android, site, link do Claude) guarda os seus próprios dados; conecte o Google Drive (acima) para deixá-los iguais.'}`, `
+    ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos ${Guide.whereData()} (~${lsSize} KB)${Drive.connected() ? ' e sincronizados com o seu Google Drive.' : '. Cada versão (app Android, site) guarda os seus próprios dados; conecte o Google Drive (acima) para deixá-los iguais.'}`, `
       <h4>Levar dados para outra versão ou aparelho</h4>
       <p class="muted small">Gera um <strong>código de texto</strong> com todos os seus dados. Mande para você mesmo (WhatsApp, e-mail, Keep) e cole na outra versão.</p>
       <div class="row-actions wrap">
@@ -217,7 +219,7 @@ Object.assign(Actions, {
   prLabel({ k }, el) { if (el.value.trim()) { S.settings.priorities[k].label = el.value.trim(); commit(); } },
   stColor({ k }, el) { S.settings.statuses[k].color = el.value; commit(); },
   stLabel({ k }, el) { if (el.value.trim()) { S.settings.statuses[k].label = el.value.trim(); commit(); } },
-  tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Esse técnico já está cadastrado.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
+  tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Essa pessoa já está cadastrada.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
   tecName({ id }, el) { const t = S.settings.technicians.find(x => x.id === id); if (el.value.trim()) { t.name = el.value.trim(); commit(); } },
   tecDel({ id }) { const t = S.settings.technicians.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(t.name)}</strong>? Os lançamentos já feitos são mantidos.`, () => { S.settings.technicians = S.settings.technicians.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
   goalNew() { Goals.form(null); },
@@ -229,6 +231,8 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
+  cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
   cfgProjetos(_, el) { S.settings.showProjetos = el.checked; commit(); UI.toast(el.checked ? 'Projetos aparece no menu, em Planejamento.' : 'Projetos ocultado. Os dados continuam guardados.'); },
   cfgIndicadores(_, el) { S.settings.showIndicadores = el.checked; commit(); UI.toast(el.checked ? 'Indicadores aparece no menu, em Planejamento.' : 'Indicadores ocultado. Os dados continuam guardados.'); },
   themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },

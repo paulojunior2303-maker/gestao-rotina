@@ -34,7 +34,7 @@ const Ind = {
       fields: [
         { type: 'html', html: '<p class="muted small">Preencha apenas o que você tem. Campos em branco ficam como <strong>sem dados</strong> (não são tratados como zero).</p>' },
         { name: 'date', label: 'Data', type: 'date', required: true, value: r.date, half: true },
-        { name: 'technician', label: 'Técnico', type: 'select', options: H.techOptions(r.technician).map(([v, l]) => [v, v ? l : 'Equipe (geral)']), value: r.technician, half: true, hint: D.techNames().length ? '' : 'Cadastre técnicos em Configurações para lançar produtividade individual.' },
+        { name: 'technician', label: 'Pessoa', type: 'select', options: H.techOptions(r.technician).map(([v, l]) => [v, v ? l : 'Equipe (geral)']), value: r.technician, half: true, hint: D.techNames().length ? '' : 'Cadastre a equipe em Configurações para lançar a produtividade de cada pessoa.' },
         ...METRICS.map(m => ({ name: m.key, label: m.label, type: 'number', min: 0, step: 1, value: r.values[m.key], half: true })),
         { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: r.notes },
       ],
@@ -73,8 +73,8 @@ Views.indicadores = {
     const metricMeta = METRICS.find(m => m.key === f.metric) || METRICS[0];
     const series1 = [{ name: metricMeta.label, color: 'var(--accent)', values: b.map(x => D.metricValue(metricMeta.key, x.from, x.to)) }];
     const series2 = [
-      { name: 'Manutenções', color: 'var(--lilac)', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
-      { name: 'Retrabalhos', color: 'var(--red)', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
+      { name: mLabel('manutencoes'), color: 'var(--lilac)', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
+      { name: mLabel('retrabalhos'), color: 'var(--red)', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
     ];
     const techs = Ind.techRows(from, to);
     const techWithData = techs.filter(r => r.days);
@@ -109,18 +109,18 @@ Views.indicadores = {
         ${metricMeta.snapshot ? '<p class="muted small">Indicador de posição: cada barra mostra o último valor registrado no intervalo.</p>' : ''}
       </div>
       <div class="card">
-        <div class="card-h"><h3>Manutenções × Retrabalhos</h3><span class="muted small">${{ diario: 'Diário', semanal: 'Semanal', mensal: 'Mensal' }[f.gran]}</span></div>
+        <div class="card-h"><h3>${U.esc(mLabel('manutencoes'))} × ${U.esc(mLabel('retrabalhos'))}</h3><span class="muted small">${{ diario: 'Diário', semanal: 'Semanal', mensal: 'Mensal' }[f.gran]}</span></div>
         ${Charts.bars({ labels: b.map(x => x.label), series: series2 })}
       </div>
     </section>
 
     <section class="grid-2">
       <div class="card">
-        <div class="card-h"><h3>${U.icon('user')} Produtividade por técnico</h3></div>
-        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: 'var(--accent)' })), ' pontos')}
-          <div class="table-wrap"><table class="table"><thead><tr><th>Técnico</th><th>Dias</th><th>Pontos câm.</th><th>Manut.</th><th>Retrab.</th></tr></thead>
+        <div class="card-h"><h3>${U.icon('user')} Produtividade por pessoa</h3></div>
+        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: 'var(--accent)' })), '')}
+          <div class="table-wrap"><table class="table"><thead><tr><th>Pessoa</th><th>Dias</th>${METRICS.map(m => `<th>${U.esc(m.label)}</th>`).join('')}</tr></thead>
           <tbody>${techWithData.map(r => `<tr><td>${U.esc(r.name)}</td><td>${r.days}</td><td>${U.fmtNum(r.pontosCamera)}</td><td>${U.fmtNum(r.manutencoes)}</td><td>${U.fmtNum(r.retrabalhos)}</td></tr>`).join('')}</tbody></table></div>`
-          : H.empty(D.techNames().length ? 'Nenhum lançamento por técnico no período.' : 'Cadastre os técnicos em Configurações e lance os dados por técnico para ver a produtividade individual.')}
+          : H.empty(D.techNames().length ? 'Nenhum lançamento por pessoa no período.' : 'Cadastre a equipe em Configurações e lance os dados por pessoa para ver a produtividade individual.')}
       </div>
       <div class="card">
         <div class="card-h"><h3>${U.icon('target')} Metas</h3><a class="link" href="#config">Configurar</a></div>
@@ -129,8 +129,8 @@ Views.indicadores = {
     </section>
 
     <div class="card">
-      <div class="card-h"><h3>Lançamentos do período</h3><span class="muted small">Totais somam todos os lançamentos. Se lançar por técnico, não repita os mesmos números como "Equipe (geral)".</span></div>
-      ${recs.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Técnico</th>${METRICS.map(m => `<th title="${m.label}">${m.label.replace('Pontos de câmera instalados', 'Pontos câm.').replace('Manutenções realizadas', 'Manut.')}</th>`).join('')}<th></th></tr></thead>
+      <div class="card-h"><h3>Lançamentos do período</h3><span class="muted small">Totais somam todos os lançamentos. Se lançar por pessoa, não repita os mesmos números como "Equipe (geral)".</span></div>
+      ${recs.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Pessoa</th>${METRICS.map(m => `<th title="${U.esc(m.label)}">${U.esc(m.label)}</th>`).join('')}<th></th></tr></thead>
         <tbody>${recs.map(r => `<tr><td>${U.fmtDate(r.date)}</td><td>${U.esc(r.technician || 'Equipe (geral)')}${H.demo(r)}</td>${METRICS.map(m => `<td>${r.values[m.key] === null || r.values[m.key] === undefined ? '<span class="muted">—</span>' : r.values[m.key]}</td>`).join('')}<td class="nowrap"><button class="icon-btn xs" data-act="indEdit" data-id="${r.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="indDel" data-id="${r.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>`
         : H.empty('Nenhum dado lançado neste período.', '<button class="btn sm primary" data-act="indNew">Lançar dados</button>')}
     </div>`;
