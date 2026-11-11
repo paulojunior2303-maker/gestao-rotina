@@ -32,9 +32,10 @@ const Store = {
   lastSaved: null,
   warned: false,
 
-  defaults() {
+  /* Modelo de exemplo da rotina (Configurações → Rotina padrão → Usar modelo de exemplo). Instalação nova começa em branco. */
+  sampleRoutine() {
     const id = U.uid;
-    const routine = [
+    return [
       ['08:00', '08:30', 'Abertura e análise de demandas', 'demandas'],
       ['08:30', '09:00', 'Alinhamento da equipe', 'equipe'],
       ['09:00', '10:30', 'Acompanhamento operacional', 'operacional'],
@@ -48,7 +49,10 @@ const Store = {
       ['17:15', '17:40', 'Janela flexível para imprevistos', 'imprevistos'],
       ['17:40', '18:00', 'Fechamento do expediente', 'administrativo'],
     ].map(([start, end, title, category, fixed]) => ({ id: id(), start, end, title, category, priority: 'media', notes: '', fixed: !!fixed, freq: 'semanal', days: [1, 2, 3, 4, 5], monthDay: 1 }));
+  },
 
+  defaults() {
+    const routine = [];   // em branco: cada pessoa monta a sua (ou usa o modelo de exemplo)
     return {
       version: 1,
       settings: {

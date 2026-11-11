@@ -72,7 +72,7 @@ Views.agenda = {
       ${blocks.length ? H.dayRail(k, { link: false }) : ''}
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
       <div class="timeline">
-        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', '<small class="muted">Toque em <strong>+</strong> para adicionar.</small>')}
+        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
       </div>
     </section>`;
   },

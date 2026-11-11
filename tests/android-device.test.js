@@ -102,6 +102,11 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(await p.locator('#nav a[href="#semanal"], #nav a[href="#mensal"]').count() === 0, 'planejamento semanal e mensal não são mais telas separadas');
 
   console.log('\n[2] Agenda (Dia) — concluir atividades (problema relatado)');
+  // Instalação nova: rotina em branco; o modelo de exemplo é carregado em Configurações → Rotina padrão
+  await go('agenda');
+  check(await p.locator('.timeline .blk').count() === 0 && (await p.textContent('.timeline')).includes('Rotina padrão'), 'instalação nova: rotina em branco, com o caminho para cadastrar');
+  await go('config'); await tap('[data-act=rtReset]');
+  check((await st()).routine.length === 12, '"Usar modelo de exemplo" carrega a rotina de exemplo');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });   // estes passos usam o intervalo em horário fixo
   await go('agenda');
   check(await p.locator('.ag-cal .calx-d').count() === 7 && await p.locator('.agenda-modes').count() === 0, 'Agenda numa tela só: semana em cima, o dia embaixo');

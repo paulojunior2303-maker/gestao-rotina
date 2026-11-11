@@ -21,6 +21,10 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
 
   // ---- Agenda (intervalo em horário fixo)
   assert(!(await p.locator('#bottom-nav').isVisible()), 'no computador a barra de baixo fica escondida (menu lateral fixo)');
+  await go('config');
+  assert((await state() || { routine: [] }).routine.length === 0 && await p.locator('#cfg-rotina .rt-empty').count() === 1, 'instalação nova: rotina padrão em branco');
+  await p.click('[data-act=rtReset]'); await p.waitForTimeout(250);
+  assert((await state()).routine.length === 12, '"Usar modelo de exemplo" carrega 12 atividades');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });
   await go('agenda');
   assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes, .calx-strip').count() === 0 && await p.locator('.ag-cal .calx-d').count() === 7, 'Agenda numa tela só: semana em cima, dia embaixo');
