@@ -228,14 +228,16 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.textContent('#page-title') === 'Jornada' && await p.locator('.jg-cls').count() === 4 && await p.locator('.jg-badge').count() === 13, 'Jornada: áreas e conquistas');
   // Missões: criar para mim ("Outra", marcada à mão) dá o XP definido
   await p.click('[data-act=msNova]'); await p.waitForTimeout(250);
-  await p.selectOption('.ms-row .ms-tipo', 'manual'); await p.fill('.ms-row .ms-txt', 'Revisar 1 POP'); await p.fill('.ms-row .ms-xp', '30');
+  await p.selectOption('.ms-row .ms-tipo', 'manual'); await p.fill('.ms-row .ms-txt', 'Revisar 1 POP');
+  assert((await p.textContent('.ms-row .ms-sum')).includes('+30 XP') && await p.locator('.ms-row .ms-xp').count() === 0, 'XP da missão é automático (sem campo para digitar)');
   await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
   const xp1 = await p.evaluate(() => Jogo.calc().total);
   await p.click('[data-act=msFeita][data-v="1"]'); await p.waitForTimeout(300);
   assert(await p.evaluate(() => Jogo.calc().total) === xp1 + 30 && (await p.textContent('#xp-pop')).includes('Missão cumprida'), 'missão marcada como feita dá o XP e avisa');
   // Enviar missões: gera link; quem abre o link aceita e a contagem é automática
   await p.click('[data-act=msEnviar]'); await p.waitForTimeout(250);
-  await p.fill('.modal-wrap.open [name=para]', 'Carlos'); await p.fill('.modal-wrap.open [name=de]', 'Victor'); await p.fill('.ms-row .ms-n', '2'); await p.fill('.ms-row .ms-xp', '40');
+  await p.fill('.modal-wrap.open [name=para]', 'Carlos'); await p.fill('.modal-wrap.open [name=de]', 'Victor'); await p.fill('.ms-row .ms-n', '2');
+  assert((await p.textContent('.ms-row .ms-sum')).includes('Concluir 2 tarefas · +20 XP'), 'a missão mostra o título e o XP calculado');
   await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
   const msTxt = await p.inputValue('.ms-share'); const msLink = msTxt.match(/https:\S+/)[0];
   assert(msTxt.includes('Victor te enviou 1 missão') && msLink.includes('#missoes?p='), 'enviar missões gera o texto com o link');
@@ -246,7 +248,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.evaluate(() => location.hash) === '#jornada' && await p.evaluate(() => S.missoes.some(m => m.de_ === 'Victor' && m.tipo === 'tarefa' && m.alvo === 2)), 'missões aceitas entram na Jornada');
   const xp2 = await p.evaluate(() => Jogo.calc().total);
   await p.evaluate(() => { for (const i of [1, 2]) S.tasks.push({ id: 'ms' + i, title: 'M' + i, status: 'concluida', completedAt: new Date().toISOString(), priority: 'media', category: 'equipe', createdAt: new Date().toISOString() }); commit(); });
-  assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.de_ === 'Victor').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp2 + 20 + 40, 'missão automática conclui sozinha (2 tarefas = 20 XP + 40 da missão)');
+  assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.de_ === 'Victor').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp2 + 20 + 20, 'missão automática conclui sozinha (2 tarefas = 20 XP + 20 da missão)');
   assert(await p.evaluate(() => Missoes.decodificar('lixo<script>') === null), 'link inválido é recusado');
   await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
   assert((await state()).settings.jogo === false && await p.locator('#nav a[href="#jornada"]').count() === 0, 'desligar o modo jogo tira a Jornada do menu');

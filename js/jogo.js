@@ -203,6 +203,10 @@ const Missoes = {
     manual: ['Outra (a pessoa marca quando fizer)', () => ''],
   },
   SITE: 'https://paulojunior2303-maker.github.io/gestao-rotina/',
+  /* XP da missão é automático: valor de cada unidade × quantidade (arredondado de 5 em 5, entre 10 e 500) */
+  VALOR: { tarefa: 10, noPrazo: 12, bloco: 3, diaBom: 15, meta: 15, reuniao: 15, feedback: 15, imprevisto: 12 },
+  MANUAL_XP: 30,
+  xpDe(tipo, alvo) { return tipo === 'manual' ? this.MANUAL_XP : Math.min(500, Math.max(10, Math.round(this.VALOR[tipo] * alvo / 5) * 5)); },
   list() { return S.missoes || (S.missoes = []); },
 
   /* Progresso de cada missão: conta o que foi feito desde que ela foi aceita (e até o prazo, se houver) */
@@ -251,17 +255,18 @@ const Missoes = {
   form(paraOutro) {
     const tipos = Object.entries(this.TIPOS).map(([k, [l]]) => `<option value="${k}">${l}</option>`).join('');
     const linha = () => `<div class="ms-row">
-        <select class="ms-tipo" aria-label="Tipo de missão">${tipos}</select>
-        <input class="ms-n" type="number" min="1" max="999" value="5" aria-label="Quantidade">
-        <input class="ms-txt" type="text" maxlength="90" placeholder="Título (opcional)" aria-label="Título da missão">
-        <span class="ms-xpw"><input class="ms-xp" type="number" min="5" max="1000" step="5" value="50" aria-label="XP de recompensa" title="XP de recompensa"><span class="ms-xp-l">XP de recompensa</span></span>
-        <button type="button" class="icon-btn xs ms-rm" title="Remover">${U.icon('x', 14)}</button></div>`;
+        <label class="ms-f ms-f-tipo"><span>Missão</span><select class="ms-tipo">${tipos}</select></label>
+        <label class="ms-f ms-f-n"><span>Quantidade</span><input class="ms-n" type="number" min="1" max="999" value="5" inputmode="numeric"></label>
+        <label class="ms-f ms-f-txt"><span class="ms-txt-l">Título (opcional)</span><input class="ms-txt" type="text" maxlength="90" placeholder="Usa o título automático"></label>
+        <button type="button" class="icon-btn xs ms-rm" title="Remover esta missão" aria-label="Remover esta missão">${U.icon('x', 14)}</button>
+        <p class="ms-sum"></p></div>`;
     const m = UI.modal({
       title: paraOutro ? 'Enviar missões' : 'Criar missão para mim',
+      wide: true,
       body: `${paraOutro ? `<div class="form-grid">
           <div class="field"><label>Para quem</label><input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa"><datalist id="ms-pessoas">${D.techNames().map(n => `<option value="${U.esc(n)}">`).join('')}</datalist></div>
           <div class="field"><label>Seu nome (aparece para a pessoa)</label><input name="de" maxlength="60" value="${U.esc(S.settings.meuNome || '')}" placeholder="Ex.: Victor"></div></div>` : ''}
-        <p class="muted small">Escolha o tipo e a quantidade: o app conta sozinho o que a pessoa fizer${paraOutro ? ' depois de aceitar' : ''}. Em <strong>Outra</strong>, escreva a missão no título; a pessoa marca quando fizer.</p>
+        <p class="muted small">Escolha a missão e a quantidade (ex.: concluir <strong>5</strong> tarefas). O app conta sozinho o que ${paraOutro ? 'a pessoa fizer depois de aceitar' : 'você fizer a partir de hoje'} e calcula o XP. Em <strong>Outra</strong>, escreva a missão; ela é marcada à mão.</p>
         <div class="ms-rows">${linha()}</div>
         <button type="button" class="btn sm ghost ms-add">${U.icon('plus', 15)} Adicionar outra missão</button>
         <div class="field ms-prazo"><label>Prazo (opcional)</label><input type="date" name="prazo" min="${U.today()}"></div>
@@ -269,8 +274,16 @@ const Missoes = {
       footer: `<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-ok>${paraOutro ? `${U.icon('arrow', 15)} Gerar link` : 'Salvar'}</button>`,
     });
     const el = m.el, rows = el.querySelector('.ms-rows');
-    const sync = row => { const manual = row.querySelector('.ms-tipo').value === 'manual'; row.querySelector('.ms-n').hidden = manual; row.querySelector('.ms-txt').placeholder = manual ? 'Escreva a missão (ex.: revisar 1 POP)' : 'Título (opcional)'; };
+    // Mostra o que a pessoa vai ver e o XP calculado
+    const sync = row => {
+      const tipo = row.querySelector('.ms-tipo').value, manual = tipo === 'manual', alvo = Math.max(1, Number(row.querySelector('.ms-n').value) || 1), txt = row.querySelector('.ms-txt').value.trim();
+      row.querySelector('.ms-f-n').hidden = manual;
+      row.querySelector('.ms-txt-l').textContent = manual ? 'Escreva a missão' : 'Título (opcional)';
+      row.querySelector('.ms-txt').placeholder = manual ? 'Ex.: revisar 1 POP' : 'Usa o título automático';
+      row.querySelector('.ms-sum').innerHTML = `${U.esc(txt || this.titulo({ tipo, alvo }) || 'Escreva a missão')} · <b>+${this.xpDe(tipo, alvo)} XP</b>${manual ? ' <small>(a pessoa marca quando fizer)</small>' : ''}`;
+    };
     rows.querySelectorAll('.ms-row').forEach(sync);
+    el.addEventListener('input', e => { const r = e.target.closest('.ms-row'); if (r) sync(r); });
     el.addEventListener('change', e => { const r = e.target.closest('.ms-row'); if (r) sync(r); });
     el.querySelector('.ms-add').onclick = () => { rows.insertAdjacentHTML('beforeend', linha()); rows.querySelectorAll('.ms-row').forEach(sync); };
     rows.addEventListener('click', e => { if (e.target.closest('.ms-rm') && rows.children.length > 1) e.target.closest('.ms-row').remove(); });
@@ -278,7 +291,7 @@ const Missoes = {
     el.querySelector('[data-ok]').onclick = () => {
       const err = el.querySelector('.form-error'), fail = msg => { err.textContent = msg; err.hidden = false; };
       const prazo = el.querySelector('[name=prazo]').value || '';
-      const lista = [...rows.querySelectorAll('.ms-row')].map(r => ({ tipo: r.querySelector('.ms-tipo').value, alvo: Number(r.querySelector('.ms-n').value) || 1, titulo: r.querySelector('.ms-txt').value.trim(), xp: Number(r.querySelector('.ms-xp').value) || 50 }));
+      const lista = [...rows.querySelectorAll('.ms-row')].map(r => { const tipo = r.querySelector('.ms-tipo').value, alvo = Math.min(999, Math.max(1, Math.round(Number(r.querySelector('.ms-n').value) || 1))); return { tipo, alvo, titulo: r.querySelector('.ms-txt').value.trim(), xp: this.xpDe(tipo, alvo) }; });
       if (lista.some(x => x.tipo === 'manual' && !x.titulo)) return fail('Escreva a missão no título quando o tipo for "Outra".');
       if (!paraOutro) { this.aceitar({ de: '', prazo, missoes: lista }); m.close(); UI.toast(U.plural(lista.length, 'missão criada', 'missões criadas') + '.'); return; }
       const para = el.querySelector('[name=para]').value.trim(), de = el.querySelector('[name=de]').value.trim();
@@ -300,7 +313,7 @@ const Missoes = {
       const cut = (s, n) => String(s || '').slice(0, n);
       const missoes = (Array.isArray(o.missoes) ? o.missoes : []).slice(0, 30)
         .filter(x => x && this.TIPOS[x.tipo])
-        .map(x => ({ tipo: x.tipo, alvo: Math.min(999, Math.max(1, Math.round(Number(x.alvo) || 1))), titulo: cut(x.titulo, 90), xp: Math.min(1000, Math.max(5, Math.round(Number(x.xp) || 50))) }))
+        .map(x => { const alvo = Math.min(999, Math.max(1, Math.round(Number(x.alvo) || 1))); return { tipo: x.tipo, alvo, titulo: cut(x.titulo, 90), xp: this.xpDe(x.tipo, alvo) }; })
         .filter(x => x.tipo !== 'manual' || x.titulo);
       if (!missoes.length) return null;
       return { id: cut(o.id, 40) || U.uid(), de: cut(o.de, 60), para: cut(o.para, 60), prazo: /^\d{4}-\d{2}-\d{2}$/.test(o.prazo || '') ? o.prazo : '', missoes };

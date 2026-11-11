@@ -48,7 +48,11 @@ Views.tarefas = {
         <div class="tk-side">
           ${x.status === 'concluida' || x.status === 'cancelada'
             ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-            : `<button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`}
+            : `${x.status === 'andamento'
+                ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
+                : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
+               <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
+               <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
           <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
         </div>
       </div>`;
@@ -116,17 +120,14 @@ Object.assign(Actions, {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
     const prev = x.status, prevAt = x.completedAt;
     Tasks.setStatus(x, s); commit();
-    if (s === 'concluida') UI.toast('Tarefa concluída.', 'ok', { label: 'Desfazer', onClick: () => { x.status = prev; x.completedAt = prevAt; commit(); } });
+    const undo = { label: 'Desfazer', onClick: () => { x.status = prev; x.completedAt = prevAt; commit(); } };
+    if (s === 'concluida') UI.toast('Tarefa concluída.', 'ok', undo);
+    else if (s === 'cancelada') UI.toast('Tarefa cancelada.', 'ok', undo);
   },
   tkMore({ id }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
     UI.sheet(x.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
-      x.status === 'andamento' ? { label: 'Marcar como pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
-        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) },
-      x.status === 'cancelada' ? { label: 'Reabrir tarefa', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
-        : { label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) },
-      { sep: true },
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
   },

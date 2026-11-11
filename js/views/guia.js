@@ -219,7 +219,7 @@ Views.guia = {
     ${sec('tarefas', 'tasks', 'Tarefas', li([
       'Botão <strong>+</strong>: nome, descrição, categoria, prioridade, status, início, prazo, horário e observações.',
       '<strong>✓</strong> conclui (aparece “Desfazer” por alguns segundos) e <strong>↶</strong> reabre, como na Agenda.',
-      '<strong>⋯</strong> → Editar, Começar agora (em andamento), Cancelar ou Excluir.',
+      '<strong>▶</strong> começa (em andamento), <strong>✕</strong> cancela e <strong>⋯</strong> → Editar ou Excluir.',
       'Os <strong>contadores do topo</strong> filtram a lista. Abaixo, há busca e filtros por categoria, prioridade e prazo.',
       'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada.',
     ]))}

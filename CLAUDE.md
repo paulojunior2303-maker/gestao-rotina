@@ -46,7 +46,8 @@ e diga o que mudou e como testar no celular.
   **Missões** (`Missoes` em `jogo.js`, `S.missoes`): o líder monta um pacote e envia por link `#missoes?p=<base64url JSON>` (sem servidor);
   quem abre aceita, e o progresso é contado a partir de `desde` (até o `prazo`). Tipos automáticos usam os mesmos pontos do XP; "manual" a pessoa marca.
   `Jogo.calc()` fica em cache até o próximo `Store.save()` (`Store.rev`).
-- **Tarefas**: botões como na Agenda (✓ conclui, ↶ reabre, ⋯ começar/cancelar/excluir); não há mais seletor de status na lista.
+- **Tarefas**: botões na linha (▶ começar, ✓ concluir, ✕ cancelar, ↶ reabrir; ⋯ só Editar e Excluir); não há seletor de status na lista.
+- **XP das missões é automático** (`Missoes.xpDe`: valor por unidade × quantidade); o XP que vier no link é ignorado e recalculado.
 - `tests/run.sh` roda os arquivos em paralelo (4 por vez).
 - **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.
 - **Feedbacks** (`js/views/feedbacks.js`, `FBPage` + `FB`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
