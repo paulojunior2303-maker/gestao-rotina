@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestão de Rotina (TESTE)</title>
-  <meta name="description" content="Painel de gestão de rotina e cronograma — liderança operacional de CFTV IP">
+  <meta name="description" content="Gestão de rotina, tarefas, reuniões e equipe para líderes">
   <meta name="theme-color" content="#0e0c13">
   <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzEwMGQxNyIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTUwIiBmaWxsPSJub25lIiBzdHJva2U9IiM5NDYxZjUiIHN0cm9rZS1vcGFjaXR5PSIuMiIgc3Ryb2tlLXdpZHRoPSI1MiIvPjxwYXRoIGQ9Ik0yNTYgMTA2YTE1MCAxNTAgMCAxIDEtMTQyLjUgMTk2LjEiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzk0NjFmNSIgc3Ryb2tlLXdpZHRoPSI1MiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGNpcmNsZSBjeD0iMTEzLjUiIGN5PSIzMDIuMSIgcj0iMzgiIGZpbGw9IiNlNmRjZmYiLz48L3N2Zz4K" type="image/svg+xml">
@@ -623,6 +623,8 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 /* ---------- Formulários / modal ---------- */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cfg-empresa { max-width: 420px; margin-top: 16px; }
+.metric-names { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .field.full, .form-grid .full { grid-column: 1 / -1; }
 .field label, .field .lbl { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 .field label em { color: var(--red); font-style: normal; }
@@ -1025,7 +1027,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <svg class="brand-logo" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="5"/><path d="M20 6a14 14 0 1 1-13.3 18.3" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><circle cx="6.7" cy="24.3" r="3.6" fill="#e6dcff"/></svg>
-        <div><strong>Gestão de Rotina</strong><small>Wi-bicam, CFTV IP</small></div>
+        <div><strong>Gestão de Rotina</strong><small id="brand-sub">Rotina e equipe</small></div>
       </div>
       <nav id="nav" class="nav"></nav>
       <div class="sidebar-foot" id="storage-status"></div>
@@ -1148,11 +1150,14 @@ const U = (() => {
 const CANAL_TESTE = typeof window !== 'undefined' && window.APP_CHANNEL === 'teste';
 const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_TESTE ? ':teste' : '');
 
-const METRICS = [
-  { key: 'pontosCamera', label: 'Pontos de câmera instalados' },
-  { key: 'manutencoes', label: 'Manutenções realizadas' },
-  { key: 'retrabalhos', label: 'Retrabalhos' },
-];
+/* Indicadores lançados por dia. As chaves são fixas (dados guardados); os nomes podem ser trocados em
+   Configurações → Metas (settings.metricNames). Os nomes padrão são genéricos, para qualquer equipe. */
+const METRIC_DEFAULT_NAMES = { pontosCamera: 'Serviços concluídos', manutencoes: 'Manutenções realizadas', retrabalhos: 'Retrabalhos' };
+const METRICS = Object.keys(METRIC_DEFAULT_NAMES).map(key => ({
+  key,
+  get label() { const n = typeof S !== 'undefined' && S && S.settings && S.settings.metricNames; return (n && n[key] || '').trim() || METRIC_DEFAULT_NAMES[key]; },
+}));
+const mLabel = key => METRICS.find(m => m.key === key).label;
 const GOAL_METRICS = [...METRICS.filter(m => !m.snapshot), { key: 'tarefasConcluidas', label: 'Tarefas concluídas' }, { key: 'projetosConcluidos', label: 'Projetos concluídos' }];
 /* Indicadores de O.S. foram retirados do app (v1.2). Lançamentos e metas antigos continuam guardados. */
 const LEGACY_METRICS = { osRecebidas: 'O.S. recebidas', osConcluidas: 'O.S. concluídas', osPendentes: 'O.S. pendentes', osAtrasadas: 'O.S. atrasadas' };
@@ -1201,6 +1206,8 @@ const Store = {
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
+        empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
+        metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
@@ -1247,7 +1254,7 @@ const Store = {
       events: [],
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
-      meta: { v2: true, v3: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
+      meta: { v2: true, v3: true, v4: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -1271,7 +1278,15 @@ const Store = {
     for (const k of Object.keys(d.settings)) if (s.settings[k] === undefined) s.settings[k] = d.settings[k];
     if (needV2) { this.migrateV2(s); s.meta = { ...(s.meta || {}), v2: true }; }
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
+    if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
     return s;
+  },
+
+  /* v4: o app ficou genérico (para qualquer equipe). Quem já usava mantém o nome da empresa e os nomes dos indicadores de antes. */
+  migrateV4(s) {
+    if (!s.settings) return;
+    if (!s.settings.empresa) s.settings.empresa = 'Wi-bicam, CFTV IP';
+    s.settings.metricNames = { pontosCamera: 'Pontos de câmera instalados', ...(s.settings.metricNames || {}) };
   },
 
   /* v3: intervalo de almoço flexível (o usuário não tem horário fixo). Tira o intervalo da rotina dos dias futuros já montados. */
@@ -1351,18 +1366,18 @@ const Store = {
     const tk = (title, category, priority, status, due, extra = {}) => ({ id: U.uid(), demo: true, title: '[Exemplo] ' + title, description: 'Registro de demonstração — pode ser removido em Configurações.', category, priority, status, createdAt: now, startDate: t, dueDate: due, dueTime: '', notes: '', completedAt: status === 'concluida' ? now : null, ...extra });
     S.tasks.push(
       tk('Revisar pendências da semana', 'pendencias', 'alta', 'pendente', U.addDays(t, 1)),
-      tk('Conferir estoque de câmeras e NVRs', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
+      tk('Conferir estoque de materiais', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
       tk('Enviar relatório semanal', 'indicadores', 'urgente', 'pendente', U.addDays(t, -1)),
-      tk('Agendar treinamento de configuração de NVR', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
+      tk('Agendar treinamento da equipe', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
     );
-    const t1 = { id: U.uid(), demo: true, name: 'Técnico Exemplo A' }, t2 = { id: U.uid(), demo: true, name: 'Técnico Exemplo B' };
+    const t1 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo A' }, t2 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo B' };
     S.settings.technicians.push(t1, t2);
     const st = names => names.map((n, i) => ({ id: U.uid(), name: n, done: i < 2 }));
     S.projects.push(
-      { id: U.uid(), demo: true, name: '[Exemplo] Ampliação de CFTV IP', client: 'Cliente Exemplo', description: 'Projeto de demonstração.', responsible: t1.name, startDate: U.addDays(t, -20), dueDate: U.addDays(t, 15), status: 'andamento', manualProgress: null, notes: '', stages: st(['Vistoria técnica', 'Projeto e orçamento', 'Instalação de câmeras', 'Configuração do NVR', 'Entrega e treinamento']), pendencias: [{ id: U.uid(), text: 'Aguardando liberação de acesso ao telhado', done: false }], createdAt: now, completedAt: null },
-      { id: U.uid(), demo: true, name: '[Exemplo] Controle de acesso — portaria', client: 'Empreendimento Exemplo', description: 'Projeto de demonstração.', responsible: t2.name, startDate: U.addDays(t, 3), dueDate: U.addDays(t, 40), status: 'planejamento', manualProgress: 0, notes: '', stages: [], pendencias: [], createdAt: now, completedAt: null },
+      { id: U.uid(), demo: true, name: '[Exemplo] Implantação no cliente', client: 'Cliente Exemplo', description: 'Projeto de demonstração.', responsible: t1.name, startDate: U.addDays(t, -20), dueDate: U.addDays(t, 15), status: 'andamento', manualProgress: null, notes: '', stages: st(['Vistoria técnica', 'Projeto e orçamento', 'Instalação de câmeras', 'Configuração do NVR', 'Entrega e treinamento']), pendencias: [{ id: U.uid(), text: 'Aguardando liberação de acesso ao telhado', done: false }], createdAt: now, completedAt: null },
+      { id: U.uid(), demo: true, name: '[Exemplo] Melhoria de processo interno', client: 'Empreendimento Exemplo', description: 'Projeto de demonstração.', responsible: t2.name, startDate: U.addDays(t, 3), dueDate: U.addDays(t, 40), status: 'planejamento', manualProgress: 0, notes: '', stages: [], pendencias: [], createdAt: now, completedAt: null },
     );
-    S.occurrences.push({ id: U.uid(), demo: true, title: '[Exemplo] Câmeras offline em cliente', description: 'Ocorrência de demonstração.', priority: 'urgente', date: t, time: '09:40', dueDate: t, dueTime: '17:00', responsible: t1.name, status: 'pendente', notes: '', scheduled: null, createdAt: now });
+    S.occurrences.push({ id: U.uid(), demo: true, title: '[Exemplo] Sistema fora do ar no cliente', description: 'Ocorrência de demonstração.', priority: 'urgente', date: t, time: '09:40', dueDate: t, dueTime: '17:00', responsible: t1.name, status: 'pendente', notes: '', scheduled: null, createdAt: now });
     S.events.push({ id: U.uid(), demo: true, title: '[Exemplo] Reunião com cliente', date: U.addDays(t, 2), time: '10:00', notes: '' });
     // Lançamentos de indicadores de exemplo nos últimos 10 dias úteis
     let k = t, n = 0, seed = 7;
@@ -1375,7 +1390,7 @@ const Store = {
         S.indicators.push({ id: U.uid(), demo: true, date: k, technician: tec.name, notes: '', values: { pontosCamera: rnd(0, 8), manutencoes: rnd(0, 3), retrabalhos: rnd(0, 1) } });
       }
     }
-    S.settings.goals.push({ id: U.uid(), demo: true, name: '[Exemplo] Pontos de câmera na semana', metric: 'pontosCamera', period: 'semanal', target: 30, direction: 'min' });
+    S.settings.goals.push({ id: U.uid(), demo: true, name: '[Exemplo] Serviços concluídos na semana', metric: 'pontosCamera', period: 'semanal', target: 30, direction: 'min' });
     return true;
   },
   removeDemo() {
@@ -1904,7 +1919,7 @@ const Native = {
 </script>
   <script>/* js/transfer.js */
 'use strict';
-/* Transferência de dados entre versões (APK, web, link do Claude):
+/* Transferência de dados entre versões (APK, web):
    - arquivo de backup (.json), aceito sem filtro de tipo (Android costuma não reconhecer .json);
    - "código de transferência": o backup comprimido (gzip) em texto, para copiar e colar
      por WhatsApp, e-mail, Keep etc., sem depender de arquivos. */
@@ -1996,7 +2011,7 @@ const Transfer = {
         <ol class="steps">
           <li>Toque em <strong>Copiar código</strong>${canShare ? ' ou <strong>Enviar código</strong>' : ''}.</li>
           <li>Mande o código para você mesmo, por exemplo pelo WhatsApp (conversa “Você”), e-mail ou Google Keep.</li>
-          <li>Na outra versão (site, link do Claude ou outro celular), abra <strong>Configurações → Dados → Receber dados</strong>, cole o código e confirme.</li>
+          <li>Na outra versão (site ou outro celular), abra <strong>Configurações → Dados → Receber dados</strong>, cole o código e confirme.</li>
         </ol>
         <p class="muted small">Contém ${U.esc(this.summary(S))} · ${kb} KB.${big ? ' <strong>O código é grande:</strong> se o WhatsApp cortar a mensagem, use e-mail ou o arquivo de backup.' : ''}</p>
         <textarea class="code-box" readonly rows="4">${U.esc(code)}</textarea>`,
@@ -2342,7 +2357,7 @@ const IA = {
   /* Transcrição de um trecho de áudio (rápida: usa primeiro o modelo leve) */
   async transcribe(audio) {
     const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout: 45000,
-      system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe técnica. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
+      system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
       parts: [{ inlineData: { mimeType: audio.mime, data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
     return /^\[sil[eê]ncio\]$/i.test(t.trim()) ? '' : t.trim();
   },
@@ -2353,7 +2368,7 @@ const IA = {
   agent() { return ((S.settings.ia && S.settings.ia.agente) || '').trim(); },
   level() { return (S.settings.ia && S.settings.ia.nivel) || 'detalhada'; },
   LEVELS: { detalhada: 'ATA detalhada: registre os assuntos com contexto, problemas identificados, propostas, decisões e encaminhamentos', compacta: 'ATA compacta: mantenha apenas os principais assuntos, decisões e orientações', resumida: 'ATA resumida: apresente uma síntese geral da reunião, sem perder informações essenciais' },
-  DEFAULT_AGENT: `Você é o assistente de documentação de um líder de equipe técnica (instalação e manutenção de CFTV IP).
+  DEFAULT_AGENT: `Você é o assistente de documentação de um líder de equipe.
 Escreva em português do Brasil, de forma profissional, natural e objetiva, direto ao ponto, sem burocracia e sem repetir informações.
 Não invente fatos, participantes, decisões ou responsabilidades. Não transforme sugestões em decisões; o que ficou sem definição é pendência.
 Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere que transcrições automáticas podem ter erros e não complete trechos incompreensíveis com suposições.`,
@@ -3647,7 +3662,7 @@ const Occ = {
       { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
       { name: 'dueDate', label: 'Prazo', type: 'date', value: o.dueDate, half: true },
       { name: 'dueTime', label: 'Horário limite', type: 'time', value: o.dueTime, half: true },
-      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou um técnico da equipe' },
+      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou alguém da equipe' },
       { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: o.notes },
     ];
     if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda após salvar', type: 'checkbox', value: scheduleAfter });
@@ -3712,7 +3727,7 @@ const Events = {
     const noun = meet ? 'reunião' : 'compromisso';
     const pend = Events.pendencias(e.id);
     const pautaIA = IA.supported() ? `<div class="pauta-ia"><span class="lbl">${U.icon('spark', 15)} Gerar pauta com IA</span>
-      <div class="inline-add"><input name="pautaTema" placeholder="Sobre o que é a reunião? Ex.: escala de fim de ano, EPI, novo técnico"><button type="button" class="btn sm primary" data-pauta-ia>Gerar</button></div>
+      <div class="inline-add"><input name="pautaTema" placeholder="Sobre o que é a reunião? Ex.: escala de fim de ano, metas do mês, novo colaborador"><button type="button" class="btn sm primary" data-pauta-ia>Gerar</button></div>
       ${pend.length ? `<label class="check small"><input type="checkbox" name="pautaPend" checked> <span>Incluir ${U.plural(pend.length, 'assunto pendente', 'assuntos pendentes')} das últimas reuniões</span></label>` : ''}</div>` : '';
     const m = UI.form({
       title: isNew ? (meet ? 'Nova reunião' : 'Novo compromisso') : `Editar ${noun}`,
@@ -4511,7 +4526,7 @@ const Ind = {
       fields: [
         { type: 'html', html: '<p class="muted small">Preencha apenas o que você tem. Campos em branco ficam como <strong>sem dados</strong> (não são tratados como zero).</p>' },
         { name: 'date', label: 'Data', type: 'date', required: true, value: r.date, half: true },
-        { name: 'technician', label: 'Técnico', type: 'select', options: H.techOptions(r.technician).map(([v, l]) => [v, v ? l : 'Equipe (geral)']), value: r.technician, half: true, hint: D.techNames().length ? '' : 'Cadastre técnicos em Configurações para lançar produtividade individual.' },
+        { name: 'technician', label: 'Pessoa', type: 'select', options: H.techOptions(r.technician).map(([v, l]) => [v, v ? l : 'Equipe (geral)']), value: r.technician, half: true, hint: D.techNames().length ? '' : 'Cadastre a equipe em Configurações para lançar a produtividade de cada pessoa.' },
         ...METRICS.map(m => ({ name: m.key, label: m.label, type: 'number', min: 0, step: 1, value: r.values[m.key], half: true })),
         { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: r.notes },
       ],
@@ -4550,8 +4565,8 @@ Views.indicadores = {
     const metricMeta = METRICS.find(m => m.key === f.metric) || METRICS[0];
     const series1 = [{ name: metricMeta.label, color: 'var(--accent)', values: b.map(x => D.metricValue(metricMeta.key, x.from, x.to)) }];
     const series2 = [
-      { name: 'Manutenções', color: 'var(--lilac)', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
-      { name: 'Retrabalhos', color: 'var(--red)', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
+      { name: mLabel('manutencoes'), color: 'var(--lilac)', values: b.map(x => D.metricValue('manutencoes', x.from, x.to)) },
+      { name: mLabel('retrabalhos'), color: 'var(--red)', values: b.map(x => D.metricValue('retrabalhos', x.from, x.to)) },
     ];
     const techs = Ind.techRows(from, to);
     const techWithData = techs.filter(r => r.days);
@@ -4586,18 +4601,18 @@ Views.indicadores = {
         ${metricMeta.snapshot ? '<p class="muted small">Indicador de posição: cada barra mostra o último valor registrado no intervalo.</p>' : ''}
       </div>
       <div class="card">
-        <div class="card-h"><h3>Manutenções × Retrabalhos</h3><span class="muted small">${{ diario: 'Diário', semanal: 'Semanal', mensal: 'Mensal' }[f.gran]}</span></div>
+        <div class="card-h"><h3>${U.esc(mLabel('manutencoes'))} × ${U.esc(mLabel('retrabalhos'))}</h3><span class="muted small">${{ diario: 'Diário', semanal: 'Semanal', mensal: 'Mensal' }[f.gran]}</span></div>
         ${Charts.bars({ labels: b.map(x => x.label), series: series2 })}
       </div>
     </section>
 
     <section class="grid-2">
       <div class="card">
-        <div class="card-h"><h3>${U.icon('user')} Produtividade por técnico</h3></div>
-        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: 'var(--accent)' })), ' pontos')}
-          <div class="table-wrap"><table class="table"><thead><tr><th>Técnico</th><th>Dias</th><th>Pontos câm.</th><th>Manut.</th><th>Retrab.</th></tr></thead>
+        <div class="card-h"><h3>${U.icon('user')} Produtividade por pessoa</h3></div>
+        ${techWithData.length ? `${Charts.hbars(techWithData.map(r => ({ label: r.name, value: r.pontosCamera, color: 'var(--accent)' })), '')}
+          <div class="table-wrap"><table class="table"><thead><tr><th>Pessoa</th><th>Dias</th>${METRICS.map(m => `<th>${U.esc(m.label)}</th>`).join('')}</tr></thead>
           <tbody>${techWithData.map(r => `<tr><td>${U.esc(r.name)}</td><td>${r.days}</td><td>${U.fmtNum(r.pontosCamera)}</td><td>${U.fmtNum(r.manutencoes)}</td><td>${U.fmtNum(r.retrabalhos)}</td></tr>`).join('')}</tbody></table></div>`
-          : H.empty(D.techNames().length ? 'Nenhum lançamento por técnico no período.' : 'Cadastre os técnicos em Configurações e lance os dados por técnico para ver a produtividade individual.')}
+          : H.empty(D.techNames().length ? 'Nenhum lançamento por pessoa no período.' : 'Cadastre a equipe em Configurações e lance os dados por pessoa para ver a produtividade individual.')}
       </div>
       <div class="card">
         <div class="card-h"><h3>${U.icon('target')} Metas</h3><a class="link" href="#config">Configurar</a></div>
@@ -4606,8 +4621,8 @@ Views.indicadores = {
     </section>
 
     <div class="card">
-      <div class="card-h"><h3>Lançamentos do período</h3><span class="muted small">Totais somam todos os lançamentos. Se lançar por técnico, não repita os mesmos números como "Equipe (geral)".</span></div>
-      ${recs.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Técnico</th>${METRICS.map(m => `<th title="${m.label}">${m.label.replace('Pontos de câmera instalados', 'Pontos câm.').replace('Manutenções realizadas', 'Manut.')}</th>`).join('')}<th></th></tr></thead>
+      <div class="card-h"><h3>Lançamentos do período</h3><span class="muted small">Totais somam todos os lançamentos. Se lançar por pessoa, não repita os mesmos números como "Equipe (geral)".</span></div>
+      ${recs.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Data</th><th>Pessoa</th>${METRICS.map(m => `<th title="${U.esc(m.label)}">${U.esc(m.label)}</th>`).join('')}<th></th></tr></thead>
         <tbody>${recs.map(r => `<tr><td>${U.fmtDate(r.date)}</td><td>${U.esc(r.technician || 'Equipe (geral)')}${H.demo(r)}</td>${METRICS.map(m => `<td>${r.values[m.key] === null || r.values[m.key] === undefined ? '<span class="muted">—</span>' : r.values[m.key]}</td>`).join('')}<td class="nowrap"><button class="icon-btn xs" data-act="indEdit" data-id="${r.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="indDel" data-id="${r.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>`
         : H.empty('Nenhum dado lançado neste período.', '<button class="btn sm primary" data-act="indNew">Lançar dados</button>')}
     </div>`;
@@ -4628,7 +4643,7 @@ Object.assign(Actions, {
 </script>
   <script>/* js/views/config.js */
 'use strict';
-/* Configurações — jornada, rotina, categorias, prioridades, status, técnicos, metas e dados */
+/* Configurações — jornada, rotina, categorias, prioridades, status, equipe, metas e dados */
 Views.config = {
   title: 'Configurações', icon: 'settings', nav: 'Configurações',
   mount(root) {
@@ -4644,7 +4659,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Técnicos'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -4653,7 +4668,8 @@ Views.config = {
         ['auto', 'Automático', 'Segue o aparelho'],
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
-      <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento de pontos de câmera, manutenções e retrabalhos, metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
+      <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>
+      <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento diário de números da equipe (serviços, manutenções, retrabalhos), metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`)}
@@ -4713,15 +4729,16 @@ Views.config = {
         <div><h4>Status</h4><div class="cfg-list">${['pendente', 'andamento', 'concluida', 'cancelada'].map(k => `<div class="cfg-item"><input type="color" value="${st.statuses[k].color}" data-change="stColor" data-k="${k}"><input type="text" value="${U.esc(st.statuses[k].label)}" data-change="stLabel" data-k="${k}"></div>`).join('')}</div></div>
       </div>`)}
 
-    ${sec('tecnicos', 'Técnicos da equipe', 'Usados como responsáveis e na produtividade individual.', `
-      <div class="cfg-list">${st.technicians.length ? st.technicians.map(t => `<div class="cfg-item"><input type="text" value="${U.esc(t.name)}" data-change="tecName" data-id="${t.id}">${H.demo(t)}<button class="icon-btn xs" data-act="tecDel" data-id="${t.id}">${U.icon('trash', 14)}</button></div>`).join('') : '<p class="muted small">Nenhum técnico cadastrado.</p>'}</div>
-      <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome do técnico…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
+    ${sec('tecnicos', 'Equipe', 'As pessoas da sua equipe: usadas como responsáveis, nos feedbacks e na produtividade individual.', `
+      <div class="cfg-list">${st.technicians.length ? st.technicians.map(t => `<div class="cfg-item"><input type="text" value="${U.esc(t.name)}" data-change="tecName" data-id="${t.id}">${H.demo(t)}<button class="icon-btn xs" data-act="tecDel" data-id="${t.id}">${U.icon('trash', 14)}</button></div>`).join('') : '<p class="muted small">Ninguém cadastrado ainda.</p>'}</div>
+      <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome da pessoa…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
 
-    ${!st.showIndicadores ? '' : sec('metas', 'Metas', 'Comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
+    ${!st.showIndicadores ? '' : sec('metas', 'Indicadores e metas', 'Dê aos indicadores os nomes que fazem sentido para a sua equipe. As metas são comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
+      <div class="metric-names">${METRICS.map(m => `<label class="field"><span class="lbl">Indicador ${METRICS.indexOf(m) + 1}</span><input type="text" value="${U.esc(m.label)}" placeholder="${U.esc(METRIC_DEFAULT_NAMES[m.key])}" data-change="cfgMetricName" data-k="${m.key}" maxlength="40"></label>`).join('')}</div>
       ${st.goals.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Meta</th><th>Indicador</th><th>Período</th><th>Alvo</th><th></th></tr></thead><tbody>${st.goals.map(g => `<tr><td>${U.esc(g.name || '—')}${H.demo(g)}</td><td>${metricLabel(g.metric)}</td><td>${g.period}</td><td>${g.direction === 'max' ? 'no máximo' : 'no mínimo'} ${g.target}</td><td class="nowrap"><button class="icon-btn xs" data-act="goalEdit" data-id="${g.id}">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="goalDel" data-id="${g.id}">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Nenhuma meta cadastrada.</p>'}
       <div class="row-actions"><button class="btn sm" data-act="goalNew">${U.icon('plus', 15)} Nova meta</button></div>`)}
 
-    ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos ${Guide.whereData()} (~${lsSize} KB)${Drive.connected() ? ' e sincronizados com o seu Google Drive.' : '. Cada versão (app Android, site, link do Claude) guarda os seus próprios dados; conecte o Google Drive (acima) para deixá-los iguais.'}`, `
+    ${sec('dados', 'Dados e armazenamento', `Os dados ficam salvos ${Guide.whereData()} (~${lsSize} KB)${Drive.connected() ? ' e sincronizados com o seu Google Drive.' : '. Cada versão (app Android, site) guarda os seus próprios dados; conecte o Google Drive (acima) para deixá-los iguais.'}`, `
       <h4>Levar dados para outra versão ou aparelho</h4>
       <p class="muted small">Gera um <strong>código de texto</strong> com todos os seus dados. Mande para você mesmo (WhatsApp, e-mail, Keep) e cole na outra versão.</p>
       <div class="row-actions wrap">
@@ -4846,7 +4863,7 @@ Object.assign(Actions, {
   prLabel({ k }, el) { if (el.value.trim()) { S.settings.priorities[k].label = el.value.trim(); commit(); } },
   stColor({ k }, el) { S.settings.statuses[k].color = el.value; commit(); },
   stLabel({ k }, el) { if (el.value.trim()) { S.settings.statuses[k].label = el.value.trim(); commit(); } },
-  tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Esse técnico já está cadastrado.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
+  tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Essa pessoa já está cadastrada.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
   tecName({ id }, el) { const t = S.settings.technicians.find(x => x.id === id); if (el.value.trim()) { t.name = el.value.trim(); commit(); } },
   tecDel({ id }) { const t = S.settings.technicians.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(t.name)}</strong>? Os lançamentos já feitos são mantidos.`, () => { S.settings.technicians = S.settings.technicians.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
   goalNew() { Goals.form(null); },
@@ -4858,6 +4875,8 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
+  cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
   cfgProjetos(_, el) { S.settings.showProjetos = el.checked; commit(); UI.toast(el.checked ? 'Projetos aparece no menu, em Planejamento.' : 'Projetos ocultado. Os dados continuam guardados.'); },
   cfgIndicadores(_, el) { S.settings.showIndicadores = el.checked; commit(); UI.toast(el.checked ? 'Indicadores aparece no menu, em Planejamento.' : 'Indicadores ocultado. Os dados continuam guardados.'); },
   themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
@@ -4891,7 +4910,7 @@ const Guide = {
     task: () => `<div class="tour-mock"><div class="task dl-row-soon" style="--c:#e3a043"><label class="tk-check"><span></span></label><div class="tk-body"><div class="tk-title">Cobrar relatório da equipe</div>
       <div class="tk-meta">${H.prio('alta')} <span class="muted">${U.icon('user', 13)} Carlos</span> <span class="dl dl-today">${U.icon('clock', 13)} Vence hoje</span></div></div></div>
       <div class="tm-legend"><span>Toque no quadrado para concluir</span><span>Toque no texto para editar</span></div></div>`,
-    occ: () => `<div class="tour-mock"><div class="occ card prio-border-urgente"><div class="occ-h"><h3>Câmeras offline no cliente</h3><span class="grow"></span>${H.prio('urgente')}</div>
+    occ: () => `<div class="tour-mock"><div class="occ card prio-border-urgente"><div class="occ-h"><h3>Sistema fora do ar no cliente</h3><span class="grow"></span>${H.prio('urgente')}</div>
       <div class="occ-actions"><span class="btn sm">${U.icon('calendar', 15)} Encaixar na agenda</span><span class="btn sm ghost ok-text">${U.icon('check', 15)} Resolver</span></div></div></div>`,
     dash: () => `<div class="tour-mock tm-kpis"><div class="kpi k-green"><span class="kpi-l">Progresso do dia</span><strong class="kpi-v">45%</strong></div><div class="kpi k-red"><span class="kpi-l">Atrasadas</span><strong class="kpi-v">2</strong></div><div class="kpi k-yellow"><span class="kpi-l">Imprevistos</span><strong class="kpi-v">1</strong></div></div>`,
     plan: () => `<div class="tour-mock tm-grid">${[['calendar', 'Calendário', 'No Início e na Agenda'], ['users', 'Reuniões', 'Pauta, gravação e ata'], ['chat', 'Feedbacks', 'Registro com IA'], ['plus', 'Botão +', 'Cria o item da tela']].map(([i, t, d]) => `<div>${U.icon(i, 20)}<strong>${t}</strong><small>${d}</small></div>`).join('')}</div>`,
@@ -4928,7 +4947,7 @@ const Guide = {
       { icon: 'download', color: 'var(--primary)', title: 'Seus dados', final: true,
         text: `Tudo o que você cadastra fica salvo ${this.whereData()}.`,
         mock: m.data(),
-        points: ['Para passar os dados entre o app, o site e o link do Claude: Configurações → Dados → <strong>Enviar meus dados</strong> / <strong>Receber dados</strong>.', 'Faça um <strong>backup</strong> de vez em quando: Configurações → Exportar backup.', Native.available() ? 'Desinstalar o app apaga os dados; o backup permite restaurá-los.' : 'O backup também serve para levar os dados a outro aparelho.', 'Em <strong>Configurações</strong> você ajusta jornada, rotina, categorias, técnicos e metas.'] },
+        points: ['Para passar os dados entre o app do celular e o site: Configurações → Dados → <strong>Enviar meus dados</strong> / <strong>Receber dados</strong>.', 'Faça um <strong>backup</strong> de vez em quando: Configurações → Exportar backup.', Native.available() ? 'Desinstalar o app apaga os dados; o backup permite restaurá-los.' : 'O backup também serve para levar os dados a outro aparelho.', 'Em <strong>Configurações</strong> você ajusta jornada, rotina, categorias, a equipe e o nome da sua empresa.'] },
     ];
   },
 };
@@ -5032,7 +5051,8 @@ Views.guia = {
     ${sec('inicio', 'flag', 'Primeiros passos (5 minutos)', `<ol>
       <li><strong>Configurações → Jornada</strong>: confira entrada, saída, intervalo e dias de trabalho.</li>
       <li><strong>Configurações → Rotina padrão</strong>: ajuste os blocos de horário do seu dia. Eles montam a agenda de cada dia útil.</li>
-      <li><strong>Configurações → Técnicos</strong>: cadastre a equipe para usar como responsáveis e na produtividade individual.</li>
+      <li><strong>Configurações → Equipe</strong>: cadastre as pessoas da equipe para usar como responsáveis e nos feedbacks.</li>
+      <li>Opcional: <strong>Configurações → Aparência</strong>: escreva o nome da sua empresa ou equipe (aparece no menu).</li>
       <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
@@ -5136,8 +5156,8 @@ Views.guia = {
     ]))}
 
     ${S.settings.showIndicadores ? sec('indicadores', 'chart', 'Indicadores e relatórios', li([
-      '<strong>Lançar dados</strong>: informe por dia, para a equipe ou por técnico. Preencha só o que tiver.',
-      'Indicadores: <strong>pontos de câmera instalados, manutenções e retrabalhos</strong>, somados no período. Campo vazio = <strong>“sem dados”</strong> (nunca vira zero).',
+      '<strong>Lançar dados</strong>: informe por dia, para a equipe ou por pessoa. Preencha só o que tiver.',
+      `Indicadores: <strong>${METRICS.map(m => U.esc(m.label).toLowerCase()).join(', ')}</strong>, somados no período (os nomes podem ser trocados em Configurações → Indicadores e metas).`+' Campo vazio = <strong>“sem dados”</strong> (nunca vira zero).',
       'Troque o período (Semana, Mês, Ano, Personalizado) e o gráfico (Diário, Semanal, Mensal).',
       Native.available() ? '<strong>Excel</strong> e <strong>backup</strong> abrem o menu Compartilhar (Drive, Arquivos, WhatsApp…). <strong>PDF</strong> abre a impressão: escolha “Salvar como PDF”.' : '<strong>Excel</strong> gera a planilha; <strong>PDF</strong> gera o relatório para imprimir ou “Salvar como PDF”.',
     ])) : ''}
@@ -5148,7 +5168,7 @@ Views.guia = {
       '<strong>Jornada</strong>: horários, intervalo de almoço (flexível, fixo ou sem intervalo), dias de trabalho e antecedência dos alertas de prazo.',
       '<strong>Rotina padrão</strong>: blocos de horário recorrentes (dias da semana ou um dia do mês).',
       '<strong>Categorias</strong>, <strong>Prioridades e status</strong>: nomes e cores.',
-      S.settings.showIndicadores ? '<strong>Técnicos</strong> e <strong>Metas</strong> (ex.: pontos de câmera por semana, retrabalhos no máximo X).' : '<strong>Técnicos</strong>: a equipe, usada como responsável em tarefas, imprevistos e projetos.',
+      S.settings.showIndicadores ? '<strong>Equipe</strong> e <strong>Indicadores e metas</strong> (ex.: serviços concluídos por semana, retrabalhos no máximo X).' : '<strong>Equipe</strong>: a equipe, usada como responsável em tarefas, imprevistos e projetos.',
     ]))}
 
     ${sec('dados', 'download', 'Seus dados e backup', li([
@@ -5195,8 +5215,8 @@ const Reports = {
     const sheets = [
       { name: 'Resumo', rows: [['Relatório de gestão', label], ['Período', `${U.fmtDate(from)} a ${U.fmtDate(to)}`], ['Gerado em', U.fmtDateTime(new Date().toISOString())], [], ['Indicador', 'Valor', 'Observação'], ...d.metrics.map(([l, v, o]) => [l, v === null ? 'Sem dados' : v, o]),
         ['Projetos concluídos no período', D.metricValue('projetosConcluidos', from, to), ''], ['Projetos em andamento (atual)', S.projects.filter(p => p.status === 'andamento').length, ''], ['Tarefas concluídas no período', D.metricValue('tarefasConcluidas', from, to), '']] },
-      { name: 'Lançamentos', rows: [['Data', 'Técnico', ...METRICS.map(m => m.label), 'Observações'], ...D.records(from, to).sort((a, b) => a.date.localeCompare(b.date)).map(r => [U.fmtDate(r.date), r.technician || 'Equipe (geral)', ...METRICS.map(m => r.values[m.key] ?? null), r.notes || ''])] },
-      { name: 'Produtividade técnicos', rows: [['Técnico', 'Dias com lançamento', 'Pontos de câmera', 'Manutenções', 'Retrabalhos'], ...d.techs.map(r => [r.name, r.days, r.pontosCamera, r.manutencoes, r.retrabalhos])] },
+      { name: 'Lançamentos', rows: [['Data', 'Pessoa', ...METRICS.map(m => m.label), 'Observações'], ...D.records(from, to).sort((a, b) => a.date.localeCompare(b.date)).map(r => [U.fmtDate(r.date), r.technician || 'Equipe (geral)', ...METRICS.map(m => r.values[m.key] ?? null), r.notes || ''])] },
+      { name: 'Produtividade por pessoa', rows: [['Pessoa', 'Dias com lançamento', ...METRICS.map(m => m.label)], ...d.techs.map(r => [r.name, r.days, r.pontosCamera, r.manutencoes, r.retrabalhos])] },
       { name: 'Metas', rows: [['Meta', 'Período', 'Alvo', 'Realizado', 'Situação'], ...d.goals] },
       { name: 'Tarefas', rows: [['Nome', 'Categoria', 'Prioridade', 'Status', 'Responsável', 'Criada em', 'Início', 'Prazo', 'Horário', 'Concluída em', 'Descrição', 'Observações'], ...d.tasks.map(x => [x.title, D.cat(x.category).name, D.prio(x.priority).label, D.status(x.status).label, x.responsible || '', U.fmtDateTime(x.createdAt), x.startDate ? U.fmtDate(x.startDate) : '', x.dueDate ? U.fmtDate(x.dueDate) : '', x.dueTime || '', x.completedAt ? U.fmtDateTime(x.completedAt) : '', x.description || '', x.notes || ''])] },
       { name: 'Projetos', rows: [['Projeto', 'Cliente', 'Responsável', 'Status', '% concluído', 'Início', 'Prazo', 'Etapas', 'Pendências abertas', 'Observações'], ...S.projects.map(p => [p.name, p.client || '', p.responsible || '', PROJECT_STATUS[p.status].label, D.projectProgress(p) / 100, p.startDate ? U.fmtDate(p.startDate) : '', p.dueDate ? U.fmtDate(p.dueDate) : '', (p.stages || []).map(s => (s.done ? '[x] ' : '[ ] ') + s.name).join('; '), (p.pendencias || []).filter(x => !x.done).map(x => x.text).join('; '), p.notes || ''])] },
@@ -5217,7 +5237,7 @@ const Reports = {
         <header><h1>Relatório de gestão operacional</h1><p>${U.esc(label)} — ${U.fmtDate(from)} a ${U.fmtDate(to)} · gerado em ${U.fmtDateTime(new Date().toISOString())}</p></header>
         <h2>Indicadores</h2>${table(['Indicador', 'Valor', 'Observação'], d.metrics.map(([l, v, o]) => [l, v === null ? null : U.fmtNum(v), o]))}
         <p>Projetos concluídos no período: <strong>${D.metricValue('projetosConcluidos', from, to)}</strong> · Projetos em andamento: <strong>${S.projects.filter(p => p.status === 'andamento').length}</strong> · Tarefas concluídas no período: <strong>${D.metricValue('tarefasConcluidas', from, to)}</strong></p>
-        <h2>Produtividade por técnico</h2>${table(['Técnico', 'Dias', 'Pontos de câmera', 'Manutenções', 'Retrabalhos'], d.techs.map(r => [r.name, r.days, U.fmtNum(r.pontosCamera), U.fmtNum(r.manutencoes), U.fmtNum(r.retrabalhos)]))}
+        <h2>Produtividade por pessoa</h2>${table(['Pessoa', 'Dias', ...METRICS.map(m => m.label)], d.techs.map(r => [r.name, r.days, U.fmtNum(r.pontosCamera), U.fmtNum(r.manutencoes), U.fmtNum(r.retrabalhos)]))}
         <h2>Metas</h2>${table(['Meta', 'Período', 'Alvo', 'Realizado', 'Situação'], d.goals.map(g => [g[0], g[1], g[2], g[3] === null ? null : U.fmtNum(g[3]), g[4]]))}
         <h2>Projetos</h2>${table(['Projeto', 'Cliente', 'Responsável', 'Status', '%', 'Prazo'], S.projects.filter(p => p.status !== 'cancelado').map(p => [p.name, p.client || '—', p.responsible || '—', PROJECT_STATUS[p.status].label, D.projectProgress(p) + '%', U.fmtDate(p.dueDate)]))}
         <h2>Tarefas</h2>${table(['Tarefa', 'Prioridade', 'Status', 'Responsável', 'Prazo'], d.tasks.map(x => [x.title, D.prio(x.priority).label, D.status(x.status).label + (D.taskLate(x) ? ' (atrasada)' : ''), x.responsible || '—', x.dueDate ? U.fmtDate(x.dueDate) : '—']))}
@@ -5296,6 +5316,7 @@ const App = {
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
     document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
+    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Rotina e equipe';
     document.getElementById('storage-status').innerHTML =
       dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
