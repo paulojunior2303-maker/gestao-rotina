@@ -48,7 +48,7 @@ e diga o que mudou e como testar no celular.
   Rotina padrão começa com **uma atividade de exemplo** na instalação nova (o usuário monta a sua; botão "Limpar rotina").
   Os testes usam a rotina antiga de 12 blocos (`tests/rotina-exemplo.js`).
   "Técnicos" virou "Equipe" na interface (a chave continua `settings.technicians`). `Store.migrateV4` (marca `meta.v4`) mantém, para quem já usava,
-  "Wi-bicam, CFTV IP" e "Pontos de câmera instalados". A chave do LocalStorage (`gestao-rotina-wibicam:v1`) e o pacote Android **não mudam** (perderia dados/atualizações).
+  "Pontos de câmera instalados"; `meta.v5` tira o "Wi-bicam, CFTV IP" (pedido do usuário: nenhum nome de empresa no app). A chave do LocalStorage (`gestao-rotina-wibicam:v1`) e o pacote Android **não mudam** (perderia dados/atualizações).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
   (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).

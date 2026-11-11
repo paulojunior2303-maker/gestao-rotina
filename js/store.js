@@ -94,7 +94,7 @@ const Store = {
       events: [],
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
-      meta: { v2: true, v3: true, v4: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
+      meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -119,13 +119,13 @@ const Store = {
     if (needV2) { this.migrateV2(s); s.meta = { ...(s.meta || {}), v2: true }; }
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
     if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
+    if (!s.meta.v5) { if (s.settings && s.settings.empresa === 'Wi-bicam, CFTV IP') s.settings.empresa = ''; s.meta.v5 = true; }
     return s;
   },
 
-  /* v4: o app ficou genérico (para qualquer equipe). Quem já usava mantém o nome da empresa e os nomes dos indicadores de antes. */
+  /* v4/v5: o app ficou genérico (para qualquer equipe), sem nome de empresa. Quem já usava mantém os nomes dos indicadores de antes. */
   migrateV4(s) {
     if (!s.settings) return;
-    if (!s.settings.empresa) s.settings.empresa = 'Wi-bicam, CFTV IP';
     s.settings.metricNames = { pontosCamera: 'Pontos de câmera instalados', ...(s.settings.metricNames || {}) };
   },
 
