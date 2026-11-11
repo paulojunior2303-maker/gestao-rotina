@@ -207,7 +207,13 @@ Object.assign(Actions, {
   rtNew() { Routine.form(null); },
   rtEdit({ id }) { Routine.form(S.routine.find(r => r.id === id)); },
   rtDel({ id }) { const r = S.routine.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(r.title)}</strong> da rotina padrão?`, () => { S.routine = S.routine.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
-  rtClear() { UI.confirm('Apagar todas as atividades da rotina padrão para montar a sua do zero? Os dias já editados não mudam.', () => { S.routine = []; commit(); UI.toast('Rotina limpa. Toque em Nova atividade recorrente para montar a sua.'); }, { danger: true, okLabel: 'Limpar' }); },
+  rtClear() {
+    const n = S.routine.length, backup = S.routine;
+    UI.confirm(`Tem certeza que quer apagar <strong>${U.plural(n, 'atividade', 'atividades')}</strong> da rotina padrão?<br><small class="muted">A agenda dos próximos dias fica vazia até você cadastrar a sua rotina. Os dias já editados não mudam.</small>`, () => {
+      S.routine = []; commit();
+      UI.toast('Rotina limpa.', 'ok', { label: 'Desfazer', onClick: () => { S.routine = backup; commit(); UI.toast('Rotina restaurada.'); } });
+    }, { danger: true, title: 'Limpar a rotina?', okLabel: 'Sim, limpar' });
+  },
   catColor({ id }, el) { D.cat(id).color = el.value; commit(); },
   catName({ id }, el) { if (el.value.trim()) { S.settings.categories.find(c => c.id === id).name = el.value.trim(); commit(); } },
   catAdd(_, form) { const name = form.elements.name.value.trim(); S.settings.categories.push({ id: U.uid(), name, color: form.elements.color.value }); commit(); },

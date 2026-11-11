@@ -26,6 +26,10 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.locator('#cfg-rotina tbody tr').count() === 1 && (await p.textContent('#cfg-rotina')).includes('(exemplo)'), 'instalação nova: rotina com uma atividade de exemplo só');
   await p.click('[data-act=rtClear]'); await p.waitForTimeout(200); await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(250);
   assert((await state()).routine.length === 0 && await p.locator('#cfg-rotina .rt-empty').count() === 1, '"Limpar rotina" deixa em branco');
+  await p.click('.toast .link'); await p.waitForTimeout(250);
+  assert((await state()).routine.length === 1, '"Desfazer" devolve a rotina apagada');
+  await p.click('[data-act=rtClear]'); await p.waitForTimeout(200); await p.click('.modal-wrap.open [data-cancel], .modal-wrap.open [data-no]'); await p.waitForTimeout(250);
+  assert((await state()).routine.length === 1, 'cancelar a confirmação não apaga nada');
   await useRoutine12(p);
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });
   await go('agenda');
