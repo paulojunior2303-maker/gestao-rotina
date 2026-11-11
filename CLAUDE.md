@@ -45,7 +45,8 @@ e diga o que mudou e como testar no celular.
   Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).
 - **App genérico** (para qualquer equipe): sem marca de empresa no código. `settings.empresa` (opcional, Configurações → Aparência) aparece no menu;
   `settings.metricNames` renomeia os 3 indicadores (chaves fixas `pontosCamera`/`manutencoes`/`retrabalhos`; nomes padrão em `METRIC_DEFAULT_NAMES`).
-  Rotina padrão começa **em branco** na instalação nova; `Store.sampleRoutine()` é o modelo de exemplo (botão "Usar modelo de exemplo").
+  Rotina padrão começa com **uma atividade de exemplo** na instalação nova (o usuário monta a sua; botão "Limpar rotina").
+  Os testes usam a rotina antiga de 12 blocos (`tests/rotina-exemplo.js`).
   "Técnicos" virou "Equipe" na interface (a chave continua `settings.technicians`). `Store.migrateV4` (marca `meta.v4`) mantém, para quem já usava,
   "Wi-bicam, CFTV IP" e "Pontos de câmera instalados". A chave do LocalStorage (`gestao-rotina-wibicam:v1`) e o pacote Android **não mudam** (perderia dados/atualizações).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.

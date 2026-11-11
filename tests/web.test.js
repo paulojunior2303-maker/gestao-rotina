@@ -1,5 +1,6 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+const useRoutine12 = require('./rotina-exemplo');
 const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('ok -', m); };
 (async () => {
   const b = await chromium.launch();
@@ -22,9 +23,10 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   // ---- Agenda (intervalo em horário fixo)
   assert(!(await p.locator('#bottom-nav').isVisible()), 'no computador a barra de baixo fica escondida (menu lateral fixo)');
   await go('config');
-  assert((await state() || { routine: [] }).routine.length === 0 && await p.locator('#cfg-rotina .rt-empty').count() === 1, 'instalação nova: rotina padrão em branco');
-  await p.click('[data-act=rtReset]'); await p.waitForTimeout(250);
-  assert((await state()).routine.length === 12, '"Usar modelo de exemplo" carrega 12 atividades');
+  assert(await p.locator('#cfg-rotina tbody tr').count() === 1 && (await p.textContent('#cfg-rotina')).includes('(exemplo)'), 'instalação nova: rotina com uma atividade de exemplo só');
+  await p.click('[data-act=rtClear]'); await p.waitForTimeout(200); await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(250);
+  assert((await state()).routine.length === 0 && await p.locator('#cfg-rotina .rt-empty').count() === 1, '"Limpar rotina" deixa em branco');
+  await useRoutine12(p);
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });
   await go('agenda');
   assert(await p.textContent('#page-title') === 'Agenda' && await p.locator('.agenda-modes, .calx-strip').count() === 0 && await p.locator('.ag-cal .calx-d').count() === 7, 'Agenda numa tela só: semana em cima, dia embaixo');

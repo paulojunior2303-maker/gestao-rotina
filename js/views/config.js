@@ -70,10 +70,10 @@ Views.config = {
     ${sec('rotina', 'Rotina padrão (horários das atividades)', 'Modelo usado para montar a agenda de cada dia útil. Alterações valem para os dias que ainda não foram editados.', `
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Horário</th><th>Atividade</th><th>Categoria</th><th>Prioridade</th><th>Frequência</th><th></th></tr></thead>
-        <tbody>${routine.length ? '' : `<tr><td colspan="6" class="rt-empty">Sua rotina está em branco. Adicione as atividades que se repetem no seu dia (ex.: alinhamento com a equipe às 08:30), ou comece pelo <strong>modelo de exemplo</strong> e ajuste.</td></tr>`}${routine.map(r => `<tr><td class="nowrap">${r.start}–${r.end}</td><td>${U.esc(r.title)}${r.fixed ? ' <span class="badge">fixo</span>' : ''}</td><td>${H.cat(r.category)}</td><td>${H.prio(r.priority)}</td><td>${freqTxt(r)}</td>
+        <tbody>${routine.length ? '' : `<tr><td colspan="6" class="rt-empty">Sua rotina está em branco. Toque em <strong>Nova atividade recorrente</strong> para cadastrar o que se repete no seu dia (ex.: alinhamento com a equipe às 08:30).</td></tr>`}${routine.map(r => `<tr><td class="nowrap">${r.start}–${r.end}</td><td>${U.esc(r.title)}${r.fixed ? ' <span class="badge">fixo</span>' : ''}</td><td>${H.cat(r.category)}</td><td>${H.prio(r.priority)}</td><td>${freqTxt(r)}</td>
           <td class="nowrap"><button class="icon-btn xs" data-act="rtEdit" data-id="${r.id}" title="Editar">${U.icon('edit', 14)}</button><button class="icon-btn xs" data-act="rtDel" data-id="${r.id}" title="Excluir">${U.icon('trash', 14)}</button></td></tr>`).join('')}</tbody>
       </table></div>
-      <div class="row-actions"><button class="btn sm" data-act="rtNew">${U.icon('plus', 15)} Nova atividade recorrente</button><button class="btn sm ghost" data-act="rtReset">${U.icon('undo', 15)} Usar modelo de exemplo</button></div>`)}
+      <div class="row-actions"><button class="btn sm" data-act="rtNew">${U.icon('plus', 15)} Nova atividade recorrente</button>${routine.length ? `<button class="btn sm ghost danger-text" data-act="rtClear">${U.icon('trash', 15)} Limpar rotina</button>` : ''}</div>`)}
 
     ${sec('categorias', 'Categorias de atividades', 'Usadas na agenda e nas tarefas. A cor identifica a categoria em todo o aplicativo.', `
       <div class="cfg-list">${st.categories.map(c => `<div class="cfg-item"><input type="color" value="${c.color}" data-change="catColor" data-id="${c.id}" aria-label="Cor"><input type="text" value="${U.esc(c.name)}" data-change="catName" data-id="${c.id}" aria-label="Nome"><button class="icon-btn xs" data-act="catDel" data-id="${c.id}" title="Excluir">${U.icon('trash', 14)}</button></div>`).join('')}</div>
@@ -207,11 +207,7 @@ Object.assign(Actions, {
   rtNew() { Routine.form(null); },
   rtEdit({ id }) { Routine.form(S.routine.find(r => r.id === id)); },
   rtDel({ id }) { const r = S.routine.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(r.title)}</strong> da rotina padrão?`, () => { S.routine = S.routine.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
-  rtReset() {
-    const use = () => { S.routine = Store.sampleRoutine(); commit(); UI.toast('Modelo de exemplo carregado. Edite ou exclua as atividades como quiser.'); };
-    if (!S.routine.length) return use();
-    UI.confirm('Trocar a sua rotina padrão pelo modelo de exemplo (12 atividades de 08:00 às 18:00)? Os dias já editados não mudam.', use, { okLabel: 'Usar modelo' });
-  },
+  rtClear() { UI.confirm('Apagar todas as atividades da rotina padrão para montar a sua do zero? Os dias já editados não mudam.', () => { S.routine = []; commit(); UI.toast('Rotina limpa. Toque em Nova atividade recorrente para montar a sua.'); }, { danger: true, okLabel: 'Limpar' }); },
   catColor({ id }, el) { D.cat(id).color = el.value; commit(); },
   catName({ id }, el) { if (el.value.trim()) { S.settings.categories.find(c => c.id === id).name = el.value.trim(); commit(); } },
   catAdd(_, form) { const name = form.elements.name.value.trim(); S.settings.categories.push({ id: U.uid(), name, color: form.elements.color.value }); commit(); },

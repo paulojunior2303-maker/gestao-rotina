@@ -1,5 +1,6 @@
 // Teste geral simulando o Redmi Note 12 (WebView Android / Chromium, toque, pt-BR, America/Sao_Paulo)
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
+const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
 const fs = require('fs');
 let pass = 0, fail = 0; const failures = [];
@@ -102,11 +103,13 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(await p.locator('#nav a[href="#semanal"], #nav a[href="#mensal"]').count() === 0, 'planejamento semanal e mensal não são mais telas separadas');
 
   console.log('\n[2] Agenda (Dia) — concluir atividades (problema relatado)');
-  // Instalação nova: rotina em branco; o modelo de exemplo é carregado em Configurações → Rotina padrão
+  // Instalação nova: só uma atividade de exemplo na rotina; "Limpar rotina" deixa em branco
+  await go('config');
+  check((await st()).routine.length === 1, 'instalação nova: rotina com uma atividade de exemplo só');
+  await tap('[data-act=rtClear]'); await tap(`${M} [data-yes]`);
   await go('agenda');
-  check(await p.locator('.timeline .blk').count() === 0 && (await p.textContent('.timeline')).includes('Rotina padrão'), 'instalação nova: rotina em branco, com o caminho para cadastrar');
-  await go('config'); await tap('[data-act=rtReset]');
-  check((await st()).routine.length === 12, '"Usar modelo de exemplo" carrega a rotina de exemplo');
+  check(await p.locator('.timeline .blk').count() === 0 && (await p.textContent('.timeline')).includes('Rotina padrão'), 'rotina em branco: a Agenda mostra o caminho para cadastrar');
+  await useRoutine12(p); await go('dashboard');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });   // estes passos usam o intervalo em horário fixo
   await go('agenda');
   check(await p.locator('.ag-cal .calx-d').count() === 7 && await p.locator('.agenda-modes').count() === 0, 'Agenda numa tela só: semana em cima, o dia embaixo');

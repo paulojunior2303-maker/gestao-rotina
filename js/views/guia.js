@@ -159,7 +159,7 @@ Views.guia = {
 
     ${sec('inicio', 'flag', 'Primeiros passos (5 minutos)', `<ol>
       <li><strong>Configurações → Jornada</strong>: confira entrada, saída, intervalo e dias de trabalho.</li>
-      <li><strong>Configurações → Rotina padrão</strong>: cadastre as atividades que se repetem no seu dia (ou toque em <strong>Usar modelo de exemplo</strong> e ajuste). Elas montam a agenda de cada dia útil.</li>
+      <li><strong>Configurações → Rotina padrão</strong>: cadastre as atividades que se repetem no seu dia (há uma de exemplo para editar ou excluir). Elas montam a agenda de cada dia útil.</li>
       <li><strong>Configurações → Equipe</strong>: cadastre as pessoas da equipe para usar como responsáveis e nos feedbacks.</li>
       <li>Opcional: <strong>Configurações → Aparência</strong>: escreva o nome da sua empresa ou equipe (aparece no menu).</li>
       <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
