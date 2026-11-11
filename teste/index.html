@@ -1021,6 +1021,82 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .tm-menu span.on { background: rgba(148, 97, 245, .18); color: #fff; }
 .tm-menu span.on .ic { color: #d6c6ff; }
 
+/* ===== Modo jogo (Jornada) ===== */
+:root { --flame: #f08a24; --gold: #e0a524; }
+:root[data-theme="dark"] { --flame: #ff9a3d; --gold: #f5bf45; }
+.jg-card { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: border-color .15s; }
+.jg-card:hover { border-color: var(--border-strong); }
+.jg-card > .ic { color: var(--muted); flex-shrink: 0; }
+.jg-stat { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-d); font-weight: 600; font-size: 17px; white-space: nowrap; }
+.jg-stat b { font-weight: 700; }
+.jg-flame { color: var(--muted); } .jg-flame.lit { color: var(--flame); }
+.jg-xp { color: var(--gold); }
+.jg-lv { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.jg-lvb { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 12px; background: var(--primary); color: #fff; font-family: var(--font-d); font-weight: 700; font-size: 13px; }
+.jg-lvb.big { min-width: 40px; height: 40px; border-radius: 20px; font-size: 19px; }
+.jg-meta { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 5px; }
+.jg-meta-t { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.jg-meta-t b { color: var(--text); font-weight: 600; }
+.jg-bar { display: block; position: relative; height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.jg-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: linear-gradient(90deg, var(--accent), var(--lilac)); transition: width .5s var(--ease); }
+.jg-meta .jg-bar i, .jg-bar.gold i { background: linear-gradient(90deg, var(--flame), var(--gold)); }
+.jg-bar.lg { height: 14px; border-radius: 7px; } .jg-bar.sm { height: 7px; margin: 6px 0 4px; }
+.jg-top { display: flex; flex-direction: column; gap: 16px; }
+.jg-top-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.jg-big { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.jg-big b { display: block; font-family: var(--font-d); font-size: 26px; line-height: 1.05; color: var(--text); }
+.jg-big.jg-lvl b { font-size: 18px; }
+.jg-big small { display: block; color: var(--muted); font-size: 12px; }
+.jg-big.jg-flame.lit b { color: var(--flame); } .jg-big.jg-xp b { color: var(--gold); }
+.jg-week { display: flex; justify-content: space-between; gap: 6px; margin: 4px 0 14px; }
+.jg-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
+.jg-dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); color: #fff; }
+.jg-day.ok .jg-dot { background: var(--flame); border-color: transparent; }
+.jg-day.today { color: var(--text); font-weight: 600; } .jg-day.today .jg-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--flame) 30%, transparent); }
+.jg-day.off:not(.ok) .jg-dot { opacity: .5; }
+.jg-meta-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: var(--text-2); }
+.jg-miss { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.jg-miss li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.jg-chk { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--border-strong); display: grid; place-items: center; color: #fff; }
+.jg-miss li.ok .jg-chk { background: var(--green, #3dbe8b); border-color: transparent; }
+.jg-miss li.ok .jg-miss-t { color: var(--muted); text-decoration: line-through; }
+.jg-miss-t { flex: 1; min-width: 0; } .jg-miss-t a { color: inherit; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.jg-miss-n { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.jg-h { margin-bottom: 12px; }
+.jg-classes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.jg-cls { display: flex; align-items: center; gap: 14px; }
+.jg-cls-b { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.jg-cls-b strong { font-size: 15px; }
+.jg-today { color: var(--c); font-weight: 600; }
+.jg-ring { position: relative; width: 68px; height: 68px; flex-shrink: 0; }
+.jg-ring > svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.jg-ic { position: absolute; inset: 12px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.jg-lvtag { position: absolute; right: -4px; bottom: -3px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--surface); border: 2px solid var(--c); color: var(--text); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.jg-conq { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px 10px; }
+.jg-badge { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; font-size: 12.5px; }
+.jg-badge small { color: var(--muted); font-size: 11px; line-height: 1.3; }
+.jg-medal { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 4px; background: var(--surface-2); color: var(--muted); border: 1.5px dashed var(--border-strong); }
+.jg-badge.on .jg-medal { background: linear-gradient(145deg, var(--gold), var(--flame)); color: #fff; border: 0; box-shadow: 0 6px 16px color-mix(in srgb, var(--flame) 30%, transparent); }
+.jg-badge:not(.on) strong { color: var(--muted); font-weight: 600; }
+.jg-how summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; list-style: none; }
+.jg-how summary::-webkit-details-marker { display: none; }
+.jg-how-l { list-style: none; padding: 0; margin: 14px 0 10px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.jg-how-l li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.jg-how-l b { color: var(--gold); font-family: var(--font-d); }
+#xp-pop { position: fixed; top: calc(70px + env(safe-area-inset-top)); left: 50%; transform: translate(-50%, -10px); z-index: 150; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 40px); padding: 8px 15px; border-radius: 999px; background: var(--side-bg, #1b1724); color: #fff; font-size: 14px; box-shadow: 0 10px 28px rgba(0, 0, 0, .35); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s var(--ease); }
+#xp-pop .ic { color: var(--gold); } #xp-pop b { color: var(--gold); font-family: var(--font-d); }
+#xp-pop small { color: #e7e2f1; font-size: 12.5px; }
+#xp-pop.show { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 640px) {
+  .jg-card { flex-wrap: wrap; gap: 8px 14px; padding: 12px 14px; }
+  .jg-card > .ic { display: none; }
+  .jg-meta { flex-basis: 100%; }
+  .jg-top-stats { grid-template-columns: 1fr 1fr; }
+  .jg-big.jg-lvl { grid-column: 1 / -1; }
+  .jg-classes { grid-template-columns: 1fr; }
+  .jg-conq { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 </style>
 </head>
 <body>
@@ -1114,6 +1190,10 @@ const U = (() => {
     left: '<path d="M15 18l-6-6 6-6"/>',
     right: '<path d="M9 18l6-6-6-6"/>',
     down: '<path d="M6 9l6 6 6-6"/>',
+    flame: '<path d="M12 3c.9 3.4 4.8 5.2 4.8 9.6A4.8 4.8 0 0 1 7.2 12.6c0-1.8.7-3 1.6-3.9.2 1.4 1 2 1.8 2.2C10.3 8.3 10.9 5.3 12 3z"/>',
+    bolt: '<path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/>',
+    trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5a3.5 3.5 0 0 0 3.6 4M16 6h3.5a3.5 3.5 0 0 1-3.6 4M12 13v4M8.5 21h7M9.5 17h5v4h-5z"/>',
+    star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
     up: '<path d="M18 15l-6-6-6 6"/>',
     menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
     x: '<path d="M18 6 6 18M6 6l12 12"/>',
@@ -1193,6 +1273,7 @@ const Store = {
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
+        jogo: true,              // modo jogo: XP, sequência e conquistas (Configurações → Aparência)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
@@ -1340,6 +1421,7 @@ const Store = {
   replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
+    if (typeof Jogo !== 'undefined') Jogo.last = null;   // dados vindos de fora não geram o aviso de "+XP"
     this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 
@@ -3235,6 +3317,7 @@ Views.dashboard = {
 
     return `
     ${Updater.banner()}
+    ${Jogo.card()}
     <section class="today">
       <div class="today-top">
         <div class="today-txt">
@@ -4656,6 +4739,8 @@ Views.config = {
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>
+      <label class="switch-row"><span><strong>Modo jogo (Jornada)</strong><small>XP, níveis, sequência de dias, missões e conquistas, calculados com o que você faz no app. Aparece no Início e no menu.</small></span>
+        <input type="checkbox" class="switch" data-change="cfgJogo" ${st.jogo !== false ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento diário de números da equipe (serviços, manutenções, retrabalhos), metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
@@ -4869,6 +4954,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgJogo(_, el) { S.settings.jogo = el.checked; Jogo.last = null; commit(); UI.toast(el.checked ? 'Modo jogo ligado: veja a Jornada no Início.' : 'Modo jogo desligado.'); },
   cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
   cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
   cfgProjetos(_, el) { S.settings.showProjetos = el.checked; commit(); UI.toast(el.checked ? 'Projetos aparece no menu, em Planejamento.' : 'Projetos ocultado. Os dados continuam guardados.'); },
@@ -5131,6 +5217,16 @@ Views.guia = {
       </ol>
       <p class="guide-note">Avise o colaborador antes de gravar. O áudio não fica guardado, só o texto. Toque no nome de uma pessoa para ver todo o histórico dela.</p>`)}
 
+    ${!Jogo.on() ? '' : sec('jornada', 'trophy', 'Jornada (modo jogo)', `
+      <p>Um jeito leve de manter a rotina em dia. O cartão no topo do <strong>Início</strong> mostra a sequência ${U.icon('flame', 14)}, o XP, o nível e a meta de hoje; toque nele para abrir a <strong>Jornada</strong>.</p>
+      ${li([
+        `<strong>XP</strong> vem do que você já faz no app: atividade da agenda concluída (+${Jogo.PONTOS.bloco}), dia com 80% da agenda (+${Jogo.PONTOS.diaBom}), tarefa concluída (+${Jogo.PONTOS.tarefa}, e +${Jogo.PONTOS.noPrazo} se no prazo), imprevisto resolvido (+${Jogo.PONTOS.imprevisto}), reunião registrada (+${Jogo.PONTOS.reuniao}) e feedback (+${Jogo.PONTOS.feedback}).`,
+        `<strong>Sequência</strong>: dias seguidos batendo a meta de ${Jogo.META} XP. Folga e fim de semana não quebram.`,
+        '<strong>Áreas</strong> (Rotina, Execução, Equipe, Imprevistos) sobem de nível separadas. <strong>Missões do dia</strong> e <strong>Conquistas</strong> são montadas com os seus dados.',
+        'O XP é calculado com o que está salvo: vale o histórico, fica igual em todos os aparelhos e reabrir algo concluído tira o XP dele.',
+        'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
+      ])}`)}
+
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>
       ${li([
@@ -5188,6 +5284,205 @@ Object.assign(Actions, {
   tourOpen() { Tutorial.open(0); },
   guideOpen({ id }) { App.ui.guideSec = id; App.go('guia'); },
 });
+
+</script>
+  <script>/* js/jogo.js */
+'use strict';
+/* Modo jogo (Jornada): XP, níveis, sequência, missões e conquistas.
+   Nada é guardado à parte: o XP é CALCULADO a partir do que já está salvo (agenda, tarefas, imprevistos,
+   reuniões e feedbacks). Assim vale o histórico, fica igual em todos os aparelhos e não dá para ganhar duas vezes.
+   Liga/desliga em Configurações → Aparência (settings.jogo). */
+const Jogo = {
+  META: 40,   // XP por dia para manter a sequência
+  PONTOS: { bloco: 5, diaBom: 20, tarefa: 10, noPrazo: 5, imprevisto: 15, reuniao: 20, feedback: 20 },
+  CLASSES: {
+    rotina: { nome: 'Rotina', sub: 'Atividades da agenda', icon: 'clock', cor: '#9461f5' },
+    execucao: { nome: 'Execução', sub: 'Tarefas concluídas', icon: 'tasks', cor: '#3fb5a8' },
+    equipe: { nome: 'Equipe', sub: 'Reuniões e feedbacks', icon: 'users', cor: '#e29cf5' },
+    imprevistos: { nome: 'Imprevistos', sub: 'Urgências resolvidas', icon: 'alert', cor: '#f0566a' },
+  },
+  on() { return !!(S && S.settings && S.settings.jogo !== false); },
+  day(iso) { return iso ? U.key(new Date(iso)) : null; },
+  needGeral: L => 200 + 100 * (L - 1),
+  needClasse: L => 80 + 40 * (L - 1),
+  nivel(xp, need) { let L = 1, rest = xp; while (rest >= need(L)) { rest -= need(L); L++; } return { L, rest, need: need(L), pct: Math.round(rest / need(L) * 100) }; },
+
+  /* Cada ponto ganho: { d: dia, xp, c: classe, t: tipo } */
+  pontos() {
+    const P = this.PONTOS, out = [], t = U.today();
+    for (const [k, blocks] of Object.entries(S.days || {})) {
+      if (k > t) continue;
+      const real = blocks.filter(b => !D.isBreak(b) && b.status !== 'cancelada' && !b.demo);
+      const done = real.filter(b => b.status === 'concluida');
+      done.forEach(() => out.push({ d: k, xp: P.bloco, c: 'rotina', t: 'bloco' }));
+      if (real.length >= 3 && done.length / real.length >= 0.8) out.push({ d: k, xp: P.diaBom, c: 'rotina', t: 'diaBom' });
+    }
+    S.tasks.forEach(x => {
+      if (x.demo || x.status !== 'concluida' || !x.completedAt) return;
+      const d = this.day(x.completedAt);
+      out.push({ d, xp: P.tarefa, c: 'execucao', t: 'tarefa' });
+      if (x.dueDate && d <= x.dueDate) out.push({ d, xp: P.noPrazo, c: 'execucao', t: 'noPrazo' });
+    });
+    S.occurrences.forEach(o => { if (!o.demo && o.status === 'concluida') out.push({ d: this.day(o.resolvedAt) || o.date, xp: P.imprevisto, c: 'imprevistos', t: 'imprevisto' }); });
+    S.events.forEach(e => { if (!e.demo && e.registro) out.push({ d: this.day(e.registro.at) || e.date, xp: P.reuniao, c: 'equipe', t: 'reuniao' }); });
+    (S.feedbacks || []).forEach(f => out.push({ d: this.day(f.createdAt) || f.date, xp: P.feedback, c: 'equipe', t: 'feedback' }));
+    return out.filter(p => p.d);
+  },
+
+  /* Resumo usado no Início, na Jornada e no aviso de "+XP" */
+  calc() {
+    const pts = this.pontos(), t = U.today();
+    const porDia = {}; pts.forEach(p => { porDia[p.d] = (porDia[p.d] || 0) + p.xp; });
+    const total = pts.reduce((s, p) => s + p.xp, 0);
+    const porClasse = Object.fromEntries(Object.keys(this.CLASSES).map(c => [c, pts.filter(p => p.c === c).reduce((s, p) => s + p.xp, 0)]));
+    const bateu = k => (porDia[k] || 0) >= this.META;
+    // Sequência: dias úteis seguidos batendo a meta. Folga não quebra (e conta se bateu). Hoje só conta depois de bater.
+    let streak = 0;
+    for (let k = bateu(t) ? t : U.addDays(t, -1), n = 0; n < 400; k = U.addDays(k, -1), n++) {
+      if (bateu(k)) streak++; else if (D.isWorkday(k)) break;
+    }
+    // Maior sequência da história (para as conquistas)
+    const dias = Object.keys(porDia).sort();
+    let melhor = 0;
+    if (dias.length) {
+      let run = 0;
+      for (let k = dias[0]; k <= t; k = U.addDays(k, 1)) {
+        if (bateu(k)) { run++; melhor = Math.max(melhor, run); } else if (D.isWorkday(k) && k !== t) run = 0;
+      }
+    }
+    const hoje = porDia[t] || 0;
+    return { pts, porDia, total, porClasse, streak, melhor, hoje, geral: this.nivel(total, this.needGeral) };
+  },
+
+  /* Missões do dia, montadas com os dados de hoje */
+  missoes(r) {
+    const t = U.today(), hojePts = r.pts.filter(p => p.d === t), cnt = tp => hojePts.filter(p => p.t === tp).length;
+    const blocos = D.dayBlocks(t).filter(b => !D.isBreak(b) && b.status !== 'cancelada');
+    const m = [{ t: `Ganhe ${this.META} XP e mantenha a sequência`, n: Math.min(r.hoje, this.META), de: this.META, xp: true }];
+    if (blocos.length) { const de = Math.min(3, blocos.length); m.push({ t: `Conclua ${U.plural(de, 'atividade', 'atividades')} da agenda`, n: Math.min(cnt('bloco'), de), de, go: '#agenda' }); }
+    if (S.tasks.some(x => OPEN(x.status)) || cnt('tarefa')) m.push({ t: S.tasks.some(D.taskLate) ? 'Conclua 1 tarefa (tem atrasada esperando)' : 'Conclua 1 tarefa', n: Math.min(cnt('tarefa'), 1), de: 1, go: '#tarefas' });
+    if (S.occurrences.some(o => OPEN(o.status)) || cnt('imprevisto')) m.push({ t: 'Resolva 1 imprevisto', n: Math.min(cnt('imprevisto'), 1), de: 1, go: '#imprevistos' });
+    else if (Meetings.toRegister().length || cnt('reuniao')) m.push({ t: 'Registre 1 reunião', n: Math.min(cnt('reuniao'), 1), de: 1, go: '#reunioes' });
+    else m.push({ t: 'Registre 1 feedback com alguém da equipe', n: Math.min(cnt('feedback'), 1), de: 1, go: '#feedbacks' });
+    return m.slice(0, 4);
+  },
+
+  conquistas(r) {
+    const n = tp => r.pts.filter(p => p.t === tp).length;
+    return [
+      { n: 'Primeiros passos', d: 'Ganhe o primeiro XP', ok: r.total > 0, s: 'star' },
+      { n: 'Pegando ritmo', d: '3 dias seguidos', ok: r.melhor >= 3, s: 'flame' },
+      { n: 'Semana de fogo', d: '5 dias seguidos', ok: r.melhor >= 5, s: 'flame' },
+      { n: 'Imparável', d: '20 dias seguidos', ok: r.melhor >= 20, s: 'flame' },
+      { n: 'Dia redondo', d: 'Feche um dia com 80% da agenda', ok: n('diaBom') > 0, s: 'clock' },
+      { n: 'Executor', d: '50 tarefas concluídas', ok: n('tarefa') >= 50, s: 'tasks' },
+      { n: 'No prazo', d: '20 tarefas dentro do prazo', ok: n('noPrazo') >= 20, s: 'flag' },
+      { n: 'Primeira ata', d: 'Registre uma reunião', ok: n('reuniao') > 0, s: 'chat' },
+      { n: 'Líder presente', d: '10 feedbacks registrados', ok: n('feedback') >= 10, s: 'users' },
+      { n: 'Apaga-incêndio', d: '10 imprevistos resolvidos', ok: n('imprevisto') >= 10, s: 'alert' },
+      { n: 'Nível 5', d: 'Chegue ao nível geral 5', ok: r.geral.L >= 5, s: 'trophy' },
+      { n: 'Nível 10', d: 'Chegue ao nível geral 10', ok: r.geral.L >= 10, s: 'trophy' },
+    ];
+  },
+
+  /* Cartão compacto no topo do Início */
+  card() {
+    if (!this.on()) return '';
+    const r = this.calc(), mp = Math.min(100, Math.round(r.hoje / this.META * 100));
+    return `<a class="jg-card" href="#jornada" aria-label="Abrir a Jornada">
+      <span class="jg-stat jg-flame ${r.streak ? 'lit' : ''}" title="${U.plural(r.streak, 'dia seguido', 'dias seguidos')} batendo a meta">${U.icon('flame', 18)}<b class="num">${r.streak}</b></span>
+      <span class="jg-stat jg-xp">${U.icon('bolt', 17)}<b class="num">${r.total}</b> XP</span>
+      <span class="jg-lv"><span class="jg-lvb num">${r.geral.L}</span>Nível</span>
+      <span class="jg-meta"><span class="jg-meta-t"><span>Meta de hoje</span><b class="num">${Math.min(r.hoje, this.META)}/${this.META}</b></span><span class="jg-bar"><i style="width:${Math.max(mp, 3)}%"></i></span></span>
+      ${U.icon('right', 16)}
+    </a>`;
+  },
+
+  ring(pct, cor, inner) {
+    const R = 30, C = 2 * Math.PI * R;
+    return `<span class="jg-ring"><svg viewBox="0 0 68 68" aria-hidden="true"><circle cx="34" cy="34" r="${R}" fill="none" stroke="var(--surface-2)" stroke-width="6"/><circle cx="34" cy="34" r="${R}" fill="none" stroke="${cor}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - Math.max(pct, 3) / 100)).toFixed(1)}"/></svg>${inner}</span>`;
+  },
+
+  /* "+10 XP" discreto quando você conclui algo (e aviso ao bater a meta do dia) */
+  last: null,
+  check() {
+    if (!this.on()) { this.last = null; return; }
+    const r = this.calc();
+    if (this.last && r.total > this.last.total) {
+      const metaAgora = this.last.hoje < this.META && r.hoje >= this.META;
+      this.pop(`+${r.total - this.last.total} XP`, metaAgora ? `Meta de hoje batida! Sequência: ${U.plural(r.streak, 'dia', 'dias')}` : '');
+    }
+    this.last = { total: r.total, hoje: r.hoje };
+  },
+  pop(txt, sub) {
+    let el = document.getElementById('xp-pop');
+    if (!el) { el = document.createElement('div'); el.id = 'xp-pop'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.innerHTML = `${U.icon(sub ? 'flame' : 'bolt', 16)}<b>${txt}</b>${sub ? `<small>${U.esc(sub)}</small>` : ''}`;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(this.popT); this.popT = setTimeout(() => el.classList.remove('show'), sub ? 3200 : 1800);
+  },
+};
+
+Views.jornada = {
+  title: 'Jornada', icon: 'trophy', nav: 'Jornada',
+  render() {
+    const J = Jogo, r = J.calc(), t = U.today(), g = r.geral;
+    const mp = Math.min(100, Math.round(r.hoje / J.META * 100));
+    const ws = U.weekStart(t);
+    const semana = [0, 1, 2, 3, 4, 5, 6].map(i => { const k = U.addDays(ws, i), ok = (r.porDia[k] || 0) >= J.META; return `<div class="jg-day ${ok ? 'ok' : ''} ${k === t ? 'today' : ''} ${D.isWorkday(k) ? '' : 'off'}"><span class="jg-dot">${ok ? U.icon('flame', 16) : ''}</span><small>${Cal.WD[i]}</small></div>`; }).join('');
+    const miss = J.missoes(r), conq = J.conquistas(r), feitas = miss.filter(m => m.n >= m.de).length;
+    const P = J.PONTOS;
+    return `
+    <section class="card jg-top">
+      <div class="jg-top-stats">
+        <div class="jg-big jg-flame ${r.streak ? 'lit' : ''}">${U.icon('flame', 26)}<div><b class="num">${r.streak}</b><small>${r.streak === 1 ? 'dia seguido' : 'dias seguidos'}</small></div></div>
+        <div class="jg-big jg-xp">${U.icon('bolt', 24)}<div><b class="num">${r.total}</b><small>XP no total</small></div></div>
+        <div class="jg-big jg-lvl"><span class="jg-lvb big num">${g.L}</span><div><b>Nível ${g.L}</b><small class="num">${g.rest} / ${g.need} XP para o ${g.L + 1}</small></div></div>
+      </div>
+      <span class="jg-bar lg"><i style="width:${Math.max(g.pct, 3)}%"></i></span>
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>${U.icon('flame')} Sua semana</h3><span class="muted small">Meta: ${J.META} XP por dia</span></div>
+        <div class="jg-week">${semana}</div>
+        <div class="jg-meta-row"><span>Hoje</span><b class="num">${r.hoje} / ${J.META} XP</b></div>
+        <span class="jg-bar gold"><i style="width:${Math.max(mp, 3)}%"></i></span>
+        <p class="muted small">${r.hoje >= J.META ? 'Meta de hoje batida. A sequência está garantida.' : `Faltam ${J.META - r.hoje} XP. Folga e fim de semana não quebram a sequência.`}</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>${U.icon('target')} Missões do dia</h3><span class="muted small">${feitas} de ${miss.length}</span></div>
+        <ul class="jg-miss">${miss.map(m => { const ok = m.n >= m.de; return `<li class="${ok ? 'ok' : ''}"><span class="jg-chk">${ok ? U.icon('check', 15) : ''}</span><span class="jg-miss-t">${m.go && !ok ? `<a href="${m.go}">${m.t}</a>` : m.t}</span><span class="jg-miss-n num">${m.n}/${m.de}${m.xp ? ' XP' : ''}</span></li>`; }).join('')}</ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="card-h jg-h"><h3>Suas áreas</h3><span class="muted small">Cada área sobe de nível com o que você faz nela</span></div>
+      <div class="jg-classes">${Object.entries(J.CLASSES).map(([id, c]) => { const xp = r.porClasse[id], n = J.nivel(xp, J.needClasse), hoje = r.pts.filter(p => p.d === t && p.c === id).reduce((s, p) => s + p.xp, 0);
+        return `<div class="card jg-cls" style="--c:${c.cor}">${J.ring(n.pct, c.cor, `<span class="jg-ic">${U.icon(c.icon, 20)}</span><span class="jg-lvtag num">${n.L}</span>`)}
+          <div class="jg-cls-b"><strong>${c.nome}</strong><small class="muted">${c.sub}</small><span class="jg-bar sm"><i style="width:${Math.max(n.pct, 4)}%;background:${c.cor}"></i></span><small class="num"><b>${n.rest} / ${n.need} XP</b> para o nível ${n.L + 1}${hoje ? ` · <span class="jg-today">+${hoje} hoje</span>` : ''}</small></div></div>`; }).join('')}</div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h3>${U.icon('trophy')} Conquistas</h3><span class="muted small">${conq.filter(a => a.ok).length} de ${conq.length}</span></div>
+      <div class="jg-conq">${conq.map(a => `<div class="jg-badge ${a.ok ? 'on' : ''}" title="${U.esc(a.d)}"><span class="jg-medal">${U.icon(a.s, 22)}</span><strong>${a.n}</strong><small>${a.d}</small></div>`).join('')}</div>
+    </section>
+
+    <details class="card jg-how">
+      <summary>${U.icon('info')} Como ganhar XP</summary>
+      <ul class="jg-how-l">
+        <li><span>Concluir uma atividade da agenda</span><b>+${P.bloco}</b></li>
+        <li><span>Fechar o dia com 80% da agenda concluída</span><b>+${P.diaBom}</b></li>
+        <li><span>Concluir uma tarefa</span><b>+${P.tarefa}</b></li>
+        <li><span>… dentro do prazo (bônus)</span><b>+${P.noPrazo}</b></li>
+        <li><span>Resolver um imprevisto</span><b>+${P.imprevisto}</b></li>
+        <li><span>Registrar uma reunião</span><b>+${P.reuniao}</b></li>
+        <li><span>Registrar um feedback</span><b>+${P.feedback}</b></li>
+      </ul>
+      <p class="muted small">O XP é calculado a partir do que está salvo no app, então vale o que você já fez antes. Reabrir algo concluído tira o XP dele. Para desligar o modo jogo: Configurações → Aparência.</p>
+    </details>`;
+  },
+};
 
 </script>
   <script>/* js/reports.js */
@@ -5265,7 +5560,7 @@ const Reports = {
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
@@ -5273,7 +5568,7 @@ const NAV_GROUPS = [
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
   const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : true;
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : true;
 };
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
@@ -5423,6 +5718,7 @@ const App = {
 
     document.body.classList.add('intro');
     this.render();
+    Jogo.check();   // ponto de partida do aviso de "+XP"
     setTimeout(() => document.body.classList.remove('intro'), 1600);
     Tutorial.maybeShow();
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
@@ -5458,7 +5754,7 @@ const Theme = {
 };
 
 /* Salva e redesenha a tela atual */
-function commit() { Store.save(); App.render(); }
+function commit() { Store.save(); App.render(); Jogo.check(); }
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
