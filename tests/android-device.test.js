@@ -1,5 +1,6 @@
 // Teste geral simulando o Redmi Note 12 (WebView Android / Chromium, toque, pt-BR, America/Sao_Paulo)
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
+const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
 const fs = require('fs');
 let pass = 0, fail = 0; const failures = [];
@@ -102,6 +103,13 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(await p.locator('#nav a[href="#semanal"], #nav a[href="#mensal"]').count() === 0, 'planejamento semanal e mensal não são mais telas separadas');
 
   console.log('\n[2] Agenda (Dia) — concluir atividades (problema relatado)');
+  // Instalação nova: só uma atividade de exemplo na rotina; "Limpar rotina" deixa em branco
+  await go('config');
+  check((await st()).routine.length === 1, 'instalação nova: rotina com uma atividade de exemplo só');
+  await tap('[data-act=rtClear]'); await tap(`${M} [data-yes]`);
+  await go('agenda');
+  check(await p.locator('.timeline .blk').count() === 0 && (await p.textContent('.timeline')).includes('Rotina padrão'), 'rotina em branco: a Agenda mostra o caminho para cadastrar');
+  await useRoutine12(p); await go('dashboard');
   await p.evaluate(() => { S.settings.breakMode = 'fixo'; commit(); });   // estes passos usam o intervalo em horário fixo
   await go('agenda');
   check(await p.locator('.ag-cal .calx-d').count() === 7 && await p.locator('.agenda-modes').count() === 0, 'Agenda numa tela só: semana em cima, o dia embaixo');
@@ -243,7 +251,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await go('indicadores');
   check(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos → "sem dados"');
   await tap('[data-act=indNew]'); await fill('pontosCamera', '12'); await fill('manutencoes', '9'); await save();
-  check((await p.locator('.kpi', { hasText: 'Pontos de câmera' }).locator('.kpi-v').textContent()).trim() === '12', 'lançar dados atualiza KPIs (12 pontos de câmera)');
+  check((await p.locator('.kpi', { hasText: 'Serviços concluídos' }).locator('.kpi-v').textContent()).trim() === '12', 'lançar dados atualiza KPIs (12 serviços concluídos)');
   check(!(await p.textContent('#view')).includes('O.S.'), 'Indicadores sem campos de O.S.');
   await overflow('10-indicadores');
   await tap('[data-act=indXlsx]'); await W(400);

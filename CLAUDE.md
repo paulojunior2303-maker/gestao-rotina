@@ -43,6 +43,12 @@ e diga o que mudou e como testar no celular.
 - **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.
 - **Feedbacks** (`js/views/feedbacks.js`, `FBPage` + `FB`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
   Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).
+- **App genérico** (para qualquer equipe): sem marca de empresa no código. `settings.empresa` (opcional, Configurações → Aparência) aparece no menu;
+  `settings.metricNames` renomeia os 3 indicadores (chaves fixas `pontosCamera`/`manutencoes`/`retrabalhos`; nomes padrão em `METRIC_DEFAULT_NAMES`).
+  Rotina padrão começa com **uma atividade de exemplo** na instalação nova (o usuário monta a sua; botão "Limpar rotina").
+  Os testes usam a rotina antiga de 12 blocos (`tests/rotina-exemplo.js`).
+  "Técnicos" virou "Equipe" na interface (a chave continua `settings.technicians`). `Store.migrateV4` (marca `meta.v4`) mantém, para quem já usava,
+  "Wi-bicam, CFTV IP" e "Pontos de câmera instalados". A chave do LocalStorage (`gestao-rotina-wibicam:v1`) e o pacote Android **não mudam** (perderia dados/atualizações).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
   (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).

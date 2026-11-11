@@ -1,5 +1,6 @@
 // Modo escuro: opção nas Configurações, persistência, modo automático e legibilidade em todas as telas
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
+const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 (async () => {
@@ -29,6 +30,7 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   const ratio = (a, c) => { const [x, y] = [lum(a), lum(c)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
   const screens = ['dashboard', 'agenda', 'imprevistos', 'tarefas', 'reunioes', 'feedbacks', 'projetos', 'indicadores', 'config', 'guia'];
   await p.evaluate(() => { Store.loadDemo(); S.settings.showIndicadores = true; S.settings.showProjetos = true; commit(); });
+  await useRoutine12(p);
   for (const r of screens) {
     await p.evaluate(r => location.hash = '#' + r, r); await W(300);
     const res = await p.evaluate(() => {

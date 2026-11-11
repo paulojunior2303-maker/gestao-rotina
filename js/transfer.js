@@ -1,5 +1,5 @@
 'use strict';
-/* Transferência de dados entre versões (APK, web, link do Claude):
+/* Transferência de dados entre versões (APK, web):
    - arquivo de backup (.json), aceito sem filtro de tipo (Android costuma não reconhecer .json);
    - "código de transferência": o backup comprimido (gzip) em texto, para copiar e colar
      por WhatsApp, e-mail, Keep etc., sem depender de arquivos. */
@@ -91,7 +91,7 @@ const Transfer = {
         <ol class="steps">
           <li>Toque em <strong>Copiar código</strong>${canShare ? ' ou <strong>Enviar código</strong>' : ''}.</li>
           <li>Mande o código para você mesmo, por exemplo pelo WhatsApp (conversa “Você”), e-mail ou Google Keep.</li>
-          <li>Na outra versão (site, link do Claude ou outro celular), abra <strong>Configurações → Dados → Receber dados</strong>, cole o código e confirme.</li>
+          <li>Na outra versão (site ou outro celular), abra <strong>Configurações → Dados → Receber dados</strong>, cole o código e confirme.</li>
         </ol>
         <p class="muted small">Contém ${U.esc(this.summary(S))} · ${kb} KB.${big ? ' <strong>O código é grande:</strong> se o WhatsApp cortar a mensagem, use e-mail ou o arquivo de backup.' : ''}</p>
         <textarea class="code-box" readonly rows="4">${U.esc(code)}</textarea>`,

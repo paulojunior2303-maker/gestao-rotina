@@ -59,7 +59,7 @@ const Occ = {
       { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
       { name: 'dueDate', label: 'Prazo', type: 'date', value: o.dueDate, half: true },
       { name: 'dueTime', label: 'Horário limite', type: 'time', value: o.dueTime, half: true },
-      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou um técnico da equipe' },
+      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou alguém da equipe' },
       { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: o.notes },
     ];
     if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda após salvar', type: 'checkbox', value: scheduleAfter });

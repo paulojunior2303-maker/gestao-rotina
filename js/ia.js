@@ -52,7 +52,7 @@ const IA = {
   /* Transcrição de um trecho de áudio (rápida: usa primeiro o modelo leve) */
   async transcribe(audio) {
     const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout: 45000,
-      system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe técnica. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
+      system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
       parts: [{ inlineData: { mimeType: audio.mime, data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
     return /^\[sil[eê]ncio\]$/i.test(t.trim()) ? '' : t.trim();
   },
@@ -63,7 +63,7 @@ const IA = {
   agent() { return ((S.settings.ia && S.settings.ia.agente) || '').trim(); },
   level() { return (S.settings.ia && S.settings.ia.nivel) || 'detalhada'; },
   LEVELS: { detalhada: 'ATA detalhada: registre os assuntos com contexto, problemas identificados, propostas, decisões e encaminhamentos', compacta: 'ATA compacta: mantenha apenas os principais assuntos, decisões e orientações', resumida: 'ATA resumida: apresente uma síntese geral da reunião, sem perder informações essenciais' },
-  DEFAULT_AGENT: `Você é o assistente de documentação de um líder de equipe técnica (instalação e manutenção de CFTV IP).
+  DEFAULT_AGENT: `Você é o assistente de documentação de um líder de equipe.
 Escreva em português do Brasil, de forma profissional, natural e objetiva, direto ao ponto, sem burocracia e sem repetir informações.
 Não invente fatos, participantes, decisões ou responsabilidades. Não transforme sugestões em decisões; o que ficou sem definição é pendência.
 Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere que transcrições automáticas podem ter erros e não complete trechos incompreensíveis com suposições.`,
