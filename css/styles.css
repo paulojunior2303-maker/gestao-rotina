@@ -126,7 +126,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand { display: flex; gap: 12px; align-items: center; padding: 24px 22px 14px; color: #fff; }
 .brand strong { font-family: "Quicksand", var(--font-d); font-size: 19px; font-weight: 700; letter-spacing: .01em; display: block; line-height: 1.15; }
 .brand small { display: block; color: var(--side-muted); font-size: 11.5px; margin-top: 2px; }
-.brand-logo { width: 44px; height: 44px; flex-shrink: 0; margin: -4px -2px -4px -4px; }
+.brand-logo { width: 38px; height: 38px; flex-shrink: 0; }
 .nav { padding: 4px 12px 12px; display: flex; flex-direction: column; overflow-y: auto; flex: 1; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: 18px; }
 .nav-g { font-size: 11.5px; color: var(--side-muted); padding: 0 12px 6px; font-weight: 500; }
