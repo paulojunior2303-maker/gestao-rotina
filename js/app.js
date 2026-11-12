@@ -46,12 +46,17 @@ const App = {
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
+    const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
     document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
     const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Rotina e equipe';
     document.getElementById('storage-status').innerHTML =
-      dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
+      fv === 'on' ? '<span class="dot-ok"></span> Sincronizado com a sua conta'
+      : fv === 'syncing' || fv === 'loading' ? '<span class="dot-wait"></span> Sincronizando com a sua conta…'
+      : fv === 'error' ? '<span class="dot-err"></span> Conta: erro ao sincronizar'
+      : fv === 'needs-auth' ? '<span class="dot-wait"></span> Conta: entre de novo'
+      : dv === 'ok' ? '<span class="dot-ok"></span> Sincronizado com o Google Drive'
       : dv === 'syncing' ? '<span class="dot-wait"></span> Sincronizando com o Google Drive…'
       : dv === 'needs-auth' ? '<span class="dot-wait"></span> Google Drive: toque em Sincronizar'
       : dv === 'error' ? '<span class="dot-err"></span> Google Drive: erro ao sincronizar'
@@ -161,6 +166,7 @@ const App = {
       if (m === lastMin) return;
       lastMin = m;
       const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
+      if (!busy && Fire.pendingRender) { Fire.pendingRender = false; this.render(); }
       if (!busy && ['dashboard', 'agenda'].includes(this.route)) this.render();
       if (U.today() !== lastDay) { lastDay = U.today(); if (!busy) this.render(); }
     }, 5000);
@@ -172,6 +178,7 @@ const App = {
     Tutorial.maybeShow();
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
     Drive.auto();
+    Fire.init();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
     if (!CANAL_TESTE && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },

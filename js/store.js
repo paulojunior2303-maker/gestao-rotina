@@ -185,6 +185,7 @@ const Store = {
     if (cloud) Cloud.schedule();
     if (typeof Reminders !== 'undefined') Reminders.schedule();
     if (touch && typeof Drive !== 'undefined') Drive.schedule();
+    if (touch && typeof Fire !== 'undefined') Fire.schedule();
     if (Native.available()) Native.persist();
     if (!this.persistent && Cloud.state !== 'on' && Cloud.state !== 'connecting' && !this.warned) {
       this.warned = true;

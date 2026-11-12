@@ -15,7 +15,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -31,6 +31,8 @@ Views.config = {
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`)}
+
+    ${Fire.section(sec)}
 
     ${Drive.section(sec)}
 
