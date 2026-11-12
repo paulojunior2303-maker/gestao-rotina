@@ -1,52 +1,26 @@
 'use strict';
 /* Gestão de imprevistos — ocorrências que exigem atenção imediata */
-Views.imprevistos = {
-  title: 'Imprevistos', icon: 'alert', nav: 'Imprevistos',
-  fab: { act: 'occNew', label: 'Registrar imprevisto' },
-  render() {
-    const f = App.ui.occFilter || 'abertas';
-    const all = S.occurrences;
-    const list = all.filter(o => f === 'todas' ? true : f === 'abertas' ? OPEN(o.status) : !OPEN(o.status))
-      .sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.occLate(b) - D.occLate(a)) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || (b.date + b.time).localeCompare(a.date + a.time));
-    const nOpen = all.filter(o => OPEN(o.status)).length;
-    const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
-
-    const card = o => {
-      const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
-      const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
-      return `<div class="occ card prio-border-${o.priority} ${D.occLate(o) ? 'late' : ''} ${OPEN(o.status) ? '' : 'closed'}">
-        <div class="occ-h"><h3>${U.esc(o.title)}</h3>${H.demo(o)}<span class="grow"></span>${H.prio(o.priority)} ${H.status(o.status)}</div>
-        <div class="occ-meta">
-          <span>${U.icon('clock', 14)} Registrado ${U.fmtDate(o.date)} ${o.time || ''}</span>
-          ${o.responsible ? `<span>${U.icon('user', 14)} ${U.esc(o.responsible)}</span>` : ''}
-          ${o.dueDate ? `<span>${U.icon('flag', 14)} Prazo ${U.fmtDate(o.dueDate)} ${o.dueTime || ''}</span>` : ''}
-          ${H.deadline(dl)}
-        </div>
-        ${o.description ? `<p>${U.esc(o.description)}</p>` : ''}
-        ${o.notes ? `<p class="muted small"><strong>Obs.:</strong> ${U.esc(o.notes)}</p>` : ''}
-        ${sch ? `<p class="small sched">${U.icon('calendar', 14)} Na agenda: ${U.fmtDate(o.scheduled.date)}, ${sch.start}–${sch.end} · <a class="link" href="#agenda" data-act="goAgenda" data-d="${o.scheduled.date}">abrir</a></p>` : ''}
-        <div class="occ-actions">
-          ${OPEN(o.status) ? `<button class="btn sm" data-act="occSchedule" data-id="${o.id}">${U.icon('calendar', 15)} ${sch ? 'Reagendar' : 'Encaixar na agenda'}</button>
-          ${o.status === 'pendente' ? `<button class="btn sm ghost" data-act="occStatus" data-id="${o.id}" data-s="andamento">${U.icon('play', 13)} Iniciar</button>` : ''}
-          <button class="btn sm ghost ok-text" data-act="occStatus" data-id="${o.id}" data-s="concluida">${U.icon('check', 15)} Resolver</button>`
-          : `<button class="btn sm ghost" data-act="occStatus" data-id="${o.id}" data-s="pendente">${U.icon('undo', 15)} Reabrir</button>`}
-          <span class="grow"></span>
-          <button class="icon-btn" data-act="occEdit" data-id="${o.id}" title="Editar">${U.icon('edit', 16)}</button>
-          <button class="icon-btn" data-act="occDelete" data-id="${o.id}" title="Excluir">${U.icon('trash', 16)}</button>
-        </div>
-      </div>`;
-    };
-
-    return `
-    <div class="toolbar">
-      <div class="tabs">${tab('abertas', 'Abertos', nOpen)}${tab('encerradas', 'Encerrados', all.length - nOpen)}${tab('todas', 'Todos', all.length)}</div>
-    </div>
-    <p class="muted small">Registre aqui demandas urgentes que exigem sua atenção imediata. Use <strong>Encaixar na agenda</strong> para reservar um horário e reorganizar o dia automaticamente.</p>
-    <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;
-  },
-};
-
+/* Imprevistos: aparecem em destaque na Agenda (Pendências) e no dia do prazo */
 const Occ = {
+  row(o) {
+    const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
+    const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
+    return `<div class="task occ-row prio-${o.priority} ${o.status} ${D.occLate(o) ? 'dl-row-late' : ''}" style="--c:var(--t-imprevisto)">
+      <div class="tk-body" data-act="occEdit" data-id="${o.id}">
+        <div class="tk-title">${U.esc(o.title)}${H.demo(o)}${o.status === 'andamento' ? ' ' + H.status('andamento') : ''}</div>
+        <div class="tk-meta"><span class="badge b-red">Imprevisto</span>${['alta', 'urgente'].includes(o.priority) ? H.prio(o.priority) : ''}
+          ${o.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(o.responsible)}</span>` : ''}
+          ${sch ? `<span class="muted">${U.icon('calendar', 13)} ${U.fmtShort(o.scheduled.date)} ${sch.start}</span>` : o.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtShort(o.dueDate)}${o.dueTime ? ' ' + o.dueTime : ''}</span>` : ''}
+          ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
+      </div>
+      <div class="tk-side">
+        ${OPEN(o.status) ? `${sch ? '' : `<button class="icon-btn" data-act="occSchedule" data-id="${o.id}" title="Encaixar na agenda" aria-label="Encaixar na agenda">${U.icon('calendar', 16)}</button>`}
+          <button class="icon-btn ok" data-act="occStatus" data-id="${o.id}" data-s="concluida" title="Resolver" aria-label="Resolver">${U.icon('check', 16)}</button>`
+          : `<button class="icon-btn" data-act="occStatus" data-id="${o.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`}
+        <button class="icon-btn" data-act="occMore" data-id="${o.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
+      </div>
+    </div>`;
+  },
   form(o, { scheduleAfter = false } = {}) {
     const isNew = !o;
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime() };
@@ -89,7 +63,16 @@ const Occ = {
 };
 
 Object.assign(Actions, {
-  occFilter({ v }) { App.ui.occFilter = v; App.render(); },
+  occMore({ id }) {
+    const o = S.occurrences.find(x => x.id === id); if (!o) return;
+    UI.sheet(o.title, [
+      { label: 'Editar', icon: 'edit', onClick: () => Occ.form(o) },
+      ...(OPEN(o.status) ? [{ label: o.scheduled ? 'Reagendar na agenda' : 'Encaixar na agenda', hint: 'Reserva um horário e reorganiza o dia', icon: 'calendar', onClick: () => Actions.occSchedule({ id }) },
+        ...(o.status === 'pendente' ? [{ label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.occStatus({ id, s: 'andamento' }) }] : [])] : []),
+      { sep: true },
+      { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.occDelete({ id }) },
+    ]);
+  },
   occNew() { Occ.form(null); },
   occEdit({ id }) { Occ.form(S.occurrences.find(o => o.id === id)); },
   occSchedule({ id }) { Agenda.scheduleDialog(S.occurrences.find(o => o.id === id)); },

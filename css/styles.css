@@ -1115,3 +1115,54 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .ms-f-data { grid-column: 1; } .ms-f-hora { grid-column: 2; }
 }
 .fire-status { margin: 0 0 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Equipes */
+.eq-hero h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.eq-hero p { max-width: 640px; }
+.eq-new h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.eq-new .inline-add { margin-top: 10px; }
+.eq-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.eq-head h2 { margin: 0 0 2px; }
+.eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.eq-m { display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: border-color .15s; }
+.eq-m:hover { border-color: var(--border-strong); }
+.eq-m-h { display: flex; align-items: center; gap: 10px; }
+.eq-m-n { flex: 1; min-width: 0; display: flex; flex-direction: column; } .eq-m-n strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-m-stats { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+.eq-m-stats .jg-stat { font-size: 15px; }
+.eq-m-stats.big { margin: 6px 0 14px; } .eq-m-stats.big .jg-stat { font-size: 18px; }
+.eq-m-miss { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
+.eq-more summary { cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.eq-more[open] summary { margin-bottom: 14px; }
+
+/* Pendências (Agenda) */
+.pend { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
+.pend-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pend-h h3 { margin: 0; display: flex; align-items: center; gap: 8px; }
+.pend-q { flex: 1 1 220px; max-width: 360px; min-height: 38px; padding: 7px 12px; border-radius: 11px; border: 1px solid var(--input-border); background: var(--surface-2); color: var(--text); font: inherit; font-size: 14px; }
+.pend-q:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.pend-g h4 { display: flex; align-items: center; gap: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 8px; color: var(--text-2); }
+.pend-feitas summary { cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); font-weight: 600; margin-bottom: 8px; }
+.occ-row .badge.b-red { font-size: 10.5px; }
+
+/* Início: "Agora" */
+.home-now { display: flex; flex-direction: column; gap: 10px; }
+.ag-now { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); position: relative; }
+.ag-now::before { content: ""; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--c); }
+.ag-now.is-now { border-color: var(--lilac); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lilac) 14%, transparent); }
+.ag-now-r { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); width: 54px; flex-shrink: 0; }
+.ag-now.is-now .ag-now-r { color: var(--lilac); }
+.ag-now-t { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
+.ag-now-t strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-sub { display: flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); margin: 8px 0 0; }
+/* Equipe: pessoas */
+.pes-jg { display: inline-flex; align-items: center; gap: 6px; }
+.pes-jg .jg-lvb { min-width: 22px; height: 22px; font-size: 12px; }
+.pes-head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; position: relative; padding-right: 48px; }
+.pes-mais { position: absolute; top: 12px; right: 12px; }
+.pes-head-t { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+.pes-head-t h2 { margin: 0; }
+.pes-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-basis: 100%; }
+.eq-cta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.eq-cta > div { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+.eq-head h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; }

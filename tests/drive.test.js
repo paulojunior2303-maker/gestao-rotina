@@ -54,7 +54,7 @@ const remoteState = () => { const f = Object.values(drive.files).find(x => x.nam
   const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('gestao-rotina-wibicam:v1')));
   const skipTour = async p => { await W(p, 600); if (await p.locator('[data-tour=skip]').count()) { await p.locator('[data-tour=skip]').click(); await W(p); } };
   const fill = (p, n, v) => p.fill(`.modal-wrap.open [name="${n}"]`, v);
-  const addTask = async (p, title) => { await p.evaluate(() => location.hash = '#tarefas'); await W(p); await p.locator('[data-act=tkNew]').first().click(); await W(p); await fill(p, 'title', title); await p.locator('.modal-wrap.open [data-submit]').click(); await W(p); };
+  const addTask = async (p, title) => { await p.evaluate(() => location.hash = '#agenda'); await W(p); await p.locator('#fab').click(); await W(p); await p.locator('.sheet-item:has-text("Tarefa")').click(); await W(p); await fill(p, 'title', title); await p.locator('.modal-wrap.open [data-submit]').click(); await W(p); };
 
   // ---------- App Android (Capacitor simulado, com o plugin Google) ----------
   const actx = await b.newContext({ viewport: { width: 393, height: 873 }, isMobile: true, hasTouch: true, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo' });

@@ -30,7 +30,7 @@ const Fire = {
   /* ---------- Documentos ---------- */
   split(s) {
     const parts = {
-      core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly, missoes: s.missoes || [] },
+      core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly, missoes: s.missoes || [], equipes: s.equipes || [] },
       tasks: { items: s.tasks || [] }, projects: { items: s.projects || [] }, occurrences: { items: s.occurrences || [] },
     };
     const mes = (pre, k, put) => { const id = pre + '-' + String(k || '0000-00').slice(0, 7); put(parts[id] = parts[id] || (pre === 'days' ? { days: {} } : { items: [] })); };
@@ -44,7 +44,7 @@ const Fire = {
   },
   join(docs) {
     const core = docs.core || {};
-    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [],
+    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], equipes: core.equipes || [],
       tasks: (docs.tasks || {}).items || [], projects: (docs.projects || {}).items || [], occurrences: (docs.occurrences || {}).items || [],
       days: {}, indicators: [], events: [], feedbacks: [] };
     for (const [id, d] of Object.entries(docs)) {
@@ -77,6 +77,15 @@ const Fire = {
         if (snap.metadata.hasPendingWrites) return;
         const all = {}; snap.forEach(d => { all[d.id] = d.data(); }); cb(all);
       }, e => this.fail(e)),
+      // Operações gerais (equipes): caminho como lista, ex.: ['canais', 'oficial', 'equipes', id]
+      d: {
+        get: async p => { const x = await F.getDoc(F.doc(db, ...p)); return x.exists() ? x.data() : null; },
+        set: (p, data, merge) => F.setDoc(F.doc(db, ...p), data, merge ? { merge: true } : {}),
+        update: (p, data) => F.updateDoc(F.doc(db, ...p), data),
+        del: p => F.deleteDoc(F.doc(db, ...p)),
+        onQuery: (p, w, cb, err) => F.onSnapshot(w ? F.query(F.collection(db, ...p), F.where(w[0], '==', w[1])) : F.collection(db, ...p),
+          snap => { const out = []; snap.forEach(x => out.push({ id: x.id, ...x.data() })); cb(out); }, err),
+      },
     };
     return this.api;
   },
@@ -145,7 +154,8 @@ const Fire = {
     }
     this.listen();
     this.setState('on');
-    if (App.route === 'config') App.render();
+    if (typeof Equipes !== 'undefined') Equipes.start();
+    if (['config', 'equipe'].includes(App.route)) App.render();
   },
   ask(remoteAt) {
     const localAt = (S.meta && S.meta.updatedAt) || 0, fmt = t => t ? new Date(t).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'sem data';
@@ -162,7 +172,7 @@ const Fire = {
       m.el.querySelector('[data-nuvem]').onclick = () => { m.close(); res('nuvem'); };
     });
   },
-  detach() { if (this.unsub) { try { this.unsub(); } catch (e) { /* ok */ } } this.unsub = null; clearTimeout(this.timer); this.last = {}; },
+  detach() { if (typeof Equipes !== 'undefined') Equipes.stop(); if (this.unsub) { try { this.unsub(); } catch (e) { /* ok */ } } this.unsub = null; clearTimeout(this.timer); this.last = {}; },
 
   /* ---------- Sincronização ---------- */
   schedule() {
@@ -194,7 +204,9 @@ const Fire = {
         else if (id in local) next[id] = local[id];
       }
       if (!changed) return;
+      const eqAntes = JSON.stringify(S.equipes || []);
       Store.replace(this.join(this.parse(next)), { fromCloud: true });
+      if (typeof Equipes !== 'undefined' && JSON.stringify(S.equipes || []) !== eqAntes) Equipes.start();
       const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
       if (busy) this.pendingRender = true; else App.render();
       this.schedule();   // se algo deste aparelho ainda não subiu, envia agora

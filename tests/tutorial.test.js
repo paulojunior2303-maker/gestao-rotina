@@ -48,7 +48,7 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   console.log('[Guia de uso]');
   await p.locator('.help-btn').tap(); await W(400);
   check(await p.textContent('#page-title') === 'Guia de uso', 'botão ? do topo abre o Guia');
-  check(await p.locator('.guide-sec').count() === 14, '14 temas no guia (com Calendário, Feedbacks e Jornada; sem planejamento semanal/mensal e Projetos oculto)');
+  check(await p.locator('.guide-sec').count() === 14, '14 temas no guia (Tarefas e imprevistos juntos na Agenda; com Calendário, Feedbacks, Jornada e Equipe; sem planejamento semanal/mensal e Projetos oculto)');
   check(await p.locator('.guide-sec[open]').count() === 1, 'só "Primeiros passos" aberto de início');
   await p.locator('#g-agenda summary').tap(); await W();
   check(await p.locator('#g-agenda[open]').count() === 1 && (await p.textContent('#g-agenda')).includes('Horário fixo'), 'tocar no tema abre o conteúdo (Agenda explica Horário fixo)');

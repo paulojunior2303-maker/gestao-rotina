@@ -286,7 +286,12 @@ const Missoes = {
   },
 
   /* Formulário de uma ou mais missões (para mim ou para enviar) */
-  form(paraOutro) {
+  form(paraOutro, opts = {}) {
+    // Gestor de equipe: escolhe um membro (as missões chegam direto no app dele) ou "Outra pessoa" (por link)
+    const eqs = typeof Equipes !== 'undefined' && Equipes.ativo() ? Equipes.gestorDe() : [];
+    const alvos = eqs.map(e => [e, (Equipes.membros[e.id] || []).filter(x => x.id !== Fire.user.uid)]).filter(([, ms]) => ms.length);
+    const pre = opts.membro ? `eq:${opts.equipe}:${opts.membro}` : opts.equipe && alvos.some(([e]) => e.id === opts.equipe) ? `eq:${opts.equipe}:${alvos.find(([e]) => e.id === opts.equipe)[1][0].id}` : alvos.length ? `eq:${alvos[0][0].id}:${alvos[0][1][0].id}` : '__link';
+    const paraSel = alvos.length ? `<select name="alvo">${alvos.map(([e, ms]) => `<optgroup label="Equipe ${U.esc(e.nome)} (chega direto no app)">${ms.map(m => `<option value="eq:${e.id}:${m.id}" ${pre === `eq:${e.id}:${m.id}` ? 'selected' : ''}>${U.esc(m.nome || m.email || 'Sem nome')}</option>`).join('')}</optgroup>`).join('')}<option value="__link" ${pre === '__link' ? 'selected' : ''}>Outra pessoa (enviar por link)</option></select>` : '';
     const opt = (k, l) => `<option value="${k}">${l}</option>`;
     const tipos = `<optgroup label="Atribuir (cria no app da pessoa)">${Object.entries(this.ITENS).map(([k, [l]]) => opt(k, l)).join('')}</optgroup>
       <optgroup label="Metas (o app conta sozinho)">${Object.entries(this.TIPOS).filter(([k]) => k !== 'manual').map(([k, [l]]) => opt(k, l)).join('')}</optgroup>
@@ -303,17 +308,19 @@ const Missoes = {
       title: paraOutro ? 'Enviar missões' : 'Criar missão para mim',
       wide: true,
       body: `${paraOutro ? `<div class="form-grid">
-          <div class="field"><label>Para quem</label><input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa"></div>
-          <div class="field"><label>Seu nome (aparece para a pessoa)</label><input name="de" maxlength="60" value="${U.esc(S.settings.meuNome || '')}" placeholder="Ex.: Victor"></div></div>` : ''}
+          <div class="field"><label>Para quem</label>${paraSel}<input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa" ${paraSel && pre !== '__link' ? 'hidden' : ''}></div>
+          <div class="field"><label>Seu nome (aparece para a pessoa)</label><input name="de" maxlength="60" value="${U.esc(S.settings.meuNome || (typeof Fire !== 'undefined' && Fire.user && Fire.user.name) || '')}" placeholder="Ex.: Victor"></div></div>` : ''}
         <datalist id="ms-pessoas">${D.techNames().map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>
         <p class="muted small"><strong>Atribuir</strong> cria o item ${paraOutro ? 'no app da pessoa' : 'no seu app'} (a tarefa em Tarefas, a reunião na agenda, o feedback em Feedbacks) e, com data, ele aparece no calendário. A missão fica concluída quando o item for concluído. <strong>Metas</strong> contam o que for feito a partir de ${paraOutro ? 'quando a pessoa aceitar' : 'hoje'}. O XP é calculado sozinho.</p>
         <div class="ms-rows">${linha()}</div>
         <button type="button" class="btn sm ghost ms-add">${U.icon('plus', 15)} Adicionar outra missão</button>
         <div class="field ms-prazo"><label>Prazo para tudo (opcional)</label><input type="date" name="prazo" min="${U.today()}"></div>
         <p class="form-error" hidden></p>`,
-      footer: `<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-ok>${paraOutro ? `${U.icon('arrow', 15)} Gerar link` : 'Salvar'}</button>`,
+      footer: `<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-ok>${paraOutro ? (paraSel && pre !== '__link' ? `${U.icon('arrow', 15)} Enviar` : `${U.icon('arrow', 15)} Gerar link`) : 'Salvar'}</button>`,
     });
     const el = m.el, rows = el.querySelector('.ms-rows');
+    const selAlvo = el.querySelector('[name=alvo]');
+    if (selAlvo) selAlvo.onchange = () => { const link = selAlvo.value === '__link'; el.querySelector('[name=para]').hidden = !link; el.querySelector('[data-ok]').innerHTML = `${U.icon('arrow', 15)} ${link ? 'Gerar link' : 'Enviar'}`; };
     const ler = row => {
       const tipo = row.querySelector('.ms-tipo').value;
       return { tipo, alvo: Math.min(999, Math.max(1, Math.round(Number(row.querySelector('.ms-n').value) || 1))), titulo: row.querySelector('.ms-txt').value.trim(), data: row.querySelector('.ms-data').value || '', hora: row.querySelector('.ms-hora').value || '' };
@@ -348,10 +355,11 @@ const Missoes = {
       if (lista.some(x => (this.ITENS[x.tipo] || x.tipo === 'manual') && !x.titulo)) return fail('Preencha o campo de cada missão (ex.: o nome da tarefa ou de quem recebe o feedback).');
       if (lista.some(x => x.tipo === 'reuniaoItem' && !x.data)) return fail('Informe a data da reunião.');
       if (!paraOutro) { this.aceitar({ de: '', prazo, missoes: lista }); m.close(); UI.toast(U.plural(lista.length, 'missão criada', 'missões criadas') + '.'); return; }
-      const para = el.querySelector('[name=para]').value.trim(), de = el.querySelector('[name=de]').value.trim();
-      if (!para) return fail('Informe para quem são as missões.');
+      const alvo = selAlvo ? selAlvo.value : '__link', para = el.querySelector('[name=para]').value.trim(), de = el.querySelector('[name=de]').value.trim();
+      if (alvo === '__link' && !para) return fail('Informe para quem são as missões.');
       if (de && de !== S.settings.meuNome) { S.settings.meuNome = de; Store.save(); }
       m.close();
+      if (alvo !== '__link') { const [, eq, uid] = alvo.split(':'); Equipes.enviar(eq, uid, { id: U.uid(), de, prazo, missoes: lista }).catch(x => UI.toast('Não foi possível enviar: ' + Fire.erro(x), 'error')); return; }
       this.compartilhar({ id: U.uid(), de, para, prazo, missoes: lista });
     };
   },
@@ -404,7 +412,7 @@ const Missoes = {
     const now = new Date().toISOString(), origem = p.de ? `Missão de ${p.de}.` : 'Missão da Jornada.';
     const cat = id => (S.settings.categories.some(c => c.id === id) ? id : (S.settings.categories[0] || {}).id || '');
     p.missoes.forEach(x => {
-      const m = { id: U.uid(), pacote, de_: p.de || '', titulo: this.titulo(x), tipo: x.tipo, alvo: x.alvo, xp: x.xp, prazo: p.prazo || '', data: x.data || '', hora: x.hora || '', desde: t, feitaEm: null };
+      const m = { id: U.uid(), pacote, equipe: p.equipe || '', de_: p.de || '', titulo: this.titulo(x), tipo: x.tipo, alvo: x.alvo, xp: x.xp, prazo: p.prazo || '', data: x.data || '', hora: x.hora || '', desde: t, feitaEm: null };
       const quando = x.data || p.prazo || '';
       if (x.tipo === 'tarefaItem') {
         const k = { id: U.uid(), title: x.titulo, description: origem, category: cat('equipe'), priority: 'alta', status: 'pendente', startDate: '', dueDate: quando, dueTime: x.hora || '', responsible: '', notes: '', createdAt: now, completedAt: null, missao: m.id };

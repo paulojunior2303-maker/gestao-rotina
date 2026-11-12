@@ -11,7 +11,7 @@ const Guide = {
   },
   /* Ilustrações: miniaturas dos componentes reais do app (não clicáveis) */
   mock: {
-    nav: () => `<div class="tour-mock tm-side"><div class="tm-top">${U.icon('menu', 20)}<strong>Início</strong></div><div class="tm-menu">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['tasks', 'Tarefas'], ['users', 'Reuniões e feedbacks'], ['alert', 'Imprevistos']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 16)}${l}</span>`).join('')}</div></div>`,
+    nav: () => `<div class="tour-mock tm-side"><div class="tm-top">${U.icon('menu', 20)}<strong>Início</strong></div><div class="tm-menu">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['users', 'Equipe'], ['trophy', 'Jornada'], ['settings', 'Configurações']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 16)}${l}</span>`).join('')}</div></div>`,
     agenda: () => `<div class="tour-mock"><div class="blk" style="--c:#7b3fe4"><div class="blk-time"><strong>09:00</strong><span>10:30</span></div>
       <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><small class="blk-kind">Rotina do dia</small></div>
       <div class="blk-actions"><span class="icon-btn ok">${U.icon('check', 16)}</span><span class="icon-btn info">${U.icon('play', 14)}</span><span class="icon-btn">${U.icon('more', 16)}</span></div></div>
@@ -32,27 +32,27 @@ const Guide = {
       { icon: 'dashboard', color: 'var(--primary)', title: 'Bem-vindo ao seu centro de controle',
         text: 'Em poucos toques você vê o que fazer hoje, o que está atrasado e o que cobrar da equipe.',
         mock: m.nav(),
-        points: ['No celular, a <strong>barra de baixo</strong> leva às telas do dia a dia: Início, Agenda, Tarefas e Imprevistos.', 'O botão redondo <strong>+</strong>, no canto de baixo, cria o item da tela em que você está (tarefa, reunião, imprevisto…). No Início e na Agenda ele pergunta o que criar.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
+        points: ['No celular, a <strong>barra de baixo</strong> leva às quatro telas: <strong>Início</strong>, <strong>Agenda</strong> (rotina, tarefas e imprevistos), <strong>Equipe</strong> (pessoas, feedbacks e reuniões) e <strong>Jornada</strong>.', 'O botão redondo <strong>+</strong>, no canto de baixo, cria o item da tela em que você está (tarefa, reunião, imprevisto…). No Início e na Agenda ele pergunta o que criar.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
       { icon: 'dashboard', color: 'var(--primary)', title: 'Início: o resumo do seu dia',
         text: 'A primeira tela mostra a situação geral, atualizada automaticamente.',
         mock: m.dash(),
-        points: ['<strong>Calendário</strong>: bata o olho nos compromissos do mês. Toque num dia para ver a lista dele.', '<strong>O que fazer hoje</strong>: próximas atividades da agenda.', '<strong>O que resolver</strong>: urgentes, alta prioridade e atrasados.', '<strong>O que cobrar da equipe</strong>: itens com responsável definido.', 'Toque nos cartões para abrir a lista correspondente.'] },
-      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: o seu dia numa lista só',
-        text: 'Em cima, a semana (ou o mês inteiro, em <strong>Ver o mês inteiro</strong>). Embaixo, o dia escolhido por horário: rotina, reuniões, compromissos e prazos juntos.',
+        points: ['<strong>Hoje</strong>: XP, meta do dia, expediente e a barra do dia.', '<strong>Agora</strong>: a atividade do momento e o que <strong>precisa de atenção</strong> (imprevistos, atrasadas, tarefas de hoje), com os botões para resolver ali mesmo.', '<strong>Calendário</strong> do mês e <strong>O que cobrar da equipe</strong>, por pessoa.'] },
+      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: tudo o que é para fazer',
+        text: 'Em cima, a semana (ou o mês inteiro). Embaixo, o dia escolhido por horário: rotina, tarefas, imprevistos, reuniões e compromissos juntos. Mais abaixo, as <strong>Pendências</strong>.',
         mock: m.agenda(),
         points: ['Toque na atividade para mudar horário, prioridade ou observações.', 'Toque num dia do calendário para ver a lista dele. Arraste para os lados para trocar de semana.', '<strong>+</strong> → <strong>Intervalo agora</strong> marca o almoço na hora em que você for e empurra o resto do dia.', '<strong>Reorganizar</strong> move as atrasadas para o próximo dia útil.', '<strong>Horário fixo</strong> só impede que a atividade seja empurrada; ela continua contando no progresso.'] },
       { icon: 'alert', color: 'var(--primary)', title: 'Imprevistos: o urgente sem bagunçar o dia',
-        text: 'Registre demandas que exigem atenção imediata pelo botão <strong>+</strong> da tela Imprevistos (ou da Agenda).',
+        text: 'Registre pelo botão <strong>+</strong> da Agenda. Eles ficam em destaque no topo das Pendências até serem resolvidos.',
         mock: m.occ(),
         points: ['<strong>Encaixar na agenda</strong> reserva um horário e empurra as atividades seguintes, sem mexer no intervalo.', 'Defina um <strong>responsável</strong> para acompanhar em “O que cobrar”.', '<strong>Resolver</strong> encerra o imprevisto e conclui o horário reservado.'] },
       { icon: 'tasks', color: 'var(--primary)', title: 'Tarefas com prazo e alertas',
-        text: 'Cadastre pendências com prazo, prioridade e, se delegar, o responsável.',
+        text: 'Crie pelo <strong>+</strong> da Agenda. Com prazo, entram no dia certo; sem prazo, ficam em Pendências.',
         mock: m.task(),
-        points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', 'Os contadores no topo funcionam como filtros (Abertas, Atrasadas, Concluídas…).', 'Com <strong>horário de prazo</strong>, o app pode te avisar na hora: ligue em Configurações → <strong>Lembretes</strong>.'] },
-      { icon: 'users', color: 'var(--primary)', title: 'Reuniões e feedbacks',
-        text: 'As conversas com a equipe ficam numa tela só, com duas abas. Abra pelo menu ☰.',
+        points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', '<strong>▶</strong> começa, <strong>✓</strong> conclui, <strong>✕</strong> cancela. A busca das Pendências acha qualquer tarefa ou imprevisto.', 'Com <strong>horário de prazo</strong>, o app pode te avisar na hora: ligue em Configurações → <strong>Lembretes</strong>.'] },
+      { icon: 'users', color: 'var(--primary)', title: 'Equipe: pessoas, feedbacks e reuniões',
+        text: 'Tudo sobre a equipe numa tela, com as abas Pessoas e Reuniões.',
         mock: m.plan(),
-        points: ['<strong>Reuniões</strong>: pauta antes; durante, gravação com transcrição ao vivo; depois, a IA escreve a ata.', '<strong>Feedbacks</strong>: grave a conversa com o colaborador e a IA escreve o registro no padrão do seu agente.'] },
+        points: ['<strong>Reuniões</strong>: pauta antes; durante, gravação com transcrição ao vivo; depois, a IA escreve a ata.', '<strong>Pessoas</strong>: cada uma tem a sua página, com o que está com ela, as missões e os feedbacks (grave a conversa e a IA escreve o registro).'] },
       { icon: 'download', color: 'var(--primary)', title: 'Seus dados', final: true,
         text: `Tudo o que você cadastra fica salvo ${this.whereData()}.`,
         mock: m.data(),
@@ -160,17 +160,17 @@ Views.guia = {
     ${sec('inicio', 'flag', 'Primeiros passos (5 minutos)', `<ol>
       <li><strong>Configurações → Jornada</strong>: confira entrada, saída, intervalo e dias de trabalho.</li>
       <li><strong>Configurações → Rotina padrão</strong>: cadastre as atividades que se repetem no seu dia (há uma de exemplo para editar ou excluir). Elas montam a agenda de cada dia útil.</li>
-      <li><strong>Configurações → Equipe</strong>: cadastre as pessoas da equipe para usar como responsáveis e nos feedbacks.</li>
+      <li><strong>Equipe</strong>: toque em <strong>+</strong> → <strong>Adicionar pessoa</strong> para cadastrar quem trabalha com você.</li>
       <li>Opcional: <strong>Configurações → Aparência</strong>: escreva o nome da sua empresa ou equipe (aparece no menu).</li>
-      <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
+      <li><strong>Agenda</strong>: crie as tarefas pelo botão <strong>+</strong>.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
     ${sec('nav', 'menu', 'Navegação', li([
-      'No celular, a <strong>barra de baixo</strong> tem os atalhos do dia a dia: Início, Agenda, Tarefas e Imprevistos.',
+      'No celular, a <strong>barra de baixo</strong> tem as quatro telas: Início, Agenda, Equipe e Jornada.',
       'Toque em <strong>☰</strong> (canto superior esquerdo) para abrir o menu com todas as telas. No celular, também dá para <strong>arrastar o dedo a partir da borda esquerda</strong>; para fechar, arraste para a esquerda ou toque fora.',
       'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início e na Agenda ele mostra a lista do que dá para criar: atividade, intervalo, tarefa, reunião, feedback, imprevisto ou compromisso.',
-      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões e feedbacks, Imprevistos) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
-      'Um <strong>ponto vermelho</strong> no ☰ e os <strong>números</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
+      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Equipe, Jornada) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
+      'Os <strong>números</strong> no menu indicam, na Agenda, imprevistos abertos e tarefas atrasadas; na Equipe, reuniões para registrar.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
       'O menu <strong>⋯</strong> reúne as ações menos usadas (adiar, mover, duplicar, excluir).',
@@ -185,15 +185,12 @@ Views.guia = {
       '<strong>Agenda do dia</strong>, no fim da lista, abre o cronograma por horário daquele dia.',
     ]))}
 
-    ${sec('dash', 'dashboard', 'Início (Dashboard)', li([
-      '<strong>Progresso do dia</strong>: atividades da agenda concluídas (o intervalo e as canceladas não contam).',
-      '<strong>Tarefas concluídas / pendentes / atrasadas</strong>: toque no cartão para abrir a lista filtrada.',
-      '<strong>O que fazer hoje</strong>: a atividade atual (marcada “Agora”) e as próximas.',
-      '<strong>O que resolver</strong>: imprevistos abertos, tarefas urgentes, de alta prioridade ou atrasadas.',
-      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido.',
-      'A <strong>linha do tempo</strong> abaixo da data mostra o dia inteiro: blocos roxos estão concluídos, o claro é o que acontece agora e os vermelhos estão atrasados. Toque nela para abrir a agenda.',
-      'Logo abaixo, o <strong>calendário</strong> (veja o tema Calendário).',
-      `<strong>Resumo da semana</strong>${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,
+    ${sec('dash', 'dashboard', 'Início', li([
+      'No topo, a <strong>saudação, a data e o relógio</strong>. Logo abaixo, o cartão <strong>Hoje</strong>: sequência, XP, nível e meta do dia (toque para abrir a Jornada) e o expediente com a <strong>barra do dia</strong> (roxo = concluído, vermelho = atrasado).',
+      '<strong>Agora</strong>: a atividade do momento e a próxima, com <strong>✓</strong> para concluir. Embaixo, <strong>Precisa de atenção</strong>: imprevistos abertos, tarefas atrasadas e de hoje e reuniões para registrar, com os botões para resolver ali mesmo.',
+      'O <strong>calendário</strong> do mês (veja o tema Calendário).',
+      '<strong>O que cobrar da equipe</strong>: quem tem algo em aberto com você. Toque na pessoa para abrir a página dela.',
+      `<strong>Semana</strong>: conclusão da agenda por dia${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,
     ]))}
 
     ${sec('agenda', 'clock', 'Agenda', `<p>O seu dia numa tela só. Em cima, o <strong>calendário da semana</strong>; toque num dia para abri-lo, ou em <strong>Ver o mês inteiro</strong>. Embaixo, a <strong>lista do dia por horário</strong>: as atividades da rotina e, no meio delas, reuniões, compromissos e prazos.</p>${li([
@@ -208,24 +205,17 @@ Views.guia = {
     ])}<p class="guide-note"><strong>Horário fixo</strong> significa só que a atividade não é empurrada quando o dia é reorganizado. Ela continua contando no progresso normalmente.</p>
     <p class="guide-note"><strong>Rotina padrão × dia:</strong> cada dia começa com a rotina padrão. Mudanças feitas em um dia valem só para ele. Para mudar todos os dias, edite em Configurações → Rotina padrão, ou marque “Aplicar também à rotina padrão” ao editar.</p>`)}
 
-    ${sec('imprevistos', 'alert', 'Imprevistos', li([
-      'Registre pelo botão <strong>+</strong> na tela Imprevistos, ou pelo <strong>+</strong> da Agenda (aí ele já é encaixado no dia).',
-      'Preencha título, prioridade, prazo e <strong>responsável</strong> (aparece em “O que cobrar”).',
-      '<strong>Encaixar na agenda</strong>: escolha data, horário e duração. “Deslocar” empurra as atividades seguintes; “Apenas encaixar” mantém tudo como está.',
-      '<strong>Iniciar</strong> e <strong>Resolver</strong> atualizam o status. Ao resolver, o horário reservado na agenda é concluído.',
-      'Use as abas <strong>Abertos / Encerrados / Todos</strong> para consultar o histórico.',
-    ]))}
-
-    ${sec('tarefas', 'tasks', 'Tarefas', li([
-      'Botão <strong>+</strong>: nome, descrição, categoria, prioridade, status, início, prazo, horário e observações.',
-      '<strong>✓</strong> conclui (aparece “Desfazer” por alguns segundos) e <strong>↶</strong> reabre, como na Agenda.',
-      '<strong>▶</strong> começa (em andamento), <strong>✕</strong> cancela e <strong>⋯</strong> → Editar ou Excluir.',
-      'Os <strong>contadores do topo</strong> filtram a lista. Abaixo, há busca e filtros por categoria, prioridade e prazo.',
-      'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada.',
+    ${sec('pendencias', 'tasks', 'Tarefas e imprevistos (na Agenda)', li([
+      'Crie pelo <strong>+</strong> da Agenda: <strong>Tarefa</strong> (nome, prazo, horário, prioridade e responsável) ou <strong>Imprevisto</strong> (já encaixado no dia, se quiser).',
+      'Com prazo, a tarefa aparece no <strong>dia certo</strong> da agenda. Em <strong>Pendências</strong>, embaixo do dia, ficam: <strong>imprevistos abertos</strong> (em destaque), <strong>atrasadas</strong>, <strong>próximos dias</strong>, <strong>sem prazo</strong> e <strong>mais adiante</strong>. A busca acha qualquer uma pelo nome ou pela pessoa.',
+      'Tarefa: <strong>▶</strong> começa, <strong>✓</strong> conclui (com “Desfazer”), <strong>✕</strong> cancela, <strong>↶</strong> reabre e <strong>⋯</strong> → Editar ou Excluir.',
+      'Imprevisto: <strong>📅</strong> encaixa na agenda (reserva um horário e empurra as atividades seguintes, sem mexer no intervalo), <strong>✓</strong> resolve (e conclui o horário reservado) e <strong>⋯</strong> → Editar, Começar agora ou Excluir.',
+      'Com <strong>responsável</strong>, o item aparece na página da pessoa (Equipe) e no Início, em “O que cobrar”.',
+      'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada. As concluídas dos últimos 14 dias ficam no fim, recolhidas.',
     ]))}
 
     ${sec('reunioes', 'users', 'Reuniões (pauta, registro e IA)', `
-      <p>Fica em <strong>Menu → Reuniões e feedbacks</strong>, aba <strong>Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
+      <p>Fica em <strong>Equipe</strong>, aba <strong>Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
       <ol>
         <li><strong>Antes:</strong> toque em <strong>+</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha. Ou descreva o tema em <strong>Gerar pauta com IA</strong>: ela monta a pauta e pode incluir os assuntos que ficaram pendentes nas últimas reuniões.</li>
         <li><strong>Na hora:</strong> toque em <strong>Iniciar</strong> no cartão da reunião (ou abra a reunião e toque em <strong>Iniciar reunião</strong>). Dá para iniciar a qualquer momento, antes ou depois do horário marcado.</li>
@@ -237,9 +227,9 @@ Views.guia = {
       <p class="guide-note">Sem gravar também funciona: escreva ou dite (microfone do teclado) suas anotações e toque em <strong>Preencher com IA</strong>. A chave da IA fica em <strong>Configurações → IA</strong> (ou cole direto na tela da reunião).</p>`)}
 
     ${sec('feedbacks', 'chat', 'Feedbacks da equipe', `
-      <p>Fica em <strong>Menu → Reuniões e feedbacks</strong>, aba <strong>Feedbacks</strong>. Registra as conversas individuais com cada colaborador, com histórico por pessoa.</p>
+      <p>Fica em <strong>Equipe → Pessoas</strong>: toque na pessoa → <strong>Registrar feedback</strong> (ou <strong>+</strong> → Registrar feedback). A página da pessoa mostra todo o histórico, o que está com ela e as missões.</p>
       <ol>
-        <li>Toque em <strong>+</strong>, escreva o nome do colaborador (ele entra na lista da equipe), o tipo (feedback, orientação verbal ou advertência formal) e o tom.</li>
+        <li>Escolha o colaborador (quem não estiver na lista entra sozinho), o tipo (feedback, orientação verbal ou advertência formal) e o tom.</li>
         <li>Na conversa, toque em <strong>Iniciar gravação</strong>. A transcrição aparece na tela enquanto vocês conversam. Também dá para só escrever ou ditar anotações.</li>
         <li>Toque em <strong>Encerrar gravação</strong>: a IA escreve o registro no padrão do seu agente (2 ou 3 parágrafos) e separa os <strong>acordos</strong>.</li>
         <li>Ajuste com <strong>Natural</strong>, <strong>Compactar</strong> ou <strong>Detalhar</strong>, marque se quer criar tarefas para os acordos (com o colaborador como responsável) e toque em <strong>Salvar feedback</strong>.</li>
@@ -257,6 +247,16 @@ Views.guia = {
         'O XP é calculado com o que está salvo: vale o histórico, fica igual em todos os aparelhos e reabrir algo concluído tira o XP dele.',
         'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
       ])}`)}
+
+    ${sec('equipe', 'users', 'Equipe na nuvem (Conta FlowFire)', `
+      <p>Fica em <strong>Equipe → Pessoas</strong>, no bloco <strong>Equipe na nuvem</strong>. Precisa estar com a Conta FlowFire conectada (Configurações → Conta).</p>
+      <ol>
+        <li><strong>Criar uma equipe</strong>: dê um nome. Você vira o <strong>gestor</strong>.</li>
+        <li><strong>Convidar</strong>: mande o link pelo WhatsApp. A pessoa abre, entra com a conta Google e aparece no seu painel. No app do celular dela: Equipe → <strong>Entrar com convite</strong> e cola o link.</li>
+        <li><strong>Enviar missões</strong>: escolha a pessoa da equipe; as missões chegam sozinhas no app dela (tarefas, reuniões e imprevistos já criados e no calendário).</li>
+        <li>Cada pessoa da equipe aparece em <strong>Pessoas</strong> com nível e sequência; na página dela você vê XP, meta de hoje e o progresso de cada missão, atualizando ao vivo.</li>
+      </ol>
+      <p class="guide-note">Privacidade: o gestor vê só esse resumo. Tarefas, feedbacks, atas e anotações de cada pessoa continuam privados. Para tirar alguém: toque na pessoa → <strong>Remover da equipe</strong> (o link de convite é trocado). Quem quiser sair: Equipe → Sair da equipe.</p>`)}
 
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>

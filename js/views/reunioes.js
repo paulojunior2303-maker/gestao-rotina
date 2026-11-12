@@ -1,5 +1,5 @@
 'use strict';
-/* Reuniões e feedbacks — conversas com pessoas num lugar só.
+/* Reuniões (aba da tela Equipe).
    Aba Reuniões: marcar com pauta, gravar, registrar o que foi combinado (com IA, se quiser).
    Aba Feedbacks: conversas individuais com cada colaborador (FBPage, em feedbacks.js). */
 const Meetings = {
@@ -19,18 +19,9 @@ const Meetings = {
   },
 };
 
-Views.reunioes = {
-  title: 'Reuniões e feedbacks', icon: 'users', nav: 'Reuniões e feedbacks',
-  fab: () => App.ui.mtTab === 'feedbacks'
-    ? { act: 'fbNew', label: 'Novo feedback', data: App.ui.fbWho ? { n: App.ui.fbWho } : {} }
-    : { act: 'mtNew', label: 'Nova reunião' },
-  render() {
-    const tab = App.ui.mtTab === 'feedbacks' ? 'feedbacks' : 'reunioes';
-    const nMt = Meetings.toRegister().length + Meetings.upcoming().filter(Meetings.isMeeting).length, nFb = FB.list().length;
-    const tabs = `<div class="tabs mt-tabs" role="tablist">${[['reunioes', 'Reuniões', nMt], ['feedbacks', 'Feedbacks', nFb]].map(([v, l, n]) => `<button class="tab ${tab === v ? 'active' : ''}" role="tab" aria-selected="${tab === v}" data-act="mtTab" data-v="${v}">${l}${n ? ` <span class="tab-n">${n}</span>` : ''}</button>`).join('')}</div>`;
-    return tabs + (tab === 'feedbacks' ? FBPage.render() : this.meetings());
-  },
-  meetings() {
+Object.assign(Meetings, {
+  /* Aba Reuniões da tela Equipe */
+  lista() {
     const reg = Meetings.toRegister(), up = Meetings.upcoming(), done = Meetings.registered();
     const empty = !reg.length && !up.length && !done.length;
     const iaHint = IA.supported() && !IA.ready() ? `<p class="muted small">Dica: com a <a class="link" href="#config" data-act="cfgJump" data-id="ia">IA ativada</a>, ela preenche o registro a partir da gravação ou das suas anotações.</p>` : '';
@@ -49,10 +40,9 @@ Views.reunioes = {
     ${up.length ? `<section class="mt-sec"><h3 class="mt-h">Próximas</h3><div class="mt-list">${up.slice(0, 30).map(e => Meetings.card(e, e.date === U.today() ? `<button class="btn sm primary" data-act="mtStart" data-id="${e.id}">${U.icon('mic', 14)} Iniciar</button>` : '')).join('')}</div></section>` : ''}
     ${done.length ? `<section class="mt-sec"><h3 class="mt-h">Registradas</h3><div class="mt-list">${done.map(e => Meetings.card(e, `<span class="badge b-green">${(e.pautas || []).length ? `${e.registro.tratadas.length}/${e.pautas.length} tratados` : 'Registrada'}</span>`)).join('')}</div></section>` : ''}`;
   },
-};
+});
 
 Object.assign(Actions, {
   mtStart({ id }) { const e = S.events.find(x => x.id === id); if (e) Events.register(e); },
   mtNew() { Events.form(null, U.today(), { reuniao: true }); },
-  mtTab({ v }) { App.ui.mtTab = v; if (v !== 'feedbacks') App.ui.fbWho = null; App.render({ resetScroll: true }); },
 });
