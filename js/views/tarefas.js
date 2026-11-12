@@ -1,82 +1,30 @@
 'use strict';
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
-Views.tarefas = {
-  title: 'Gestão de tarefas', icon: 'tasks', nav: 'Tarefas',
-  fab: { act: 'tkNew', label: 'Nova tarefa' },
-  render(params) {
-    const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
-    const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
-    const all = S.tasks;
-    const counts = {
-      abertas: all.filter(x => OPEN(x.status)).length,
-      atrasadas: all.filter(D.taskLate).length,
-      andamento: all.filter(x => x.status === 'andamento').length,
-      concluida: all.filter(x => x.status === 'concluida').length,
-      todas: all.length,
-    };
-    let list = all.filter(x => {
-      if (f.status === 'abertas' && !OPEN(x.status)) return false;
-      if (f.status === 'atrasadas' && !D.taskLate(x)) return false;
-      if (['pendente', 'andamento', 'concluida', 'cancelada'].includes(f.status) && x.status !== f.status) return false;
-      if (f.priority && x.priority !== f.priority) return false;
-      if (f.category && x.category !== f.category) return false;
-      if (f.q) { const q = f.q.toLowerCase(); if (![x.title, x.description, x.notes, x.responsible].some(s => (s || '').toLowerCase().includes(q))) return false; }
-      if (f.period === 'hoje' && x.dueDate !== t) return false;
-      if (f.period === 'semana' && !(x.dueDate >= ws && x.dueDate <= we)) return false;
-      if (f.period === 'proximos' && !(x.dueDate >= t && x.dueDate <= U.addDays(t, 7))) return false;
-      if (f.period === 'semprazo' && x.dueDate) return false;
-      if (f.from && !(x.dueDate && x.dueDate >= f.from)) return false;
-      if (f.to && !(x.dueDate && x.dueDate <= f.to)) return false;
-      return true;
-    });
-    list.sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.taskLate(b) - D.taskLate(a)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-
-    const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
-    const sel = (name, opts, label) => `<select data-change="tkFilter" data-k="${name}" aria-label="${label}"><option value="">${label}</option>${UI.opts(opts, f[name])}</select>`;
-    const filtersOn = f.priority || f.category || f.period || f.from || f.to || f.q;
-
-    const row = x => {
-      const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
-      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
-        <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
-          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
-          ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
-          <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
-            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : '<span class="muted">Sem prazo</span>'}
-            ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
-        </div>
-        <div class="tk-side">
-          ${x.status === 'concluida' || x.status === 'cancelada'
-            ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-            : `${x.status === 'andamento'
-                ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
-                : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
-               <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
-               <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
-          <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
-        </div>
-      </div>`;
-    };
-
-    return `
-    <div class="toolbar">
-      <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
-    </div>
-    <div class="filters card">
-      <input type="search" placeholder="Buscar tarefa, descrição ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
-      ${sel('category', H.catOptions(), 'Todas as categorias')}
-      ${sel('priority', H.prioOptions(), 'Todas as prioridades')}
-      ${sel('period', [['hoje', 'Prazo hoje'], ['semana', 'Prazo nesta semana'], ['proximos', 'Próximos 7 dias'], ['semprazo', 'Sem prazo']], 'Qualquer prazo')}
-      <label class="inline">De <input type="date" value="${f.from}" data-change="tkFilter" data-k="from"></label>
-      <label class="inline">Até <input type="date" value="${f.to}" data-change="tkFilter" data-k="to"></label>
-      ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
-    </div>
-    <p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>
-    <div class="task-list">${list.length ? list.map(row).join('') : H.empty(all.length ? 'Nenhuma tarefa com esses filtros.' : 'Nenhuma tarefa cadastrada ainda.', all.length ? '' : '<button class="btn sm primary" data-act="tkNew">Criar primeira tarefa</button>')}</div>`;
-  },
-};
-
+/* Tarefas: aparecem na Agenda (no dia do prazo e em Pendências) e na página de cada pessoa da Equipe */
 const Tasks = {
+  /* Linha da tarefa com os botões na frente: ▶ começar, ✓ concluir, ✕ cancelar (ou ↶ reabrir) e ⋯ editar/excluir */
+  row(x, { semResp = false } = {}) {
+    const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
+    const fim = x.status === 'concluida' || x.status === 'cancelada';
+    return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
+      <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
+        <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
+        <div class="tk-meta">${['alta', 'urgente'].includes(x.priority) ? H.prio(x.priority) : ''}
+          ${x.responsible && !semResp ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
+          ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtShort(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : ''}
+          ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
+      </div>
+      <div class="tk-side">
+        ${fim ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
+          : `${x.status === 'andamento'
+              ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
+              : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
+             <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
+             <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
+        <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
+      </div>
+    </div>`;
+  },
   form(x, defaults = {}) {
     const isNew = !x;
     x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
@@ -124,10 +72,13 @@ Object.assign(Actions, {
     if (s === 'concluida') UI.toast('Tarefa concluída.', 'ok', undo);
     else if (s === 'cancelada') UI.toast('Tarefa cancelada.', 'ok', undo);
   },
-  tkMore({ id }) {
+  tkMore({ id, v }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
+    const full = v === 'full' && OPEN(x.status);
     UI.sheet(x.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
+      ...(full ? [x.status === 'andamento' ? { label: 'Voltar para pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) } : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) },
+        { label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
   },
@@ -138,8 +89,4 @@ Object.assign(Actions, {
       UI.toast('Tarefa excluída.', 'ok', { label: 'Desfazer', onClick: () => { S.tasks.splice(i, 0, x); commit(); } });
     }, { danger: true, okLabel: 'Excluir' });
   },
-  tkStatusF({ v }) { App.ui.taskF.status = v; App.render(); },
-  tkFilter({ k }, el) { App.ui.taskF[k] = el.value; App.render(); },
-  tkSearch(_, el) { App.ui.taskF.q = el.value; App.render({ keepFocus: true }); },
-  tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });

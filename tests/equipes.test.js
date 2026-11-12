@@ -16,10 +16,11 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[2] Gestor cria a equipe e convida');
   check(await G.locator('form[data-submit=eqCriar]').count() === 1, 'conectado: opções "Criar uma equipe" e "Entrar com convite"');
+  await G.click('.eq-more summary'); await W(G);
   await G.fill('form[data-submit=eqCriar] [name=nome]', 'Equipe CFTV'); await G.click('form[data-submit=eqCriar] button'); await W(G, 900);
   const eqId = await G.evaluate(() => S.equipes[0] && S.equipes[0].id);
   check(eqId && F.docs[`canais/oficial/equipes/${eqId}`] && F.docs[`canais/oficial/equipes/${eqId}/membros/victor`].papel === 'gestor', 'equipe criada na nuvem, com o gestor como membro');
-  check((await G.textContent('#view')).includes('Equipe CFTV') && (await G.textContent('#view')).includes('Você é o gestor'), 'painel da equipe aberto');
+  check((await G.textContent('#view')).includes('Equipe CFTV') && (await G.textContent('#view')).includes('você é o gestor'), 'equipe aparece na tela Equipe (você é o gestor)');
   await G.click('[data-act=eqConvidar]'); await W(G);
   const convite = (await G.inputValue('.ms-share')).match(/https:\S+/)[0];
   check(convite.includes('#equipe?e=' + eqId) && convite.includes('&c='), 'convite gera link com a equipe e o código');
@@ -34,7 +35,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(await P.evaluate(() => S.equipes.length === 1 && S.equipes[0].papel === 'membro') && F.docs[`canais/oficial/equipes/${eqId}/membros/paulo`], 'entrou com a conta (login pelo próprio convite) e virou membro');
   check((await P.textContent('#view')).includes('Você é membro'), 'membro vê a tela da equipe (sem o painel dos outros)');
   await W(G, 600);
-  check((await G.textContent('.eq-grid')).includes('Paulo'), 'o novo membro aparece no painel do gestor, ao vivo');
+  check((await G.textContent('.fb-people')).includes('Paulo'), 'o novo membro aparece na lista de pessoas do gestor, ao vivo');
 
   console.log('\n[4] Gestor envia missões direto para o membro');
   await G.click('[data-act=eqMissoes]'); await W(G);
@@ -55,17 +56,16 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   const m = F.docs[`canais/oficial/equipes/${eqId}/membros/paulo`];
   check(m.resumo.xp > 0 && m.missoes.filter(x => x.feitaEm).length === 1, 'o resumo do membro (XP e missões) é publicado');
   check(!('tasks' in m) && !JSON.stringify(m).includes('feedbacks'), 'só o resumo sai do aparelho (sem tarefas ou feedbacks)');
-  check((await G.textContent('.eq-grid')).includes('1/2 missões'), 'gestor vê "1/2 missões" do membro sem recarregar');
-  await G.locator('.eq-m', { hasText: 'Paulo' }).click(); await W(G);
-  check((await G.textContent('.modal-wrap.open')).includes('Atualizar a planilha') && (await G.textContent('.modal-wrap.open')).includes('concluída em'), 'detalhe do membro mostra cada missão e quando foi concluída');
-  await G.keyboard.press('Escape'); await W(G);
+  await G.locator('.fb-person', { hasText: 'Paulo' }).click(); await W(G);
+  check((await G.textContent('#view')).includes('Atualizar a planilha') && (await G.textContent('#view')).includes('concluída em') && (await G.textContent('#view')).includes('XP'), 'página do membro mostra XP e cada missão, com quando foi concluída');
+  await G.click('[data-act=pessoaAbrir][data-n=""]'); await W(G);
 
   console.log('\n[6] Sair da equipe');
   await P.evaluate(() => { location.hash = '#equipe'; }); await W(P);
   await P.click('[data-act=eqSair]'); await P.click('.modal-wrap.open [data-yes]'); await W(P, 900);
   check(await P.evaluate(() => S.equipes.length === 0) && !F.docs[`canais/oficial/equipes/${eqId}/membros/paulo`], 'membro sai: some da equipe');
   await W(G, 600);
-  check(!(await G.textContent('.eq-grid')).includes('Paulo'), 'e some do painel do gestor');
+  check(!(await G.textContent('#view')).includes('Paulo'), 'e some da lista do gestor');
 
   const errs = F.pages.flatMap(p => p.errs);
   check(!errs.length, 'nenhum erro de JavaScript' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));

@@ -33,7 +33,7 @@ const Equipes = {
     await d.set(this.p(id, 'membros', uid), { papel: 'gestor', entrouEm: Date.now(), ...this.resumo(id) });
     this.list().push({ id, nome, papel: 'gestor', convite });
     commit(); this.start();
-    App.ui.eqSel = id; App.go('equipe');
+    App.ui.eqTab = 'pessoas'; App.ui.pessoa = null; App.go('equipe');
     UI.toast(`Equipe “${nome}” criada. Agora convide as pessoas.`);
   },
   link(e) { return `${Missoes.SITE}${CANAL_TESTE ? 'teste/' : ''}#equipe?e=${e.id}&c=${e.convite}&n=${encodeURIComponent(e.nome)}`; },
@@ -57,14 +57,14 @@ const Equipes = {
     const o = Object.fromEntries(new URLSearchParams(q));
     if (!o.e || !o.c) return UI.toast('Convite inválido.', 'error');
     const nome = String(o.n || 'equipe').slice(0, 60);
-    if (this.list().some(e => e.id === o.e)) { App.ui.eqSel = o.e; App.go('equipe'); return UI.toast('Você já está nessa equipe.'); }
+    if (this.list().some(e => e.id === o.e)) { App.go('equipe'); return UI.toast('Você já está nessa equipe.'); }
     UI.confirm(`Você foi convidado para a equipe <strong>${U.esc(nome)}</strong> no FlowFire.<br><small class="muted">Quem lidera a equipe vai ver só um resumo seu: nível, XP, sequência, meta do dia e o progresso das missões que ele enviar. Suas tarefas, feedbacks e atas continuam privados.</small>`, async () => {
       try {
         if (!this.ativo()) { await Fire.connect(); if (!Fire.user) return; }
         await Fire.api.d.set(this.p(o.e, 'membros', Fire.user.uid), { papel: 'membro', convite: o.c, entrouEm: Date.now(), ...this.resumo(o.e) });
         this.list().push({ id: o.e, nome, papel: 'membro' });
         commit(); this.start();
-        App.ui.eqSel = o.e; App.go('equipe');
+        App.go('equipe');
         UI.toast(`Você entrou na equipe “${nome}”.`);
       } catch (x) { UI.toast(/permission/i.test(String(x && (x.code || x.message))) ? 'Este convite não vale mais. Peça um link novo a quem lidera a equipe.' : 'Não foi possível entrar: ' + Fire.erro(x), 'error'); }
     }, { title: 'Convite de equipe', okLabel: 'Entrar na equipe' });
@@ -151,78 +151,10 @@ const Equipes = {
   },
 };
 
-Views.equipe = {
-  title: 'Equipe', icon: 'user', nav: 'Equipe',
-  render() {
-    if (!Fire.supported()) return H.empty('Equipes não funcionam dentro do link do Claude. Use o app ou o site.');
-    if (!Fire.user) return `<div class="card eq-hero"><h2>${U.icon('users')} Equipes</h2>
-      <p>Crie a sua equipe, convide as pessoas por link e envie missões direto para o app de cada uma. Você acompanha o nível, a sequência e o progresso das missões de todos, ao vivo.</p>
-      <p class="muted small">Para usar equipes, entre na sua Conta FlowFire (a mesma conta Google em todos os aparelhos).</p>
-      <button class="btn primary" data-act="fireEntrar">Entrar com Google</button></div>`;
-    const eqs = Equipes.list();
-    const novo = `<section class="grid-2">
-      <form class="card eq-new" data-submit="eqCriar"><h3>${U.icon('plus')} Criar uma equipe</h3><p class="muted small">Você vira o gestor: convida as pessoas e envia missões.</p>
-        <div class="inline-add"><input name="nome" maxlength="60" required placeholder="Nome da equipe (ex.: Equipe técnica)"><button class="btn primary">Criar</button></div></form>
-      <form class="card eq-new" data-submit="eqEntrar"><h3>${U.icon('download')} Entrar com convite</h3><p class="muted small">Cole o link que você recebeu de quem lidera a equipe.</p>
-        <div class="inline-add"><input name="link" required placeholder="Cole aqui o link do convite"><button class="btn">Entrar</button></div></form>
-    </section>`;
-    if (!eqs.length) return `<div class="card eq-hero"><h2>${U.icon('users')} Equipes</h2><p>Você ainda não está em nenhuma equipe.</p></div>${novo}`;
-    const sel = eqs.find(e => e.id === App.ui.eqSel) || eqs[0];
-    const tabs = eqs.length > 1 ? `<div class="tabs mt-tabs">${eqs.map(e => `<button class="tab ${e.id === sel.id ? 'active' : ''}" data-act="eqSel" data-id="${e.id}">${U.esc(e.nome)}</button>`).join('')}</div>` : '';
-    return tabs + (sel.papel === 'gestor' ? this.gestor(sel) : this.membro(sel)) + `<details class="card eq-more"><summary>${U.icon('plus', 15)} Criar outra equipe ou entrar em outra</summary>${novo}</details>`;
-  },
-  gestor(e) {
-    const ms = (Equipes.membros[e.id] || []).slice().sort((a, b) => (a.papel === 'gestor') - (b.papel === 'gestor') || (b.resumo?.xp || 0) - (a.resumo?.xp || 0));
-    const card = m => {
-      const r = m.resumo || {}, miss = m.missoes || [], feitas = miss.filter(x => x.feitaEm).length, mp = Math.min(100, Math.round((r.hoje || 0) / (r.meta || 40) * 100));
-      return `<div class="card eq-m" role="button" tabindex="0" data-act="eqMembro" data-e="${e.id}" data-id="${m.id}">
-        <div class="eq-m-h"><span class="fb-av">${U.esc(FB.initials(m.nome || '?'))}</span>
-          <span class="eq-m-n"><strong>${U.esc(m.nome || 'Sem nome')}${m.id === Fire.user.uid ? ' <small class="muted">(você)</small>' : ''}</strong><small class="muted">${Equipes.quando(m.atualizadoEm)}</small></span>
-          <span class="jg-lvb num" title="Nível">${r.nivel || 1}</span></div>
-        <div class="eq-m-stats"><span class="jg-stat jg-flame ${r.streak ? 'lit' : ''}">${U.icon('flame', 15)}<b class="num">${r.streak || 0}</b></span><span class="jg-stat jg-xp">${U.icon('bolt', 14)}<b class="num">${r.xp || 0}</b> XP</span>
-          <span class="eq-m-miss">${miss.length ? `${U.icon('target', 14)} ${feitas}/${miss.length} missões` : '<span class="muted">Sem missões</span>'}</span></div>
-        <div class="jg-meta-t"><span>Meta de hoje</span><b class="num">${Math.min(r.hoje || 0, r.meta || 40)}/${r.meta || 40}</b></div>
-        <span class="jg-bar gold"><i style="width:${Math.max(mp, 3)}%"></i></span>
-      </div>`;
-    };
-    return `<section class="card eq-head">
-        <div><h2>${U.esc(e.nome)}</h2><p class="muted small">Você é o gestor · ${U.plural(ms.length, 'pessoa', 'pessoas')} · atualiza ao vivo</p></div>
-        <span class="grow"></span>
-        <button class="btn" data-act="eqConvidar" data-id="${e.id}">${U.icon('users', 15)} Convidar</button>
-        <button class="btn primary" data-act="eqMissoes" data-id="${e.id}">${U.icon('target', 15)} Enviar missões</button>
-      </section>
-      ${ms.length > 1 ? '' : `<p class="muted small">Ninguém entrou ainda. Toque em <strong>Convidar</strong> e mande o link pelo WhatsApp.</p>`}
-      <div class="eq-grid">${ms.map(card).join('')}</div>
-      <p class="muted small">Você vê só o resumo de cada pessoa. Tarefas, feedbacks e atas delas continuam privados. <a class="link" href="#equipe" data-act="eqSair" data-id="${e.id}">Excluir equipe</a></p>`;
-  },
-  membro(e) {
-    const r = Jogo.calc(), miss = r.miss.filter(m => m.equipe === e.id);
-    return `<section class="card eq-head"><div><h2>${U.esc(e.nome)}</h2><p class="muted small">Você é membro. Quem lidera vê o seu nível, XP, sequência e as missões que enviou.</p></div></section>
-      <section class="card"><div class="card-h"><h3>${U.icon('target')} Missões desta equipe</h3><a class="link" href="#jornada">Abrir a Jornada</a></div>
-        ${miss.length ? `<ul class="jg-miss">${miss.map(m => `<li class="${m.feitaEm ? 'ok' : ''}"><span class="jg-chk">${m.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(m.titulo)}</span><small class="muted">+${m.xp} XP${m.prazo ? ` · até ${U.fmtShort(m.prazo)}` : ''}</small></span><span class="jg-miss-n num">${m.n}/${m.de}</span></li>`).join('')}</ul>`
-          : '<p class="muted small">Nenhuma missão desta equipe ainda. Quando chegarem, elas aparecem aqui, na Jornada e, se forem tarefas ou reuniões, direto nas telas delas.</p>'}</section>
-      <p class="muted small"><a class="link" href="#equipe" data-act="eqSair" data-id="${e.id}">Sair da equipe</a></p>`;
-  },
-};
-
 Object.assign(Actions, {
   eqCriar(_, f) { const nome = f.elements.nome.value.trim(); if (nome) Equipes.criar(nome).catch(x => UI.toast('Não foi possível criar: ' + Fire.erro(x), 'error')); },
   eqEntrar(_, f) { const v = f.elements.link.value.trim(), q = v.includes('?') ? v.slice(v.indexOf('?') + 1) : v; Equipes.aceitarConvite(q); },
-  eqSel({ id }) { App.ui.eqSel = id; App.render(); },
   eqConvidar({ id }) { const e = Equipes.list().find(x => x.id === id); if (e) Equipes.convidar(e); },
   eqSair({ id }) { const e = Equipes.list().find(x => x.id === id); if (e) Equipes.sair(e); },
   eqMissoes({ id }) { Missoes.form(true, { equipe: id }); },
-  eqMembro({ e, id }) {
-    const eq = Equipes.list().find(x => x.id === e), m = (Equipes.membros[e] || []).find(x => x.id === id); if (!eq || !m) return;
-    const miss = m.missoes || [];
-    const mo = UI.modal({
-      title: m.nome || 'Membro',
-      body: `<p class="muted small">${U.esc(m.email || '')} · atualizado ${Equipes.quando(m.atualizadoEm)}</p>
-        <div class="eq-m-stats big"><span class="jg-stat jg-flame ${m.resumo?.streak ? 'lit' : ''}">${U.icon('flame', 17)}<b>${m.resumo?.streak || 0}</b> dias</span><span class="jg-stat jg-xp">${U.icon('bolt', 16)}<b>${m.resumo?.xp || 0}</b> XP</span><span class="jg-lv"><span class="jg-lvb">${m.resumo?.nivel || 1}</span>Nível</span></div>
-        <h4>Missões</h4>${miss.length ? `<ul class="jg-miss">${miss.map(x => `<li class="${x.feitaEm ? 'ok' : x.expirada ? 'exp' : ''}"><span class="jg-chk">${x.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(x.titulo)}</span><small class="muted">${x.feitaEm ? 'concluída em ' + U.fmtShort(x.feitaEm) : x.expirada ? 'prazo encerrado' : x.prazo ? 'até ' + U.fmtShort(x.prazo) : 'em andamento'} · +${x.xp} XP</small></span><span class="jg-miss-n num">${x.n}/${x.de}</span></li>`).join('')}</ul>` : '<p class="muted small">Nenhuma missão ainda.</p>'}`,
-      footer: `${m.id !== Fire.user.uid ? '<button class="btn ghost danger-text" data-rm>Remover da equipe</button>' : ''}<span class="grow"></span><button class="btn primary" data-env>${U.icon('target', 15)} Enviar missões</button>`,
-    });
-    mo.el.querySelector('[data-env]').onclick = () => { mo.close(); Missoes.form(true, { equipe: e, membro: id }); };
-    const rm = mo.el.querySelector('[data-rm]'); if (rm) rm.onclick = () => { mo.close(); Equipes.remover(eq, m); };
-  },
 });

@@ -28,7 +28,7 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   // Contraste: texto principal sobre fundo dos cartões (WCAG AA ≥ 4.5)
   const lum = c => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
   const ratio = (a, c) => { const [x, y] = [lum(a), lum(c)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
-  const screens = ['dashboard', 'agenda', 'jornada', 'imprevistos', 'tarefas', 'reunioes', 'feedbacks', 'projetos', 'indicadores', 'config', 'guia'];
+  const screens = ['dashboard', 'agenda', 'equipe', 'jornada', 'projetos', 'indicadores', 'config', 'guia'];
   await p.evaluate(() => { Store.loadDemo(); S.settings.showIndicadores = true; S.settings.showProjetos = true; commit(); });
   await useRoutine12(p);
   for (const r of screens) {
@@ -46,8 +46,8 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
     check(!low.length, `${r}: texto legível (contraste ≥ 4,5)${low.length ? ' → ' + low.slice(0, 3).map(([x, n]) => n + ' ' + x.toFixed(1)).join('; ') : ''}`);
     await p.screenshot({ path: `${OUT}/escuro-${r}.png` });
   }
-  await p.evaluate(() => location.hash = '#tarefas'); await W(300);
-  await p.locator('[data-act=tkNew]').tap(); await W(300);
+  await p.evaluate(() => location.hash = '#agenda'); await W(300);
+  await p.locator('#fab').tap(); await W(300); await p.locator('.sheet-item:has-text("Tarefa")').tap(); await W(300);
   const inBg = await p.evaluate(() => getComputedStyle(document.querySelector('.modal-wrap.open [name=title]')).backgroundColor);
   check(inBg !== 'rgb(255, 255, 255)', 'campos dos formulários escuros também');
   await p.screenshot({ path: `${OUT}/escuro-formulario.png` });
