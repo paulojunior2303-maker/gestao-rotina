@@ -7,6 +7,7 @@
    Use SEMPRE as variáveis abaixo — os temas claro e escuro dependem delas.
    ========================================================= */
 @font-face { font-family: "Geist"; src: url('../fonts/geist.woff2') format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Quicksand"; src: url('../fonts/quicksand-bold.woff2') format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 @font-face { font-family: "Bricolage Grotesque"; src: url('../fonts/bricolage-grotesque.woff2') format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
 
 :root {
@@ -123,7 +124,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .app { display: flex; min-height: 100vh; }
 .sidebar { width: var(--side-w); background: var(--side-bg); color: var(--side-text); position: fixed; inset: 0 auto 0 0; display: flex; flex-direction: column; z-index: 40; transition: transform .28s var(--ease); border-right: 1px solid var(--side-line); padding-top: env(safe-area-inset-top); }
 .brand { display: flex; gap: 12px; align-items: center; padding: 24px 22px 14px; color: #fff; }
-.brand strong { font-family: var(--font-d); font-size: 17px; font-weight: 650; letter-spacing: -.015em; display: block; line-height: 1.15; }
+.brand strong { font-family: "Quicksand", var(--font-d); font-size: 19px; font-weight: 700; letter-spacing: .01em; display: block; line-height: 1.15; }
 .brand small { display: block; color: var(--side-muted); font-size: 11.5px; margin-top: 2px; }
 .brand-logo { width: 38px; height: 38px; flex-shrink: 0; }
 .nav { padding: 4px 12px 12px; display: flex; flex-direction: column; overflow-y: auto; flex: 1; }
