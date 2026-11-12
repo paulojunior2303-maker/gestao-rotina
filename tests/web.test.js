@@ -40,7 +40,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('.ag-cal .calx-exp'); await p.waitForTimeout(150);
   assert(await p.locator('.ag-cal .calx-d').count() === 7, 'e volta para a semana');
   assert(await p.locator('.blk').count() === 12, 'agenda inicial tem 12 blocos (intervalo fixo)');
-  await p.locator('.blk').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(150);
+  await p.locator('.blk:not(.blk-it)').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(150);
   let s = await state(); const tk = Object.keys(s.days)[0];
   assert(s.days[tk].find(b => b.title.startsWith('Abertura')).status === 'concluida', 'concluir bloco persiste no LocalStorage');
   // editar Acompanhamento operacional 09:00-10:30 -> 09:00-11:00 com deslocamento
