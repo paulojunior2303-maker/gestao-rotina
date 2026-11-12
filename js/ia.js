@@ -70,7 +70,7 @@ Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere
   system(task) {
     return `${this.agent() || this.DEFAULT_AGENT}
 
-=== Instruções do aplicativo Gestão de Rotina (seguir sempre, junto com as de cima) ===
+=== Instruções do aplicativo FlowFire (seguir sempre, junto com as de cima) ===
 ${task}
 Entregue texto simples, pronto para copiar: sem markdown (não use #, ** ou _). Numere os assuntos ("1. ", "2. ") e use "• " para os tópicos.`;
   },

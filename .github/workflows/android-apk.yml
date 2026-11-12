@@ -103,6 +103,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "v$APP_VERSION_NAME" "GestaoRotina-$APP_VERSION_NAME.apk" GestaoRotina.apk \
-            --title "Gestão de Rotina $APP_VERSION_NAME" \
+            --title "FlowFire $APP_VERSION_NAME" \
             --notes "APK gerado automaticamente a partir de ${GITHUB_SHA::7}. Instale por cima da versão atual (os dados são mantidos)." \
             --latest

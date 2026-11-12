@@ -28,6 +28,7 @@ const OPEN = s => s === 'pendente' || s === 'andamento';
 
 const Store = {
   state: null,
+  rev: 0,             // muda a cada salvamento (cache de cálculos, ex.: Jornada)
   persistent: true,   // LocalStorage disponível
   lastSaved: null,
   warned: false,
@@ -46,6 +47,7 @@ const Store = {
         theme: 'escuro',  // escuro | claro | auto (segue o aparelho)
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
+        jogo: true,              // modo jogo: XP, sequência e conquistas (Configurações → Aparência)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
@@ -94,6 +96,7 @@ const Store = {
       events: [],
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
+      missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
       meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
@@ -173,6 +176,7 @@ const Store = {
 
   /* touch = alteração feita aqui (marca o horário e envia ao Google Drive). Dados vindos de fora usam touch: false. */
   save({ cloud = true, touch = true } = {}) {
+    this.rev++;
     if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }
@@ -193,6 +197,7 @@ const Store = {
   replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
+    if (typeof Jogo !== 'undefined') Jogo.last = null;   // dados vindos de fora não geram o aviso de "+XP"
     this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 

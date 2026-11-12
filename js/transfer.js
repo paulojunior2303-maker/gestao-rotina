@@ -106,8 +106,8 @@ const Transfer = {
     const sh = m.el.querySelector('[data-share]');
     if (sh) sh.onclick = async () => {
       try {
-        if (Native.available()) await Native.P().Share.share({ title: 'Dados do Gestão de Rotina', text: code, dialogTitle: 'Enviar código de transferência' });
-        else await navigator.share({ title: 'Dados do Gestão de Rotina', text: code });
+        if (Native.available()) await Native.P().Share.share({ title: 'Dados do FlowFire', text: code, dialogTitle: 'Enviar código de transferência' });
+        else await navigator.share({ title: 'Dados do FlowFire', text: code });
       } catch (e) { if (!/cancel|abort/i.test(String(e && (e.message || e.name)))) UI.toast('Não foi possível enviar: ' + U.esc(e.message || e), 'error'); }
     };
   },

@@ -25,6 +25,8 @@ Views.config = {
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>
+      <label class="switch-row"><span><strong>Modo jogo (Jornada)</strong><small>XP, níveis, sequência de dias, missões e conquistas, calculados com o que você faz no app. Aparece no Início e no menu.</small></span>
+        <input type="checkbox" class="switch" data-change="cfgJogo" ${st.jogo !== false ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento diário de números da equipe (serviços, manutenções, retrabalhos), metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
@@ -238,6 +240,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgJogo(_, el) { S.settings.jogo = el.checked; Jogo.last = null; commit(); UI.toast(el.checked ? 'Modo jogo ligado: veja a Jornada no Início.' : 'Modo jogo desligado.'); },
   cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
   cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
   cfgProjetos(_, el) { S.settings.showProjetos = el.checked; commit(); UI.toast(el.checked ? 'Projetos aparece no menu, em Planejamento.' : 'Projetos ocultado. Os dados continuam guardados.'); },

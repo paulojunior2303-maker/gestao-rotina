@@ -40,6 +40,18 @@ e diga o que mudou e como testar no celular.
 - **Calendário** (`js/calendar.js`, `Cal`) é o recurso principal: no Início e no topo da Agenda. Mês/semana, bolinhas no celular e títulos no computador,
   lista do dia escolhido, arrastar para trocar de mês/semana, "Hoje". Reuniões têm cor própria (`--t-reuniao`).
 - **Intervalo de almoço**: `settings.breakMode` = flexivel (padrão; "+" → "Intervalo agora" na Agenda, empurra o resto) | fixo (bloco da rotina) | nenhum.
+- **Modo jogo / Jornada** (`js/jogo.js`, `Jogo` + `Views.jornada`): XP, níveis, sequência, missões e conquistas **calculados** dos dados
+  (agenda, tarefas `completedAt`, imprevistos `resolvedAt`, `registro.at` das reuniões, feedbacks); nada guardado à parte. `settings.jogo` (padrão ligado,
+  Configurações → Aparência). Cartão no Início (`Jogo.card`), aviso "+XP" em `commit()` (`Jogo.check`). Sem mascote (decisão do usuário).
+  **Missões** (`Missoes` em `jogo.js`, `S.missoes`): o líder monta um pacote e envia por link `#missoes?p=<base64url JSON>` (sem servidor);
+  quem abre aceita, e o progresso é contado a partir de `desde` (até o `prazo`). Tipos automáticos usam os mesmos pontos do XP; "manual" a pessoa marca.
+  `Jogo.calc()` fica em cache até o próximo `Store.save()` (`Store.rev`).
+- **Tarefas**: botões na linha (▶ começar, ✓ concluir, ✕ cancelar, ↶ reabrir; ⋯ só Editar e Excluir); não há seletor de status na lista.
+- **Nome do app: FlowFire** (tudo junto, na fonte arredondada Quicksand no menu), ícone em `icon.svg` (só as duas labaredas roxas da logo original, em vetor; o arco e a estrela foram retirados a pedido do usuário) e PNGs do Android em `res/mipmap-*` e `splash.png`.
+  **Não renomear**: a pasta do Drive (`Drive.FOLDER = 'Gestão de Rotina'`, senão a sincronização perde o arquivo), a chave do LocalStorage, o pacote Android e o arquivo `GestaoRotina.apk` (o aviso de atualização das versões instaladas procura esse nome).
+- **Missões de atribuição** (`Missoes.ITENS`): tarefa, reunião, imprevisto e feedback com alguém. Ao aceitar, o item é criado no app de quem recebe (`m.ref`), com data entra no calendário; a missão conclui quando o item conclui (`Missoes.itemFeito`). Feedback pedido aparece em Feedbacks → Para fazer.
+- **XP das missões é automático** (`Missoes.xpDe`: valor por unidade × quantidade); o XP que vier no link é ignorado e recalculado.
+- `tests/run.sh` roda os arquivos em paralelo (4 por vez).
 - **Reuniões e feedbacks** são uma tela só (`Views.reunioes`, abas `App.ui.mtTab`); `#feedbacks` abre a aba Feedbacks.
 - **Feedbacks** (`js/views/feedbacks.js`, `FBPage` + `FB`, `S.feedbacks`): por colaborador, gravação ao vivo, `IA.feedback` (/feedback do agente), acordos → tarefas com responsável.
   Peças reaproveitáveis de IA/gravação em `IAUI` (`js/ia.js`).
@@ -77,7 +89,7 @@ bash tests/run.sh android  # só um arquivo
 ## Fluxo de trabalho: canal de teste (pedido do usuário)
 - **Nada vai para o app oficial sem aprovação do usuário.** Toda mudança nova é feita no ramo `teste` e publicada só no
   **site de teste**: https://paulojunior2303-maker.github.io/gestao-rotina/teste/
-- Publicar o teste: no ramo `teste`, `python3 build.py --teste` → copiar `dist/gestao-rotina-teste.html` para `teste/index.html`
+- Publicar o teste: `bash tools/publicar-teste.sh "mensagem"` (faz tudo abaixo). Manualmente: no ramo `teste`, `python3 build.py --teste` → copiar `dist/gestao-rotina-teste.html` para `teste/index.html`
   no ramo `main` (só essa pasta; não dispara o APK) e enviar. O build de teste usa outra chave no LocalStorage (`…:teste`),
   desliga o Google Drive e mostra a marca TESTE (`CANAL_TESTE` em `js/store.js`).
 - Cada recurso num commit separado, para dar para aprovar só uma parte. Quando o usuário aprovar, levar os commits

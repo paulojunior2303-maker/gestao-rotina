@@ -28,7 +28,7 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   // Contraste: texto principal sobre fundo dos cartões (WCAG AA ≥ 4.5)
   const lum = c => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
   const ratio = (a, c) => { const [x, y] = [lum(a), lum(c)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
-  const screens = ['dashboard', 'agenda', 'imprevistos', 'tarefas', 'reunioes', 'feedbacks', 'projetos', 'indicadores', 'config', 'guia'];
+  const screens = ['dashboard', 'agenda', 'jornada', 'imprevistos', 'tarefas', 'reunioes', 'feedbacks', 'projetos', 'indicadores', 'config', 'guia'];
   await p.evaluate(() => { Store.loadDemo(); S.settings.showIndicadores = true; S.settings.showProjetos = true; commit(); });
   await useRoutine12(p);
   for (const r of screens) {

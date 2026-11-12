@@ -3,7 +3,7 @@
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
@@ -11,7 +11,7 @@ const NAV_GROUPS = [
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
   const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : true;
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : true;
 };
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
@@ -34,6 +34,7 @@ const App = {
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
     if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
     if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
@@ -71,7 +72,7 @@ const App = {
     const scroll = window.scrollY;
     document.getElementById('page-title').textContent = view.title;
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
-    document.title = `${view.title} · Gestão de Rotina${CANAL_TESTE ? ' (TESTE)' : ''}`;
+    document.title = `${view.title} · FlowFire${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
     const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
       : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
@@ -84,6 +85,11 @@ const App = {
     }
     this.renderNav();
     if (opts.resetScroll) window.scrollTo(0, 0); else window.scrollTo(0, scroll);
+    if (this.ui.msPend !== undefined && this.ui.msPend !== null) {   // abriu um link de missões
+      const q = this.ui.msPend; this.ui.msPend = null;
+      history.replaceState(null, '', '#jornada');
+      setTimeout(() => Missoes.receber('?' + q), 300);
+    }
     if (focus) { const el = root.querySelector(focus.sel); if (el) { el.focus(); try { el.setSelectionRange(focus.pos, focus.pos); } catch (e) { /* tipo sem seleção */ } } }
   },
 
@@ -161,6 +167,7 @@ const App = {
 
     document.body.classList.add('intro');
     this.render();
+    Jogo.check();   // ponto de partida do aviso de "+XP"
     setTimeout(() => document.body.classList.remove('intro'), 1600);
     Tutorial.maybeShow();
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
@@ -196,7 +203,7 @@ const Theme = {
 };
 
 /* Salva e redesenha a tela atual */
-function commit() { Store.save(); App.render(); }
+function commit() { Store.save(); App.render(); Jogo.check(); }
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };

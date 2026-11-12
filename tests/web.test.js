@@ -40,7 +40,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('.ag-cal .calx-exp'); await p.waitForTimeout(150);
   assert(await p.locator('.ag-cal .calx-d').count() === 7, 'e volta para a semana');
   assert(await p.locator('.blk').count() === 12, 'agenda inicial tem 12 blocos (intervalo fixo)');
-  await p.locator('.blk').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(150);
+  await p.locator('.blk:not(.blk-it)').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(150);
   let s = await state(); const tk = Object.keys(s.days)[0];
   assert(s.days[tk].find(b => b.title.startsWith('Abertura')).status === 'concluida', 'concluir bloco persiste no LocalStorage');
   // editar Acompanhamento operacional 09:00-10:30 -> 09:00-11:00 com deslocamento
@@ -114,12 +114,12 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.fill('[data-input=tkSearch]', 'planilha'); await p.waitForTimeout(500);
   assert(await p.locator('.task').count() === 1 && await p.evaluate(() => document.activeElement.dataset.input) === 'tkSearch', 'busca filtra e mantém o foco');
   await p.fill('[data-input=tkSearch]', ''); await p.waitForTimeout(500);
-  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('.tk-check span').click(); await p.waitForTimeout(200);
+  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(200);
   s = await state();
   assert(s.tasks.find(t => t.title === 'Cobrar relatório do técnico').status === 'concluida' && s.tasks.find(t => t.title === 'Cobrar relatório do técnico').completedAt, 'concluir tarefa registra data de conclusão');
   await p.click('[data-act=tkStatusF][data-v=concluida]'); await p.waitForTimeout(150);
   assert(await p.locator('.task').count() === 1, 'filtro por status concluída');
-  await p.locator('.task').first().locator('[data-act=tkDelete]').click(); await p.waitForTimeout(200);
+  await p.locator('.task').first().locator('[data-act=tkMore]').click(); await p.waitForTimeout(250); await p.click('.sheet-item.danger:has-text("Excluir")'); await p.waitForTimeout(200);
   await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(200);
   assert((await state()).tasks.length === 1, 'excluir tarefa');
 
@@ -153,7 +153,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.textContent('#page-title') === 'Início', 'endereço #indicadores oculto volta ao Início');
   await go('config');
   assert(await p.locator('#cfg-metas').count() === 0, 'Metas ocultas junto com Indicadores');
-  await p.click('#cfg-aparencia .switch'); await p.waitForTimeout(250);
+  await p.click('[data-change=cfgIndicadores]'); await p.waitForTimeout(250);
   assert((await state()).settings.showIndicadores === true && await p.locator('#nav a[href="#indicadores"]').count() === 1, 'chave em Aparência mostra Indicadores no menu');
   await go('indicadores');
   assert(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos: indicadores aparecem como "sem dados"');
@@ -217,13 +217,68 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.fill('[data-change=cfgMetricName][data-k=pontosCamera]', 'Visitas realizadas'); await p.press('[data-change=cfgMetricName][data-k=pontosCamera]', 'Tab'); await p.waitForTimeout(200);
   assert((await state()).settings.metricNames.pontosCamera === 'Visitas realizadas', 'nome do indicador personalizável');
 
+  // ---- Modo jogo (Jornada): ligado por padrão, XP calculado do que foi feito, desliga em Aparência
+  await go('dashboard');
+  assert(await p.locator('.jg-card').count() === 1 && await p.locator('#nav a[href="#jornada"]').count() === 1, 'modo jogo ligado: cartão no Início e Jornada no menu');
+  const xp0 = await p.evaluate(() => Jogo.calc().total);
+  await p.evaluate(() => { S.tasks.push({ id: 'jg1', title: 'Teste XP', status: 'pendente', priority: 'media', category: 'equipe', dueDate: U.addDays(U.today(), 2), createdAt: new Date().toISOString() }); commit(); });
+  await go('tarefas'); await p.click('[data-act=tkStatusF][data-v=abertas]'); await p.waitForTimeout(150); await p.locator('.task', { hasText: 'Teste XP' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(300);
+  assert(await p.evaluate(() => Jogo.calc().total) === xp0 + 15 && (await p.textContent('#xp-pop')).includes('+15 XP'), 'concluir tarefa no prazo dá +15 XP e mostra o aviso');
+  await go('jornada');
+  assert(await p.textContent('#page-title') === 'Jornada' && await p.locator('.jg-cls').count() === 4 && await p.locator('.jg-badge').count() === 13, 'Jornada: áreas e conquistas');
+  // Missões: criar para mim ("Outra", marcada à mão) dá o XP definido
+  await p.click('[data-act=msNova]'); await p.waitForTimeout(250);
+  await p.selectOption('.ms-row .ms-tipo', 'manual'); await p.fill('.ms-row .ms-txt', 'Revisar 1 POP');
+  assert((await p.textContent('.ms-row .ms-sum')).includes('+30 XP') && await p.locator('.ms-row .ms-xp').count() === 0, 'XP da missão é automático (sem campo para digitar)');
+  await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
+  const xp1 = await p.evaluate(() => Jogo.calc().total);
+  await p.click('[data-act=msFeita][data-v="1"]'); await p.waitForTimeout(300);
+  assert(await p.evaluate(() => Jogo.calc().total) === xp1 + 30 && (await p.textContent('#xp-pop')).includes('Missão cumprida'), 'missão marcada como feita dá o XP e avisa');
+  // Enviar missões: gera link; quem abre o link aceita e a contagem é automática
+  await p.click('[data-act=msEnviar]'); await p.waitForTimeout(250);
+  await p.fill('.modal-wrap.open [name=para]', 'Carlos'); await p.fill('.modal-wrap.open [name=de]', 'Victor'); await p.selectOption('.ms-row .ms-tipo', 'tarefa'); await p.fill('.ms-row .ms-n', '2');
+  assert((await p.textContent('.ms-row .ms-sum')).includes('Concluir 2 tarefas · +20 XP'), 'a missão mostra o título e o XP calculado');
+  await p.click('.modal-wrap.open [data-ok]'); await p.waitForTimeout(300);
+  const msTxt = await p.inputValue('.ms-share'); const msLink = msTxt.match(/https:\S+/)[0];
+  assert(msTxt.includes('Victor te enviou 1 missão') && msLink.includes('#missoes?p='), 'enviar missões gera o texto com o link');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  await p.goto(B + msLink.slice(msLink.indexOf('#'))); await p.waitForTimeout(700);
+  assert((await p.textContent('.modal-wrap.open')).includes('Concluir 2 tarefas'), 'abrir o link mostra as missões para aceitar');
+  await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(400);
+  assert(await p.evaluate(() => location.hash) === '#jornada' && await p.evaluate(() => S.missoes.some(m => m.de_ === 'Victor' && m.tipo === 'tarefa' && m.alvo === 2)), 'missões aceitas entram na Jornada');
+  const xp2 = await p.evaluate(() => Jogo.calc().total);
+  await p.evaluate(() => { for (const i of [1, 2]) S.tasks.push({ id: 'ms' + i, title: 'M' + i, status: 'concluida', completedAt: new Date().toISOString(), priority: 'media', category: 'equipe', createdAt: new Date().toISOString() }); commit(); });
+  assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.de_ === 'Victor').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp2 + 20 + 20, 'missão automática conclui sozinha (2 tarefas = 20 XP + 20 da missão)');
+  assert(await p.evaluate(() => Missoes.decodificar('lixo<script>') === null), 'link inválido é recusado');
+  // Missões de atribuição criam o item no app de quem recebe (tarefa em Tarefas, reunião na agenda, pessoa em Feedbacks)
+  const amanha = await p.evaluate(() => U.addDays(U.today(), 1));
+  const pac = await p.evaluate(d => Missoes.link({ id: 'pk-int', de: 'Victor', para: 'Paulo', prazo: '', missoes: [
+    { tipo: 'tarefaItem', alvo: 1, titulo: 'Atualizar planilha', data: d, hora: '10:00' },
+    { tipo: 'reuniaoItem', alvo: 1, titulo: 'Alinhamento da escala', data: d, hora: '09:30' },
+    { tipo: 'feedbackItem', alvo: 1, titulo: 'Natan', data: d, hora: '' },
+    { tipo: 'imprevistoItem', alvo: 1, titulo: 'Câmera offline', data: d, hora: '' }] }), amanha);
+  await p.goto(B + pac.slice(pac.indexOf('#'))); await p.waitForTimeout(700); await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(400);
+  const integ = await p.evaluate(d => ({
+    tarefa: S.tasks.find(t => t.title === 'Atualizar planilha'), reuniao: S.events.find(e => e.title === 'Alinhamento da escala'),
+    imp: S.occurrences.find(o => o.title === 'Câmera offline'), natan: D.techNames().includes('Natan'), cal: Cal.itemsOn(d).map(i => i.type).sort().join(',') }), amanha);
+  assert(integ.tarefa && integ.tarefa.dueDate === amanha && integ.tarefa.dueTime === '10:00' && integ.reuniao && integ.reuniao.reuniao && integ.reuniao.date === amanha && integ.imp && integ.natan, 'aceitar cria a tarefa, a reunião, o imprevisto e a pessoa na equipe');
+  assert(integ.cal === 'imprevisto,missao,reuniao,tarefa', 'tudo aparece no calendário do dia (' + integ.cal + ')');
+  await go('feedbacks'); assert((await p.textContent('#view')).includes('Feedback com Natan'), 'o feedback pedido aparece em Feedbacks → Para fazer');
+  const xp3 = await p.evaluate(() => Jogo.calc().total);
+  await p.evaluate(() => { const t = S.tasks.find(x => x.title === 'Atualizar planilha'); Tasks.setStatus(t, 'concluida'); commit(); });
+  assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.titulo === 'Atualizar planilha').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp3 + 15 + 20, 'concluir a tarefa conclui a missão (+15 da tarefa no prazo, +20 da missão)');
+  await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
+  assert((await state()).settings.jogo === false && await p.locator('#nav a[href="#jornada"]').count() === 0, 'desligar o modo jogo tira a Jornada do menu');
+  await go('dashboard'); assert(await p.locator('.jg-card').count() === 0, 'e o cartão do Início');
+  await go('config'); await p.click('[data-change=cfgJogo]'); await p.waitForTimeout(250);
+
   // ---- Configurações
   await go('config');
   await p.fill('form[data-submit=cfgJornada] [name=workEnd]', '17:30'); await p.click('form[data-submit=cfgJornada] button'); await p.waitForTimeout(150);
   assert((await state()).settings.workEnd === '17:30', 'jornada editável');
   await p.fill('form[data-submit=tecAdd] input', 'Carlos'); await p.click('form[data-submit=tecAdd] button'); await p.waitForTimeout(150);
   await p.fill('form[data-submit=catAdd] [name=name]', 'Treinamentos'); await p.click('form[data-submit=catAdd] button'); await p.waitForTimeout(150);
-  s = await state(); assert(s.settings.technicians[0].name === 'Carlos' && s.settings.categories.some(c => c.name === 'Treinamentos'), 'técnico e categoria cadastrados');
+  s = await state(); assert(s.settings.technicians.some(t => t.name === 'Carlos') && s.settings.categories.some(c => c.name === 'Treinamentos'), 'técnico e categoria cadastrados');
   await p.click('[data-act=goalNew]'); await p.waitForTimeout(200); await fill('target', '5'); await submit();
   assert((await state()).settings.goals.length === 1, 'meta cadastrada');
   await p.click('[data-act=rtNew]'); await p.waitForTimeout(200);
@@ -237,7 +292,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.click('[data-act=demoLoad]'); await p.waitForTimeout(150);
   s = await state(); const nTasks = s.tasks.length;
   await p.click('.view [data-act=demoRemove] >> nth=0'); await p.waitForTimeout(150); await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(150);
-  s = await state(); assert(s.tasks.length === nTasks - 4 && !s.tasks.some(t => t.demo) && s.settings.technicians.length === 1, 'remover demonstração preserva dados reais');
+  s = await state(); assert(s.tasks.length === nTasks - 4 && !s.tasks.some(t => t.demo) && s.settings.technicians.length === 2, 'remover demonstração preserva dados reais');
 
   // ---- Persistência após recarregar
   await p.reload(); await go('tarefas');
