@@ -260,15 +260,13 @@ label.inline input, .filters input, .filters select, .chart-ctrl select { min-he
 a.rail:hover .seg:not(.s-break) { filter: brightness(1.08); }
 
 /* ---------- Dashboard ---------- */
-.today { display: flex; flex-direction: column; gap: 16px; padding: 6px 0 4px; }
-.today-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
-.today-greet { color: var(--muted); margin: 0 0 4px; font-size: 14px; }
-.today-date { font-size: clamp(30px, 4.2vw, 46px); font-weight: 600; letter-spacing: -.03em; line-height: 1.02; margin-bottom: 10px; }
-.today-focus { margin: 0; color: var(--text-2); }
-.today-focus strong { color: var(--text); }
-.today-clock { text-align: right; flex-shrink: 0; }
-.today-clock span { display: block; font-family: var(--font-d); font-size: 38px; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; }
-.today-clock small { color: var(--muted); font-size: 12px; }
+.topbar.is-hero { border-bottom-color: transparent; }
+.topbar.is-hero h1 { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.th-greet { font-size: 12.5px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.th-date { font-size: 23px; font-weight: 600; letter-spacing: -.025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar.is-hero .top-clock { display: block; font-family: var(--font-d); font-size: 22px; color: var(--text-2); letter-spacing: -.01em; }
+.hero-extra { margin: -28px -36px 0; padding: 0 36px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.hero-focus { margin: 0; color: var(--text-2); font-size: 13.5px; } .hero-focus strong { color: var(--text); }
 .kpis { display: grid; grid-template-columns: 1.5fr repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
 .kpis-ind { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .kpi { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 2px; min-width: 0; transition: background .15s; }
@@ -668,11 +666,10 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 #print-root { display: none; }
 
 /* ---------- Abertura (apenas no primeiro desenho da tela) ---------- */
-body.intro .today-date, body.intro .today-greet, body.intro .today-focus { animation: introUp .6s var(--ease) both; }
-body.intro .today-greet { animation-delay: .02s; }
-body.intro .today-date { animation-delay: .08s; }
-body.intro .today-focus { animation-delay: .16s; }
-body.intro .today .rail-track { animation: railIn 1s .2s var(--ease) both; }
+body.intro .th-greet, body.intro .th-date, body.intro .hero-focus { animation: introUp .6s var(--ease) both; }
+body.intro .th-date { animation-delay: .08s; }
+body.intro .hero-focus { animation-delay: .16s; }
+body.intro .hero-extra .rail-track { animation: railIn 1s .2s var(--ease) both; }
 body.intro .rail-now { animation: introFade .4s 1.05s both; }
 @keyframes introUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes introFade { from { opacity: 0; } to { opacity: 1; } }
@@ -704,7 +701,6 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .bottom-nav .nav-badge { position: absolute; top: 0; right: calc(50% - 28px); font-size: 10px; padding: 0 5px; line-height: 16px; border: 2px solid var(--side-bg); }
   #toast-root { bottom: calc(92px + env(safe-area-inset-bottom)); }
   .occ-list { grid-template-columns: 1fr; }
-  .today-top { align-items: flex-start; }
 }
 @media (max-width: 640px) {
   body { font-size: 14px; }
@@ -718,10 +714,9 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .toolbar > .grow { display: none; }
   .top-clock { display: none; }
   .topbar h1 { font-size: 19px; }
-  .today { gap: 12px; padding-top: 2px; }
-  .today-date { font-size: 30px; margin-bottom: 8px; }
-  .today-clock span { font-size: 17px; color: var(--muted); }
-  .today-clock small { display: none; }
+  .th-date { font-size: 18px; }
+  .topbar.is-hero .top-clock { font-size: 15px; color: var(--muted); }
+  .hero-extra { margin: -18px -16px 0; padding: 0 16px 14px; }
   .row-actions { flex-wrap: wrap; }
   .row-actions .btn, .modal-foot .btn { white-space: normal; text-align: center; }
   .view { overflow-x: clip; }
@@ -1135,7 +1130,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="76 76 360 360" aria-hidden="true"><g transform="translate(5.2 -16.0) scale(0.8000)"><path d="M352 128 C 395 175 398 240 360 282 C 330 315 280 340 252 378 C 232 405 225 445 222 480 C 190 455 175 405 188 365 C 205 315 255 285 300 255 C 340 228 360 185 352 128 Z" fill="#7a30f2"/><path d="M425 275 C 452 330 445 380 405 412 C 370 440 330 455 308 490 C 296 510 288 530 285 552 C 262 520 262 470 290 438 C 318 405 368 390 398 360 C 424 335 432 305 425 275 Z" fill="#7a30f2"/></g></svg>
-        <div><strong>FlowFire</strong><small id="brand-sub">Rotina e equipe</small></div>
+        <div><strong>FlowFire</strong><small id="brand-sub">Calma Pae</small></div>
       </div>
       <nav id="nav" class="nav"></nav>
       <div class="sidebar-foot" id="storage-status"></div>
@@ -3529,6 +3524,12 @@ const XLSX = (() => {
 Views.dashboard = {
   title: 'Início', icon: 'dashboard', nav: 'Início',
   fab: () => ({ act: 'quickAdd', label: 'Adicionar', data: { k: Cal.st('home').sel, from: 'home' } }),
+  /* Topo da tela inicial: saudação e data no lugar do título (o relógio fica à direita) */
+  hero() {
+    const h = new Date().getHours(), t = U.today(), d = U.parse(t);
+    const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    return `<span class="th-greet">${greet}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
+  },
   render() {
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
@@ -3597,19 +3598,12 @@ Views.dashboard = {
     const showGoals = !!S.settings.showIndicadores, showProj = !!S.settings.showProjetos;
 
     return `
-    ${Updater.banner()}
-    ${Jogo.card()}
-    <section class="today">
-      <div class="today-top">
-        <div class="today-txt">
-          <p class="today-greet">${greet}</p>
-          <h2 class="today-date">${dDate}</h2>
-          <p class="today-focus">${workday ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : `Expediente das ${S.settings.workStart} às ${S.settings.workEnd}`) : 'Hoje não é dia útil. Bom descanso.'}</p>
-        </div>
-        <div class="today-clock"><span id="dash-clock">${new Date().toLocaleTimeString('pt-BR')}</span>${workday && focus && focus.title ? `<small>Expediente ${S.settings.workStart}–${S.settings.workEnd}</small>` : ''}</div>
-      </div>
+    <section class="hero-extra">
+      <p class="hero-focus">${workday ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong> · ` : '') + `Expediente das ${S.settings.workStart} às ${S.settings.workEnd}` : 'Hoje não é dia útil. Bom descanso.'}</p>
       ${blocks.length ? H.dayRail(t) : ''}
     </section>
+    ${Updater.banner()}
+    ${Jogo.card()}
 
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
 
@@ -6175,7 +6169,7 @@ const App = {
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
     document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
-    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Rotina e equipe';
+    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae';
     document.getElementById('storage-status').innerHTML =
       fv === 'on' ? '<span class="dot-ok"></span> Sincronizado com a sua conta'
       : fv === 'syncing' || fv === 'loading' ? '<span class="dot-wait"></span> Sincronizando com a sua conta…'
@@ -6200,7 +6194,10 @@ const App = {
       focus = { sel: `[data-input="${document.activeElement.dataset.input}"]`, pos: document.activeElement.selectionStart };
     }
     const scroll = window.scrollY;
-    document.getElementById('page-title').textContent = view.title;
+    const top = document.querySelector('.topbar'), h1 = document.getElementById('page-title');
+    top.classList.toggle('is-hero', !!view.hero);
+    if (view.hero) h1.innerHTML = view.hero(); else h1.textContent = view.title;
+    this.tick && this.tick();
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
     document.title = `${view.title} · FlowFire${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
@@ -6278,11 +6275,11 @@ const App = {
     }, { passive: true });
 
     // Relógio e atualização periódica (status "agora"/"atrasada")
-    const tick = () => {
-      const now = new Date();
-      const s = now.toLocaleTimeString('pt-BR');
-      const c = document.getElementById('dash-clock'); if (c) c.textContent = s;
-      document.getElementById('top-clock').textContent = `${U.WD_SHORT[now.getDay()]}, ${U.fmtShort(U.today())} · ${s.slice(0, 5)}`;
+    // Relógio do topo: na tela inicial mostra a hora (a data já está no título); nas outras, dia e hora
+    const tick = this.tick = () => {
+      const now = new Date(), s = now.toLocaleTimeString('pt-BR');
+      const hero = document.querySelector('.topbar').classList.contains('is-hero'), estreito = window.innerWidth <= 640;
+      document.getElementById('top-clock').textContent = hero ? (estreito ? s.slice(0, 5) : s) : `${U.WD_SHORT[now.getDay()]}, ${U.fmtShort(U.today())} · ${s.slice(0, 5)}`;
     };
     tick(); setInterval(tick, 1000);
     let lastMin = U.nowMin(), lastDay = U.today();
