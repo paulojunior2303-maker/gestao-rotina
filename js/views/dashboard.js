@@ -77,12 +77,15 @@ Views.dashboard = {
     const showGoals = !!S.settings.showIndicadores, showProj = !!S.settings.showProjetos;
 
     return `
-    <section class="hero-extra">
-      <p class="hero-focus">${workday ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong> · ` : '') + `Expediente das ${S.settings.workStart} às ${S.settings.workEnd}` : 'Hoje não é dia útil. Bom descanso.'}</p>
-      ${blocks.length ? H.dayRail(t) : ''}
-    </section>
     ${Updater.banner()}
-    ${Jogo.card()}
+    <section class="day-card">
+      ${Jogo.card()}
+      <div class="dc-day">
+        <div class="dc-day-h"><span>${workday ? (focus && focus.title ? `Foco: <strong>${U.esc(focus.title)}</strong> · ` : '') + `Expediente <strong>${S.settings.workStart}–${S.settings.workEnd}</strong>` : 'Hoje não é dia útil. Bom descanso.'}</span>
+          ${prog.total ? `<a class="dc-prog" href="#agenda">${prog.done} de ${U.plural(prog.total, 'atividade')} · ${prog.pct}%</a>` : ''}</div>
+        ${blocks.length ? H.dayRail(t) : ''}
+      </div>
+    </section>
 
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
 
