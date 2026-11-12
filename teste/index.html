@@ -1146,38 +1146,6 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .eq-more summary { cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .eq-more[open] summary { margin-bottom: 14px; }
 
-/* Pendências (Agenda) */
-.pend { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
-.pend-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.pend-h h3 { margin: 0; display: flex; align-items: center; gap: 8px; }
-.pend-q { flex: 1 1 220px; max-width: 360px; min-height: 38px; padding: 7px 12px; border-radius: 11px; border: 1px solid var(--input-border); background: var(--surface-2); color: var(--text); font: inherit; font-size: 14px; }
-.pend-q:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
-.pend-g h4 { display: flex; align-items: center; gap: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 8px; color: var(--text-2); }
-.pend-feitas summary { cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); font-weight: 600; margin-bottom: 8px; }
-.occ-row .badge.b-red { font-size: 10.5px; }
-
-/* Início: "Agora" */
-.home-now { display: flex; flex-direction: column; gap: 10px; }
-.ag-now { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); position: relative; }
-.ag-now::before { content: ""; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--c); }
-.ag-now.is-now { border-color: var(--lilac); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lilac) 14%, transparent); }
-.ag-now-r { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); width: 54px; flex-shrink: 0; }
-.ag-now.is-now .ag-now-r { color: var(--lilac); }
-.ag-now-t { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
-.ag-now-t strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.home-sub { display: flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); margin: 8px 0 0; }
-/* Equipe: pessoas */
-.pes-jg { display: inline-flex; align-items: center; gap: 6px; }
-.pes-jg .jg-lvb { min-width: 22px; height: 22px; font-size: 12px; }
-.pes-head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; position: relative; padding-right: 48px; }
-.pes-mais { position: absolute; top: 12px; right: 12px; }
-.pes-head-t { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
-.pes-head-t h2 { margin: 0; }
-.pes-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-basis: 100%; }
-.eq-cta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.eq-cta > div { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
-.eq-head h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; }
-
 </style>
 </head>
 <body>
@@ -2329,7 +2297,7 @@ const Reminders = {
       return;
     }
     // Toque no aviso: abre a tela relacionada
-    const go = { tarefa: 'agenda', imprevisto: 'agenda', resumo: 'dashboard' }[x.kind];
+    const go = { tarefa: 'tarefas', imprevisto: 'imprevistos', resumo: 'dashboard' }[x.kind];
     if (go) App.go(go);
     else if (x.kind === 'evento') { const e = S.events.find(e => e.id === x.id); if (e) { App.go('mensal'); setTimeout(() => Events.view(e), 200); } }
   },
@@ -3367,9 +3335,9 @@ const Cal = {
   itemsOn(k) {
     const out = [];
     S.events.filter(e => e.date === k).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
-    S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit', resp: x.responsible, st: x.status }));
+    S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
     if (S.settings.showProjetos) S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
-    S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit', resp: o.responsible, st: o.status }));
+    S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
     // Missões com data que não criam item próprio (feedback com alguém, missão livre)
     if (typeof Missoes !== 'undefined') Missoes.list().filter(m => m.data === k && (m.tipo === 'feedbackItem' || m.tipo === 'manual') && !(m.tipo === 'manual' ? m.feitaEm : Missoes.itemFeito(m)))
       .forEach(m => out.push({ type: 'missao', label: m.titulo, time: '', id: m.id, act: 'msAbrir' }));
@@ -3600,37 +3568,70 @@ Views.dashboard = {
   },
   render() {
     const t = U.today(), nowM = U.nowMin();
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
     const workday = D.isWorkday(t);
     const blocks = D.dayBlocks(t);
     const prog = D.progress(t);
     const focus = S.weekly.focus.find(f => f.day === U.weekday(t));
-    const ws = U.weekStart(t);
 
-    // Agora: a atividade do momento e a próxima (com o botão de concluir)
-    const naoFeitas = blocks.filter(b => !D.blockDone(b) && !D.isBreak(b));
-    const atual = naoFeitas.find(b => D.blockNow(b, t)), proxima = naoFeitas.find(b => U.toMin(b.start) > nowM && b !== atual);
-    const lin = (b, rot) => `<div class="ag-now ${rot === 'Agora' ? 'is-now' : ''}" style="--c:${D.cat(b.category).color}">
-        <span class="ag-now-r">${rot}</span><span class="ag-now-t" data-act="goAgenda" data-d="${t}"><strong>${U.esc(b.title)}</strong><small class="muted">${b.start}–${b.end}</small></span>
-        <button class="icon-btn ok" data-act="agStatusHoje" data-id="${b.id}" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button></div>`;
-    // Precisa de atenção: imprevistos abertos, atrasadas e reuniões para registrar (com os botões na frente)
-    const occ = S.occurrences.filter(o => OPEN(o.status)).sort((a, b) => (D.occLate(b) - D.occLate(a)) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-    const atrasadas = S.tasks.filter(D.taskLate).sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
-    const hojeT = S.tasks.filter(x => OPEN(x.status) && !D.taskLate(x) && x.dueDate === t);
-    const reg = Meetings.toRegister().filter(e => e.date >= U.addDays(t, -7));
-    const atencao = [...occ.map(o => Occ.row(o)), ...atrasadas.map(x => Tasks.row(x)), ...hojeT.map(x => Tasks.row(x))];
-    const nAt = atencao.length;
+    const open = S.tasks.filter(x => OPEN(x.status));
+    const lateTasks = open.filter(D.taskLate);
+    const lateBlocks = blocks.filter(b => D.blockLate(b, t));
+    const ws = U.weekStart(t), we = U.addDays(ws, 6);
+    const doneWeek = S.tasks.filter(x => x.status === 'concluida' && x.completedAt && x.completedAt.slice(0, 10) >= ws && x.completedAt.slice(0, 10) <= we);
+    const doneTotal = S.tasks.filter(x => x.status === 'concluida').length;
+    const openOcc = S.occurrences.filter(o => OPEN(o.status));
 
-    // O que cobrar: por pessoa, quem tem algo em aberto
-    const cobrar = Pessoas.todas().filter(p => p.abertas.length || p.missFb.length).slice(0, 6);
+    // Próximas atividades da agenda
+    const next = blocks.filter(b => !D.blockDone(b) && U.toMin(b.end) > nowM).slice(0, 5);
 
-    // Resumo da semana
+    // Pendências prioritárias (o que resolver)
+    const prioItems = [
+      ...openOcc.map(o => ({ kind: 'Imprevisto', title: o.title, prio: o.priority, info: D.deadline(o.dueDate, o.dueTime, false), link: '#imprevistos', demo: o.demo })),
+      ...open.filter(x => ['urgente', 'alta'].includes(x.priority) || D.taskLate(x)).map(x => ({ kind: 'Tarefa', title: x.title, prio: x.priority, info: D.deadline(x.dueDate, x.dueTime, false), link: '#tarefas', demo: x.demo })),
+      // Reuniões com pauta que já aconteceram (últimos 7 dias) e ainda não foram registradas
+      ...Meetings.toRegister().filter(e => e.date >= U.addDays(t, -7))
+        .map(e => ({ kind: 'Registrar reunião', title: e.title, prio: 'media', info: null, link: '#reunioes', demo: e.demo, ev: e.id })),
+    ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late')) || PRIORITY_RANK[a.prio] - PRIORITY_RANK[b.prio]).slice(0, 7);
+
+    // O que cobrar da equipe
+    const charge = [
+      ...open.filter(x => x.responsible).map(x => ({ who: x.responsible, what: x.title, kind: 'Tarefa', info: D.deadline(x.dueDate, x.dueTime, false), demo: x.demo })),
+      ...openOcc.filter(o => o.responsible).map(o => ({ who: o.responsible, what: o.title, kind: 'Imprevisto', info: D.deadline(o.dueDate, o.dueTime, false), demo: o.demo })),
+      ...(S.settings.showProjetos ? S.projects : []).filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status)).flatMap(p => (p.pendencias || []).filter(x => !x.done).map(x => ({ who: p.responsible || '—', what: x.text, kind: 'Pendência · ' + p.name, info: null, demo: p.demo }))),
+    ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late'))).slice(0, 7);
+
+    // Projetos
+    const projects = S.projects.filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status))
+      .sort((a, b) => (D.projectLate(b) - D.projectLate(a)) || (a.dueDate || '9').localeCompare(b.dueDate || '9')).slice(0, 5);
+
+    // Próximos 7 dias
+    const upcoming = [];
+    for (let i = 0; i <= 7; i++) {
+      const k = U.addDays(t, i);
+      S.tasks.filter(x => OPEN(x.status) && x.dueDate === k).forEach(x => upcoming.push({ k, label: x.title, type: 'Prazo de tarefa', demo: x.demo }));
+      (S.settings.showProjetos ? S.projects : []).filter(p => !['concluido', 'cancelado'].includes(p.status) && p.dueDate === k).forEach(p => upcoming.push({ k, label: p.name, type: 'Prazo de projeto', demo: p.demo }));
+      S.events.filter(e => e.date === k).forEach(e => upcoming.push({ k, label: e.title, type: 'Compromisso' + (e.time ? ' ' + e.time : '') + ((e.pautas || []).length ? `, ${U.plural(e.pautas.length, 'assunto')} na pauta` : ''), demo: e.demo, ev: e.id }));
+      S.occurrences.filter(o => OPEN(o.status) && o.dueDate === k).forEach(o => upcoming.push({ k, label: o.title, type: 'Prazo de imprevisto', demo: o.demo }));
+    }
+
+    // Resumo semanal
     const wdays = S.settings.workDays.filter(d => d >= 1 && d <= 6).concat(S.settings.workDays.includes(0) ? [0] : []);
     const weekKeys = wdays.map(d => U.addDays(ws, (d + 6) % 7));
+    const chk = S.weekly.checks[ws] || {};
+    const wItems = S.weekly.focus.filter(f => S.settings.workDays.includes(f.day)).flatMap(f => f.items);
+    const wDone = wItems.filter(i => chk[i.id]).length;
+    const wPct = wItems.length ? Math.round(wDone / wItems.length * 100) : null;
     const dayVals = weekKeys.map(k => k > t ? null : (D.progress(k).pct ?? null));
-    const doneWeek = S.tasks.filter(x => x.status === 'concluida' && x.completedAt && U.key(new Date(x.completedAt)) >= ws).length;
+
     const goals = S.settings.goals.map(g => ({ g, st: D.goalStatus(g) }));
+
+    const kpi = (label, value, sub, cls = '', href = '', status = '') => `<a class="kpi ${cls}" ${href ? `href="${href}"` : ''} ${status ? `data-act="goTasks" data-status="${status}"` : ''}><span class="kpi-l">${label}</span><strong class="kpi-v">${value}</strong><span class="kpi-s">${sub}</span></a>`;
+
+    const dWd = U.WD[U.weekday(t)].replace('-feira', '');
+    const dDate = `${dWd}, ${U.parse(t).getDate()} de ${U.MONTHS[U.parse(t).getMonth()].toLowerCase()}`;
     const showGoals = !!S.settings.showIndicadores, showProj = !!S.settings.showProjetos;
-    const projects = showProj ? S.projects.filter(p => ['andamento', 'planejamento', 'pausado'].includes(p.status)).sort((a, b) => (D.projectLate(b) - D.projectLate(a)) || (a.dueDate || '9').localeCompare(b.dueDate || '9')).slice(0, 4) : [];
 
     return `
     ${Updater.banner()}
@@ -3643,41 +3644,59 @@ Views.dashboard = {
       </div>
     </section>
 
-    <section class="card home-now">
-      <div class="card-h"><h3>${U.icon('clock')} Agora</h3><a class="link" href="#agenda" data-act="goAgenda" data-d="${t}">Abrir a agenda</a></div>
-      ${atual || proxima ? `${atual ? lin(atual, 'Agora') : ''}${proxima ? lin(proxima, atual ? 'Depois' : 'Próxima') : ''}`
-        : `<p class="muted small">${workday ? (prog.total ? 'As atividades de hoje foram encerradas.' : 'Nenhuma atividade na agenda de hoje.') : 'Sem agenda para hoje.'}</p>`}
-      ${nAt || reg.length ? `<h4 class="home-sub">Precisa de atenção <span class="badge ${occ.length || atrasadas.length ? 'b-red' : ''}">${nAt + reg.length}</span></h4>
-        <div class="task-list">${atencao.slice(0, 5).join('')}</div>
-        ${reg.length ? `<div class="mt-list">${reg.slice(0, 2).map(e => Meetings.card(e, '<span class="btn sm primary">Registrar</span>')).join('')}</div>` : ''}
-        ${nAt > 5 ? `<a class="link small" href="#agenda" data-act="goAgenda" data-d="${t}">Ver mais ${nAt - 5} na Agenda</a>` : ''}` : ''}
+    <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
+
+    <section class="kpis">
+      <div class="kpi kpi-ring">${Charts.ring(prog.pct, { size: 76, stroke: 7 })}<div><span class="kpi-l">Progresso do dia</span><span class="kpi-s">${prog.total ? `${prog.done} de ${U.plural(prog.total, 'atividade')}` : 'Sem atividades hoje'}</span><a class="link" href="#agenda">Abrir agenda</a></div></div>
+      ${kpi('Tarefas concluídas', doneTotal, `${doneWeek.length} nesta semana`, 'k-green', '#tarefas', 'concluida')}
+      ${kpi('Tarefas pendentes', open.length, `${open.filter(x => x.status === 'andamento').length} em andamento`, 'k-gray', '#tarefas', 'abertas')}
+      ${kpi('Atrasadas', lateTasks.length + lateBlocks.length, `${U.plural(lateTasks.length, 'tarefa')} · ${lateBlocks.length} na agenda`, (lateTasks.length + lateBlocks.length) ? 'k-red' : 'k-gray', '#tarefas', 'atrasadas')}
+      ${kpi('Imprevistos abertos', openOcc.length, openOcc.filter(D.occLate).length ? `${openOcc.filter(D.occLate).length} com prazo vencido` : 'Nenhum vencido', openOcc.length ? 'k-yellow' : 'k-gray', '#imprevistos')}
     </section>
 
-    <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
+    <section class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>${U.icon('clock')} O que fazer hoje</h3><a class="link" href="#agenda">Agenda</a></div>
+        ${next.length ? `<ul class="list">${next.map(b => `<li class="li ${D.blockNow(b, t) ? 'li-now' : ''}"><span class="li-time">${b.start}–${b.end}</span><span class="li-main" style="--c:${D.cat(b.category).color}"><span class="cat-dot"></span>${U.esc(b.title)}</span>${D.blockNow(b, t) ? '<span class="badge b-blue">Agora</span>' : b.status === 'andamento' ? H.status('andamento') : ''}</li>`).join('')}</ul>`
+          : H.empty(workday ? (prog.total ? 'Todas as atividades de hoje foram encerradas.' : 'Nenhuma atividade na agenda de hoje.') : 'Sem agenda para hoje.')}
+        ${lateBlocks.length ? `<div class="alert a-red">${U.icon('alert')} ${U.plural(lateBlocks.length, 'atividade')} da agenda ${lateBlocks.length > 1 ? 'passaram' : 'passou'} do horário sem conclusão. <a class="link" href="#agenda">Reorganizar</a></div>` : ''}
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>${U.icon('alert')} O que resolver</h3><a class="link" href="#tarefas">Tarefas</a></div>
+        ${prioItems.length ? `<ul class="list">${prioItems.map(i => `<li class="li"><a href="${i.link}" class="li-main" ${i.ev ? `data-act="evView" data-id="${i.ev}"` : ''}>${i.ev ? H.chip('Reunião', '#9461f5') : H.prio(i.prio)} <span>${U.esc(i.title)}</span>${H.demo(i)}</a><span class="li-side"><small class="muted">${i.kind}</small>${H.deadline(i.info)}</span></li>`).join('')}</ul>`
+          : H.empty('Nenhuma pendência urgente, de alta prioridade ou atrasada.')}
+      </div>
+    </section>
 
     <section class="${showProj ? 'grid-2' : 'grid-1'}">
       <div class="card">
-        <div class="card-h"><h3>${U.icon('users')} O que cobrar da equipe</h3><a class="link" href="#equipe">Equipe</a></div>
-        ${cobrar.length ? `<div class="fb-people">${cobrar.map(p => { const late = p.abertas.filter(x => D.taskLate(x) || D.occLate(x)).length; return `<div class="fb-person" role="button" tabindex="0" data-act="pessoaIr" data-n="${U.esc(p.nome)}"><span class="fb-av">${U.esc(FB.initials(p.nome))}</span>
-            <span class="fb-p-body"><strong>${U.esc(p.nome)}</strong><small class="muted">${[p.abertas.length ? U.plural(p.abertas.length, 'item aberto', 'itens abertos') : '', p.missFb.length ? 'feedback pedido' : ''].filter(Boolean).join(' · ')}</small></span>
-            ${late ? `<span class="badge b-red">${late} atrasado${late > 1 ? 's' : ''}</span>` : ''}${U.icon('right', 15)}</div>`; }).join('')}</div>`
-          : H.empty('Nada delegado em aberto. Ao criar uma tarefa, escolha um responsável para acompanhar aqui.')}
+        <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3></div>
+        ${charge.length ? `<ul class="list">${charge.map(c => `<li class="li li-stack"><div class="li-top"><strong>${U.esc(c.who)}</strong><small class="muted">${U.esc(c.kind)}</small>${H.deadline(c.info)}</div><div class="li-txt">${U.esc(c.what)}${H.demo(c)}</div></li>`).join('')}</ul>`
+          : H.empty('Nada delegado em aberto. Defina um responsável em tarefas, imprevistos ou projetos para acompanhar aqui.')}
       </div>
       ${showProj ? `<div class="card">
         <div class="card-h"><h3>${U.icon('kanban')} Projetos em andamento</h3><a class="link" href="#projetos">Projetos</a></div>
-        ${projects.length ? projects.map(p => { const pct = D.projectProgress(p); return `<div class="proj-mini"><div class="pm-h"><a href="#projetos" class="pm-n">${U.esc(p.name)}</a>${H.demo(p)}${H.pstatus(p.status)}</div><div class="pm-b">${H.bar(pct, D.projectLate(p) ? 'var(--red)' : 'var(--accent)')}<strong>${pct}%</strong></div></div>`; }).join('') : H.empty('Nenhum projeto ativo.')}
+        ${projects.length ? projects.map(p => { const pct = D.projectProgress(p); const dl = D.deadline(p.dueDate, null, false); return `<div class="proj-mini"><div class="pm-h"><a href="#projetos" class="pm-n">${U.esc(p.name)}</a>${H.demo(p)}${H.pstatus(p.status)}</div><div class="pm-b">${H.bar(pct, D.projectLate(p) ? 'var(--red)' : 'var(--accent)')}<strong>${pct}%</strong></div><div class="pm-f"><small class="muted">${U.esc(p.client || '')}</small>${H.deadline(dl)}</div></div>`; }).join('')
+          : H.empty('Nenhum projeto ativo cadastrado.', '<a class="btn sm" href="#projetos">Cadastrar projeto</a>')}
       </div>` : ''}
     </section>
 
     <section class="${showGoals ? 'grid-2' : 'grid-1'} dash-foot">
       <div class="card flat">
-        <div class="card-h"><h3>${U.icon('week')} Semana</h3><span class="muted small">${U.plural(doneWeek, 'tarefa concluída', 'tarefas concluídas')} · ${U.plural(S.occurrences.filter(o => o.date >= ws).length, 'imprevisto', 'imprevistos')}</span></div>
-        <p class="muted small">Conclusão da agenda por dia</p>
+        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#agenda">Agenda</a></div>
+        <div class="stat-row">
+          ${wItems.length ? `<div><small>Checklist semanal</small><strong>${wPct}%</strong></div>` : ''}
+          <div><small>Tarefas concluídas</small><strong>${doneWeek.length}</strong></div>
+          <div><small>Imprevistos na semana</small><strong>${S.occurrences.filter(o => o.date >= ws && o.date <= we).length}</strong></div>
+        </div>
+        ${wItems.length ? H.bar(wPct) : ''}
+        <p class="muted small mt">Conclusão da agenda por dia</p>
         ${dayVals.some(v => v !== null) ? Charts.bars({ labels: weekKeys.map(k => U.WD_SHORT[U.weekday(k)]), series: [{ name: 'Agenda concluída', color: 'var(--accent)', values: dayVals }], height: 150, unit: '%', maxValue: 100 }) : '<div class="chart-empty"><span>Sem dados ainda nesta semana</span></div>'}
       </div>
       ${showGoals ? `<div class="card flat">
         <div class="card-h"><h3>${U.icon('target')} Resultados e metas</h3><a class="link" href="#indicadores">Indicadores</a></div>
-        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--accent)')}</div>`).join('') : H.empty('Nenhuma meta configurada.', '<a class="btn sm" href="#config">Configurar metas</a>')}
+        ${goals.length ? goals.map(({ g, st }) => `<div class="goal"><div class="goal-h"><span>${U.esc(g.name || metricLabel(g.metric))}</span>${H.demo(g)}${st.achieved === null ? '<span class="badge">Sem dados</span>' : st.achieved ? '<span class="badge b-green">Alcançada</span>' : '<span class="badge b-yellow">Em curso</span>'}</div>${H.bar(st.pct, st.achieved ? 'var(--green)' : 'var(--accent)')}<small class="muted">${st.val === null ? 'Nenhum dado lançado' : `${U.fmtNum(st.val)} ${g.direction === 'max' ? '(máx.' : '(meta'} ${U.fmtNum(st.target)}) · ${g.period}`}</small></div>`).join('')
+          : H.empty('Nenhuma meta configurada.', '<a class="btn sm" href="#config">Configurar metas</a>')}
       </div>` : ''}
     </section>`;
   },
@@ -3686,10 +3705,8 @@ Views.dashboard = {
 </script>
   <script>/* js/views/agenda.js */
 'use strict';
-/* Agenda — tudo o que é para fazer, numa tela só:
-   1) calendário compacto (semana; "Ver o mês inteiro" abre o mês);
-   2) o dia escolhido numa lista única por horário: rotina, tarefas, imprevistos, reuniões e compromissos, com os botões na frente;
-   3) Pendências: imprevistos abertos, atrasadas, próximos dias e sem prazo (com busca) e as concluídas recentes. */
+/* Agenda — uma tela só: calendário compacto em cima (semana; "Ver mês" abre o mês inteiro) e, embaixo,
+   o dia escolhido numa lista única por horário: atividades da rotina + reuniões, compromissos e prazos. */
 Views.agenda = {
   title: 'Agenda', icon: 'clock', nav: 'Agenda',
   fab: () => ({ act: 'quickAdd', label: 'Adicionar neste dia', data: { k: Agenda.day(), from: 'agenda' } }),
@@ -3731,18 +3748,11 @@ Views.agenda = {
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
-    const acoes = i => i.type === 'tarefa'
-        ? (i.done ? `<button class="icon-btn" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-          : `<button class="icon-btn ok" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`) + `<button class="icon-btn" data-act="tkMore" data-id="${i.id}" data-v="full" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>`
-      : i.type === 'imprevisto'
-        ? (i.done ? `<button class="icon-btn" data-act="occStatus" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-          : `<button class="icon-btn ok" data-act="occStatus" data-id="${i.id}" data-s="concluida" title="Resolver" aria-label="Resolver">${U.icon('check', 16)}</button>`) + `<button class="icon-btn" data-act="occMore" data-id="${i.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>`
-      : U.icon('right', 16);
-    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" ${i.type === 'tarefa' || i.type === 'imprevisto' ? '' : 'role="button" tabindex="0"'} data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
-          <small class="blk-kind">${i.type === 'tarefa' ? 'Tarefa' : Cal.TYPES[i.type]}${i.resp ? ` · ${U.esc(i.resp)}` : ''}${i.st === 'andamento' ? ' · em andamento' : ''}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
-        <div class="blk-actions">${acoes(i)}</div></div>`;
+          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
+        <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
     const list = [
       ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
       ...blocks.map(b => ({ t: b.start, h: row(b) })),
@@ -3770,38 +3780,6 @@ Views.agenda = {
       <div class="timeline">
         ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
       </div>
-    </section>
-    ${this.pendencias(k)}`;
-  },
-
-  /* Pendências: o que está em aberto, independente do dia escolhido */
-  pendencias(k) {
-    const t = U.today(), q = (App.ui.pq || '').trim().toLowerCase();
-    const bate = x => !q || [x.title, x.description, x.responsible, x.notes].some(v => (v || '').toLowerCase().includes(q));
-    const occ = S.occurrences.filter(o => OPEN(o.status) && bate(o))
-      .sort((a, b) => (D.occLate(b) - D.occLate(a)) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-    const abertas = S.tasks.filter(x => OPEN(x.status) && bate(x))
-      .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (a.dueTime || '99').localeCompare(b.dueTime || '99') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-    const em14 = U.addDays(t, 14);
-    const grupos = [
-      ['Atrasadas', abertas.filter(D.taskLate), 'c-red'],
-      ...(k !== t || q ? [['Hoje', abertas.filter(x => !D.taskLate(x) && x.dueDate === t)]] : []),
-      ['Próximos dias', abertas.filter(x => !D.taskLate(x) && x.dueDate > t && x.dueDate <= em14)],
-      ['Sem prazo', abertas.filter(x => !x.dueDate)],
-      ['Mais adiante', abertas.filter(x => x.dueDate > em14)],
-    ].filter(([, l]) => l.length);
-    const desde = U.addDays(t, -14), dia = iso => iso ? U.key(new Date(iso)) : '';
-    const feitas = [...S.tasks.filter(x => x.status === 'concluida' && dia(x.completedAt) >= desde && bate(x)).map(x => ({ d: dia(x.completedAt), h: Tasks.row(x) })),
-      ...S.occurrences.filter(o => o.status === 'concluida' && (dia(o.resolvedAt) || o.date) >= desde && bate(o)).map(o => ({ d: dia(o.resolvedAt) || o.date, h: Occ.row(o) }))]
-      .sort((a, b) => b.d.localeCompare(a.d));
-    const total = occ.length + abertas.length;
-    return `<section class="pend">
-      <div class="pend-h"><h3>Pendências ${total ? `<span class="badge">${total}</span>` : ''}</h3><span class="grow"></span>
-        <input type="search" class="pend-q" placeholder="Buscar tarefa, imprevisto ou pessoa…" value="${U.esc(App.ui.pq || '')}" data-input="pendBusca" aria-label="Buscar nas pendências"></div>
-      ${occ.length ? `<div class="pend-g"><h4 class="c-red">${U.icon('alert', 15)} Imprevistos abertos</h4><div class="task-list">${occ.map(o => Occ.row(o)).join('')}</div></div>` : ''}
-      ${grupos.map(([nome, l, cls]) => `<div class="pend-g"><h4 class="${cls || ''}">${nome} <span class="muted">${l.length}</span></h4><div class="task-list">${l.map(x => Tasks.row(x)).join('')}</div></div>`).join('')}
-      ${!total ? `<p class="muted small">${q ? 'Nada encontrado com essa busca.' : 'Nenhuma pendência. Toque em <strong>+</strong> para criar uma tarefa ou registrar um imprevisto.'}</p>` : ''}
-      ${feitas.length ? `<details class="pend-g pend-feitas"><summary>Concluídas nos últimos 14 dias <span class="muted">${feitas.length}</span></summary><div class="task-list">${feitas.map(x => x.h).join('')}</div></details>` : ''}
     </section>`;
   },
 };
@@ -3884,10 +3862,6 @@ const Agenda = {
 };
 
 Object.assign(Actions, {
-  /* Concluir uma atividade de hoje a partir do Início */
-  agStatusHoje({ id }) { const k = U.today(), b = D.findBlock(k, id); if (!b) return; b.status = 'concluida'; commit(); },
-  pessoaIr({ n }) { App.ui.eqTab = 'pessoas'; App.ui.pessoa = n; App.go('equipe'); },
-  pendBusca(_, el) { App.ui.pq = el.value; App.render({ keepFocus: true }); },
   agShift({ n }) { n = Number(n); App.ui.agendaDate = n === 0 ? U.today() : U.addDays(Agenda.day(), n); App.render(); },
   agStatus({ id, s }) {
     const k = Agenda.day(); const b = D.findBlock(k, id); if (!b) return;
@@ -4013,27 +3987,53 @@ Object.assign(Actions, {
   <script>/* js/views/imprevistos.js */
 'use strict';
 /* Gestão de imprevistos — ocorrências que exigem atenção imediata */
-/* Imprevistos: aparecem em destaque na Agenda (Pendências) e no dia do prazo */
-const Occ = {
-  row(o) {
-    const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
-    const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
-    return `<div class="task occ-row prio-${o.priority} ${o.status} ${D.occLate(o) ? 'dl-row-late' : ''}" style="--c:var(--t-imprevisto)">
-      <div class="tk-body" data-act="occEdit" data-id="${o.id}">
-        <div class="tk-title">${U.esc(o.title)}${H.demo(o)}${o.status === 'andamento' ? ' ' + H.status('andamento') : ''}</div>
-        <div class="tk-meta"><span class="badge b-red">Imprevisto</span>${['alta', 'urgente'].includes(o.priority) ? H.prio(o.priority) : ''}
-          ${o.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(o.responsible)}</span>` : ''}
-          ${sch ? `<span class="muted">${U.icon('calendar', 13)} ${U.fmtShort(o.scheduled.date)} ${sch.start}</span>` : o.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtShort(o.dueDate)}${o.dueTime ? ' ' + o.dueTime : ''}</span>` : ''}
-          ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
-      </div>
-      <div class="tk-side">
-        ${OPEN(o.status) ? `${sch ? '' : `<button class="icon-btn" data-act="occSchedule" data-id="${o.id}" title="Encaixar na agenda" aria-label="Encaixar na agenda">${U.icon('calendar', 16)}</button>`}
-          <button class="icon-btn ok" data-act="occStatus" data-id="${o.id}" data-s="concluida" title="Resolver" aria-label="Resolver">${U.icon('check', 16)}</button>`
-          : `<button class="icon-btn" data-act="occStatus" data-id="${o.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`}
-        <button class="icon-btn" data-act="occMore" data-id="${o.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
-      </div>
-    </div>`;
+Views.imprevistos = {
+  title: 'Imprevistos', icon: 'alert', nav: 'Imprevistos',
+  fab: { act: 'occNew', label: 'Registrar imprevisto' },
+  render() {
+    const f = App.ui.occFilter || 'abertas';
+    const all = S.occurrences;
+    const list = all.filter(o => f === 'todas' ? true : f === 'abertas' ? OPEN(o.status) : !OPEN(o.status))
+      .sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.occLate(b) - D.occLate(a)) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || (b.date + b.time).localeCompare(a.date + a.time));
+    const nOpen = all.filter(o => OPEN(o.status)).length;
+    const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
+
+    const card = o => {
+      const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
+      const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
+      return `<div class="occ card prio-border-${o.priority} ${D.occLate(o) ? 'late' : ''} ${OPEN(o.status) ? '' : 'closed'}">
+        <div class="occ-h"><h3>${U.esc(o.title)}</h3>${H.demo(o)}<span class="grow"></span>${H.prio(o.priority)} ${H.status(o.status)}</div>
+        <div class="occ-meta">
+          <span>${U.icon('clock', 14)} Registrado ${U.fmtDate(o.date)} ${o.time || ''}</span>
+          ${o.responsible ? `<span>${U.icon('user', 14)} ${U.esc(o.responsible)}</span>` : ''}
+          ${o.dueDate ? `<span>${U.icon('flag', 14)} Prazo ${U.fmtDate(o.dueDate)} ${o.dueTime || ''}</span>` : ''}
+          ${H.deadline(dl)}
+        </div>
+        ${o.description ? `<p>${U.esc(o.description)}</p>` : ''}
+        ${o.notes ? `<p class="muted small"><strong>Obs.:</strong> ${U.esc(o.notes)}</p>` : ''}
+        ${sch ? `<p class="small sched">${U.icon('calendar', 14)} Na agenda: ${U.fmtDate(o.scheduled.date)}, ${sch.start}–${sch.end} · <a class="link" href="#agenda" data-act="goAgenda" data-d="${o.scheduled.date}">abrir</a></p>` : ''}
+        <div class="occ-actions">
+          ${OPEN(o.status) ? `<button class="btn sm" data-act="occSchedule" data-id="${o.id}">${U.icon('calendar', 15)} ${sch ? 'Reagendar' : 'Encaixar na agenda'}</button>
+          ${o.status === 'pendente' ? `<button class="btn sm ghost" data-act="occStatus" data-id="${o.id}" data-s="andamento">${U.icon('play', 13)} Iniciar</button>` : ''}
+          <button class="btn sm ghost ok-text" data-act="occStatus" data-id="${o.id}" data-s="concluida">${U.icon('check', 15)} Resolver</button>`
+          : `<button class="btn sm ghost" data-act="occStatus" data-id="${o.id}" data-s="pendente">${U.icon('undo', 15)} Reabrir</button>`}
+          <span class="grow"></span>
+          <button class="icon-btn" data-act="occEdit" data-id="${o.id}" title="Editar">${U.icon('edit', 16)}</button>
+          <button class="icon-btn" data-act="occDelete" data-id="${o.id}" title="Excluir">${U.icon('trash', 16)}</button>
+        </div>
+      </div>`;
+    };
+
+    return `
+    <div class="toolbar">
+      <div class="tabs">${tab('abertas', 'Abertos', nOpen)}${tab('encerradas', 'Encerrados', all.length - nOpen)}${tab('todas', 'Todos', all.length)}</div>
+    </div>
+    <p class="muted small">Registre aqui demandas urgentes que exigem sua atenção imediata. Use <strong>Encaixar na agenda</strong> para reservar um horário e reorganizar o dia automaticamente.</p>
+    <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;
   },
+};
+
+const Occ = {
   form(o, { scheduleAfter = false } = {}) {
     const isNew = !o;
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime() };
@@ -4076,16 +4076,7 @@ const Occ = {
 };
 
 Object.assign(Actions, {
-  occMore({ id }) {
-    const o = S.occurrences.find(x => x.id === id); if (!o) return;
-    UI.sheet(o.title, [
-      { label: 'Editar', icon: 'edit', onClick: () => Occ.form(o) },
-      ...(OPEN(o.status) ? [{ label: o.scheduled ? 'Reagendar na agenda' : 'Encaixar na agenda', hint: 'Reserva um horário e reorganiza o dia', icon: 'calendar', onClick: () => Actions.occSchedule({ id }) },
-        ...(o.status === 'pendente' ? [{ label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.occStatus({ id, s: 'andamento' }) }] : [])] : []),
-      { sep: true },
-      { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.occDelete({ id }) },
-    ]);
-  },
+  occFilter({ v }) { App.ui.occFilter = v; App.render(); },
   occNew() { Occ.form(null); },
   occEdit({ id }) { Occ.form(S.occurrences.find(o => o.id === id)); },
   occSchedule({ id }) { Agenda.scheduleDialog(S.occurrences.find(o => o.id === id)); },
@@ -4353,7 +4344,7 @@ Object.assign(Actions, {
 </script>
   <script>/* js/views/reunioes.js */
 'use strict';
-/* Reuniões (aba da tela Equipe).
+/* Reuniões e feedbacks — conversas com pessoas num lugar só.
    Aba Reuniões: marcar com pauta, gravar, registrar o que foi combinado (com IA, se quiser).
    Aba Feedbacks: conversas individuais com cada colaborador (FBPage, em feedbacks.js). */
 const Meetings = {
@@ -4373,9 +4364,18 @@ const Meetings = {
   },
 };
 
-Object.assign(Meetings, {
-  /* Aba Reuniões da tela Equipe */
-  lista() {
+Views.reunioes = {
+  title: 'Reuniões e feedbacks', icon: 'users', nav: 'Reuniões e feedbacks',
+  fab: () => App.ui.mtTab === 'feedbacks'
+    ? { act: 'fbNew', label: 'Novo feedback', data: App.ui.fbWho ? { n: App.ui.fbWho } : {} }
+    : { act: 'mtNew', label: 'Nova reunião' },
+  render() {
+    const tab = App.ui.mtTab === 'feedbacks' ? 'feedbacks' : 'reunioes';
+    const nMt = Meetings.toRegister().length + Meetings.upcoming().filter(Meetings.isMeeting).length, nFb = FB.list().length;
+    const tabs = `<div class="tabs mt-tabs" role="tablist">${[['reunioes', 'Reuniões', nMt], ['feedbacks', 'Feedbacks', nFb]].map(([v, l, n]) => `<button class="tab ${tab === v ? 'active' : ''}" role="tab" aria-selected="${tab === v}" data-act="mtTab" data-v="${v}">${l}${n ? ` <span class="tab-n">${n}</span>` : ''}</button>`).join('')}</div>`;
+    return tabs + (tab === 'feedbacks' ? FBPage.render() : this.meetings());
+  },
+  meetings() {
     const reg = Meetings.toRegister(), up = Meetings.upcoming(), done = Meetings.registered();
     const empty = !reg.length && !up.length && !done.length;
     const iaHint = IA.supported() && !IA.ready() ? `<p class="muted small">Dica: com a <a class="link" href="#config" data-act="cfgJump" data-id="ia">IA ativada</a>, ela preenche o registro a partir da gravação ou das suas anotações.</p>` : '';
@@ -4394,11 +4394,12 @@ Object.assign(Meetings, {
     ${up.length ? `<section class="mt-sec"><h3 class="mt-h">Próximas</h3><div class="mt-list">${up.slice(0, 30).map(e => Meetings.card(e, e.date === U.today() ? `<button class="btn sm primary" data-act="mtStart" data-id="${e.id}">${U.icon('mic', 14)} Iniciar</button>` : '')).join('')}</div></section>` : ''}
     ${done.length ? `<section class="mt-sec"><h3 class="mt-h">Registradas</h3><div class="mt-list">${done.map(e => Meetings.card(e, `<span class="badge b-green">${(e.pautas || []).length ? `${e.registro.tratadas.length}/${e.pautas.length} tratados` : 'Registrada'}</span>`)).join('')}</div></section>` : ''}`;
   },
-});
+};
 
 Object.assign(Actions, {
   mtStart({ id }) { const e = S.events.find(x => x.id === id); if (e) Events.register(e); },
   mtNew() { Events.form(null, U.today(), { reuniao: true }); },
+  mtTab({ v }) { App.ui.mtTab = v; if (v !== 'feedbacks') App.ui.fbWho = null; App.render({ resetScroll: true }); },
 });
 
 </script>
@@ -4410,6 +4411,13 @@ const FB = {
   TOM_COLOR: { positivo: '#3dbe8b', neutro: '#8e87a3', melhorar: '#e3a043' },
   TIPO_COLOR: { feedback: '#9461f5', orientacao: '#e3a043', advertencia: '#ee5a6f' },
   list() { return S.feedbacks || (S.feedbacks = []); },
+  people() {
+    const names = new Map();
+    S.settings.technicians.forEach(t => names.set(t.name, { name: t.name, demo: t.demo, items: [] }));
+    this.list().forEach(f => { if (!names.has(f.pessoa)) names.set(f.pessoa, { name: f.pessoa, items: [] }); names.get(f.pessoa).items.push(f); });
+    return [...names.values()].map(p => ({ ...p, items: p.items.sort((a, b) => b.date.localeCompare(a.date)) }))
+      .sort((a, b) => ((b.items[0] || {}).date || '').localeCompare((a.items[0] || {}).date || '') || a.name.localeCompare(b.name));
+  },
   initials(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); },
   chips(f) { return `${H.chip(IA.TONS[f.tom] || 'Neutro', this.TOM_COLOR[f.tom] || '#8e87a3')}${f.tipo && f.tipo !== 'feedback' ? H.chip(IA.TIPOS[f.tipo], this.TIPO_COLOR[f.tipo]) : ''}${f.transcricao ? `<span class="muted" title="Conversa gravada">${U.icon('mic', 13)}</span>` : ''}`; },
   card(f, showName) {
@@ -4417,6 +4425,39 @@ const FB = {
     return `<div class="fb-card" role="button" tabindex="0" data-act="fbView" data-id="${f.id}">
       <div class="fb-card-h">${showName ? `<strong>${U.esc(f.pessoa)}</strong>` : ''}<span class="muted small">${U.fmtDate(f.date)}</span>${this.chips(f)}</div>
       <p class="fb-card-t">${U.esc(first)}</p></div>`;
+  },
+};
+
+/* Aba "Feedbacks" da tela Reuniões e feedbacks */
+const FBPage = {
+  render() {
+    const who = App.ui.fbWho;
+    if (who) return this.person(who);
+    const people = FB.people(), recent = [...FB.list()].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+    // Feedbacks pedidos em missões (ainda não registrados)
+    const pend = (S.missoes || []).filter(m => m.tipo === 'feedbackItem' && !Missoes.itemFeito(m));
+    return `
+    ${pend.length ? `<section class="mt-sec"><h3 class="mt-h">Para fazer <span class="badge b-yellow">${pend.length}</span></h3><div class="mt-list">${pend.map(m => `<div class="mt-card" role="button" tabindex="0" data-act="msAbrir" data-id="${m.id}">
+        <span class="fb-av">${U.esc(FB.initials(m.pessoa || '?'))}</span>
+        <span class="mt-body"><span class="mt-title">${U.esc(m.titulo)}</span><span class="mt-meta">Missão${m.de_ ? ` de ${U.esc(m.de_)}` : ''}${m.data ? ` · ${U.fmtShort(m.data)}` : ''} · +${m.xp} XP</span></span>
+        <span class="btn sm primary">Registrar</span></div>`).join('')}</div></section>` : ''}
+    ${people.length ? `<section class="mt-sec"><h3 class="mt-h">Equipe</h3><div class="fb-people">${people.map(p => `<div class="fb-person" role="button" tabindex="0" data-act="fbWho" data-n="${U.esc(p.name)}">
+        <span class="fb-av">${U.esc(FB.initials(p.name))}</span>
+        <span class="fb-p-body"><strong>${U.esc(p.name)}${H.demo(p)}</strong><small class="muted">${p.items.length ? `${U.plural(p.items.length, 'feedback')} · último em ${U.fmtShort(p.items[0].date)}` : 'Nenhum feedback ainda'}</small></span>
+        ${p.items[0] ? H.chip(IA.TONS[p.items[0].tom] || 'Neutro', FB.TOM_COLOR[p.items[0].tom] || '#8e87a3') : ''}${U.icon('right', 15)}</div>`).join('')}</div></section>` : `<div class="card mt-empty"><h3>Como funciona</h3><ol class="mt-steps">
+        <li>Toque em <strong>+</strong> e escreva o nome do colaborador (ele entra na lista da equipe).</li>
+        <li>Na conversa, toque em <strong>Iniciar gravação</strong> (avise o colaborador). A transcrição aparece na tela.</li>
+        <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA escreve o registro e separa os acordos. Confira e salve.</li></ol></div>`}
+    ${recent.length ? `<section class="mt-sec"><h3 class="mt-h">Recentes</h3><div class="mt-list">${recent.map(f => FB.card(f, true)).join('')}</div></section>` : ''}`;
+  },
+  person(name) {
+    const items = FB.list().filter(f => f.pessoa === name).sort((a, b) => b.date.localeCompare(a.date));
+    const count = k => items.filter(f => f.tom === k).length;
+    return `
+    <div class="toolbar"><button class="btn sm ghost" data-act="fbWho" data-n="">${U.icon('left', 15)} Equipe</button></div>
+    <div class="card fb-head"><span class="fb-av big">${U.esc(FB.initials(name))}</span><div><h2>${U.esc(name)}</h2>
+      <p class="muted small">${items.length ? `${U.plural(items.length, 'feedback')}: ${count('positivo')} positivos, ${count('neutro')} neutros, ${count('melhorar')} a melhorar` : 'Nenhum feedback registrado ainda.'}</p></div></div>
+    ${items.length ? `<div class="mt-list">${items.map(f => FB.card(f, false)).join('')}</div>` : H.empty('Toque em + para registrar a primeira conversa.')}`;
   },
 };
 
@@ -4465,7 +4506,7 @@ Object.assign(FB, {
           S.tasks.push({ id: U.uid(), title, description: `Acordo do feedback com ${v.pessoa} (${U.fmtShort(v.date)}).`, category: 'equipe', priority: 'media', status: 'pendente', responsible: v.pessoa, createdAt: new Date().toISOString(), startDate: U.today(), dueDate: '', dueTime: '', notes: '', completedAt: null });
         });
         warned = true;
-        if (App.route === 'equipe' && !App.ui.pessoa) App.ui.pessoa = v.pessoa;
+        if (App.route === 'reunioes' && App.ui.mtTab === 'feedbacks') App.ui.fbWho = v.pessoa;
         commit();
         UI.toast(n ? `Feedback salvo e ${U.plural(n, 'tarefa criada', 'tarefas criadas')}.` : 'Feedback salvo.');
       },
@@ -4516,7 +4557,8 @@ Object.assign(FB, {
 });
 
 Object.assign(Actions, {
-  fbNew({ n }) { FB.form(null, n || App.ui.pessoa || ''); },
+  fbNew({ n }) { FB.form(null, n || App.ui.fbWho || ''); },
+  fbWho({ n }) { App.ui.fbWho = n || null; App.render({ resetScroll: true }); },
   fbView({ id }) { const f = FB.list().find(x => x.id === id); if (f) FB.view(f); },
 });
 
@@ -4524,31 +4566,83 @@ Object.assign(Actions, {
   <script>/* js/views/tarefas.js */
 'use strict';
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
-/* Tarefas: aparecem na Agenda (no dia do prazo e em Pendências) e na página de cada pessoa da Equipe */
-const Tasks = {
-  /* Linha da tarefa com os botões na frente: ▶ começar, ✓ concluir, ✕ cancelar (ou ↶ reabrir) e ⋯ editar/excluir */
-  row(x, { semResp = false } = {}) {
-    const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
-    const fim = x.status === 'concluida' || x.status === 'cancelada';
-    return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
-      <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
-        <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
-        <div class="tk-meta">${['alta', 'urgente'].includes(x.priority) ? H.prio(x.priority) : ''}
-          ${x.responsible && !semResp ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
-          ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtShort(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : ''}
-          ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
-      </div>
-      <div class="tk-side">
-        ${fim ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-          : `${x.status === 'andamento'
-              ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
-              : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
-             <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
-             <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
-        <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
-      </div>
-    </div>`;
+Views.tarefas = {
+  title: 'Gestão de tarefas', icon: 'tasks', nav: 'Tarefas',
+  fab: { act: 'tkNew', label: 'Nova tarefa' },
+  render(params) {
+    const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
+    const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
+    const all = S.tasks;
+    const counts = {
+      abertas: all.filter(x => OPEN(x.status)).length,
+      atrasadas: all.filter(D.taskLate).length,
+      andamento: all.filter(x => x.status === 'andamento').length,
+      concluida: all.filter(x => x.status === 'concluida').length,
+      todas: all.length,
+    };
+    let list = all.filter(x => {
+      if (f.status === 'abertas' && !OPEN(x.status)) return false;
+      if (f.status === 'atrasadas' && !D.taskLate(x)) return false;
+      if (['pendente', 'andamento', 'concluida', 'cancelada'].includes(f.status) && x.status !== f.status) return false;
+      if (f.priority && x.priority !== f.priority) return false;
+      if (f.category && x.category !== f.category) return false;
+      if (f.q) { const q = f.q.toLowerCase(); if (![x.title, x.description, x.notes, x.responsible].some(s => (s || '').toLowerCase().includes(q))) return false; }
+      if (f.period === 'hoje' && x.dueDate !== t) return false;
+      if (f.period === 'semana' && !(x.dueDate >= ws && x.dueDate <= we)) return false;
+      if (f.period === 'proximos' && !(x.dueDate >= t && x.dueDate <= U.addDays(t, 7))) return false;
+      if (f.period === 'semprazo' && x.dueDate) return false;
+      if (f.from && !(x.dueDate && x.dueDate >= f.from)) return false;
+      if (f.to && !(x.dueDate && x.dueDate <= f.to)) return false;
+      return true;
+    });
+    list.sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.taskLate(b) - D.taskLate(a)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
+
+    const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
+    const sel = (name, opts, label) => `<select data-change="tkFilter" data-k="${name}" aria-label="${label}"><option value="">${label}</option>${UI.opts(opts, f[name])}</select>`;
+    const filtersOn = f.priority || f.category || f.period || f.from || f.to || f.q;
+
+    const row = x => {
+      const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
+      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
+        <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
+          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
+          ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
+          <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
+            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : '<span class="muted">Sem prazo</span>'}
+            ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
+        </div>
+        <div class="tk-side">
+          ${x.status === 'concluida' || x.status === 'cancelada'
+            ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
+            : `${x.status === 'andamento'
+                ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
+                : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
+               <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
+               <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
+          <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
+        </div>
+      </div>`;
+    };
+
+    return `
+    <div class="toolbar">
+      <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
+    </div>
+    <div class="filters card">
+      <input type="search" placeholder="Buscar tarefa, descrição ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      ${sel('category', H.catOptions(), 'Todas as categorias')}
+      ${sel('priority', H.prioOptions(), 'Todas as prioridades')}
+      ${sel('period', [['hoje', 'Prazo hoje'], ['semana', 'Prazo nesta semana'], ['proximos', 'Próximos 7 dias'], ['semprazo', 'Sem prazo']], 'Qualquer prazo')}
+      <label class="inline">De <input type="date" value="${f.from}" data-change="tkFilter" data-k="from"></label>
+      <label class="inline">Até <input type="date" value="${f.to}" data-change="tkFilter" data-k="to"></label>
+      ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
+    </div>
+    <p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>
+    <div class="task-list">${list.length ? list.map(row).join('') : H.empty(all.length ? 'Nenhuma tarefa com esses filtros.' : 'Nenhuma tarefa cadastrada ainda.', all.length ? '' : '<button class="btn sm primary" data-act="tkNew">Criar primeira tarefa</button>')}</div>`;
   },
+};
+
+const Tasks = {
   form(x, defaults = {}) {
     const isNew = !x;
     x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
@@ -4596,13 +4690,10 @@ Object.assign(Actions, {
     if (s === 'concluida') UI.toast('Tarefa concluída.', 'ok', undo);
     else if (s === 'cancelada') UI.toast('Tarefa cancelada.', 'ok', undo);
   },
-  tkMore({ id, v }) {
+  tkMore({ id }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
-    const full = v === 'full' && OPEN(x.status);
     UI.sheet(x.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
-      ...(full ? [x.status === 'andamento' ? { label: 'Voltar para pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) } : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) },
-        { label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
   },
@@ -4613,6 +4704,10 @@ Object.assign(Actions, {
       UI.toast('Tarefa excluída.', 'ok', { label: 'Desfazer', onClick: () => { S.tasks.splice(i, 0, x); commit(); } });
     }, { danger: true, okLabel: 'Excluir' });
   },
+  tkStatusF({ v }) { App.ui.taskF.status = v; App.render(); },
+  tkFilter({ k }, el) { App.ui.taskF[k] = el.value; App.render(); },
+  tkSearch(_, el) { App.ui.taskF.q = el.value; App.render({ keepFocus: true }); },
+  tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });
 
 </script>
@@ -4973,7 +5068,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -5047,7 +5142,9 @@ Views.config = {
         <div><h4>Status</h4><div class="cfg-list">${['pendente', 'andamento', 'concluida', 'cancelada'].map(k => `<div class="cfg-item"><input type="color" value="${st.statuses[k].color}" data-change="stColor" data-k="${k}"><input type="text" value="${U.esc(st.statuses[k].label)}" data-change="stLabel" data-k="${k}"></div>`).join('')}</div></div>
       </div>`)}
 
-    <p class="muted small">A lista de pessoas da equipe fica em <a class="link" href="#equipe">Equipe</a> (toque em + → Adicionar pessoa).</p>
+    ${sec('tecnicos', 'Equipe', 'As pessoas da sua equipe: usadas como responsáveis, nos feedbacks e na produtividade individual.', `
+      <div class="cfg-list">${st.technicians.length ? st.technicians.map(t => `<div class="cfg-item"><input type="text" value="${U.esc(t.name)}" data-change="tecName" data-id="${t.id}">${H.demo(t)}<button class="icon-btn xs" data-act="tecDel" data-id="${t.id}">${U.icon('trash', 14)}</button></div>`).join('') : '<p class="muted small">Ninguém cadastrado ainda.</p>'}</div>
+      <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome da pessoa…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
 
     ${!st.showIndicadores ? '' : sec('metas', 'Indicadores e metas', 'Dê aos indicadores os nomes que fazem sentido para a sua equipe. As metas são comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
       <div class="metric-names">${METRICS.map(m => `<label class="field"><span class="lbl">Indicador ${METRICS.indexOf(m) + 1}</span><input type="text" value="${U.esc(m.label)}" placeholder="${U.esc(METRIC_DEFAULT_NAMES[m.key])}" data-change="cfgMetricName" data-k="${m.key}" maxlength="40"></label>`).join('')}</div>
@@ -5186,6 +5283,9 @@ Object.assign(Actions, {
   prLabel({ k }, el) { if (el.value.trim()) { S.settings.priorities[k].label = el.value.trim(); commit(); } },
   stColor({ k }, el) { S.settings.statuses[k].color = el.value; commit(); },
   stLabel({ k }, el) { if (el.value.trim()) { S.settings.statuses[k].label = el.value.trim(); commit(); } },
+  tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Essa pessoa já está cadastrada.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
+  tecName({ id }, el) { const t = S.settings.technicians.find(x => x.id === id); if (el.value.trim()) { t.name = el.value.trim(); commit(); } },
+  tecDel({ id }) { const t = S.settings.technicians.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(t.name)}</strong>? Os lançamentos já feitos são mantidos.`, () => { S.settings.technicians = S.settings.technicians.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
   goalNew() { Goals.form(null); },
   goalEdit({ id }) { Goals.form(S.settings.goals.find(g => g.id === id)); },
   goalDel({ id }) { UI.confirm('Excluir esta meta?', () => { S.settings.goals = S.settings.goals.filter(g => g.id !== id); commit(); }, { danger: true, okLabel: 'Excluir' }); },
@@ -5223,7 +5323,7 @@ const Guide = {
   },
   /* Ilustrações: miniaturas dos componentes reais do app (não clicáveis) */
   mock: {
-    nav: () => `<div class="tour-mock tm-side"><div class="tm-top">${U.icon('menu', 20)}<strong>Início</strong></div><div class="tm-menu">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['users', 'Equipe'], ['trophy', 'Jornada'], ['settings', 'Configurações']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 16)}${l}</span>`).join('')}</div></div>`,
+    nav: () => `<div class="tour-mock tm-side"><div class="tm-top">${U.icon('menu', 20)}<strong>Início</strong></div><div class="tm-menu">${[['dashboard', 'Início'], ['clock', 'Agenda'], ['tasks', 'Tarefas'], ['users', 'Reuniões e feedbacks'], ['alert', 'Imprevistos']].map(([i, l], n) => `<span class="${n === 0 ? 'on' : ''}">${U.icon(i, 16)}${l}</span>`).join('')}</div></div>`,
     agenda: () => `<div class="tour-mock"><div class="blk" style="--c:#7b3fe4"><div class="blk-time"><strong>09:00</strong><span>10:30</span></div>
       <div class="blk-body"><div class="blk-head"><span class="blk-title">Acompanhamento operacional</span></div><small class="blk-kind">Rotina do dia</small></div>
       <div class="blk-actions"><span class="icon-btn ok">${U.icon('check', 16)}</span><span class="icon-btn info">${U.icon('play', 14)}</span><span class="icon-btn">${U.icon('more', 16)}</span></div></div>
@@ -5244,27 +5344,27 @@ const Guide = {
       { icon: 'dashboard', color: 'var(--primary)', title: 'Bem-vindo ao seu centro de controle',
         text: 'Em poucos toques você vê o que fazer hoje, o que está atrasado e o que cobrar da equipe.',
         mock: m.nav(),
-        points: ['No celular, a <strong>barra de baixo</strong> leva às quatro telas: <strong>Início</strong>, <strong>Agenda</strong> (rotina, tarefas e imprevistos), <strong>Equipe</strong> (pessoas, feedbacks e reuniões) e <strong>Jornada</strong>.', 'O botão redondo <strong>+</strong>, no canto de baixo, cria o item da tela em que você está (tarefa, reunião, imprevisto…). No Início e na Agenda ele pergunta o que criar.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
+        points: ['No celular, a <strong>barra de baixo</strong> leva às telas do dia a dia: Início, Agenda, Tarefas e Imprevistos.', 'O botão redondo <strong>+</strong>, no canto de baixo, cria o item da tela em que você está (tarefa, reunião, imprevisto…). No Início e na Agenda ele pergunta o que criar.', 'Toque em <strong>☰</strong>, no canto superior esquerdo, para abrir o menu com todas as telas. Também dá para arrastar o dedo a partir da borda esquerda.', 'Um <strong>ponto vermelho</strong> no ☰ avisa que há tarefas atrasadas ou imprevistos abertos.', Native.available() ? 'O botão <strong>voltar</strong> do Android fecha janelas e retorna ao Início.' : 'O botão <strong>?</strong> no topo abre o guia completo a qualquer momento.'] },
       { icon: 'dashboard', color: 'var(--primary)', title: 'Início: o resumo do seu dia',
         text: 'A primeira tela mostra a situação geral, atualizada automaticamente.',
         mock: m.dash(),
-        points: ['<strong>Hoje</strong>: XP, meta do dia, expediente e a barra do dia.', '<strong>Agora</strong>: a atividade do momento e o que <strong>precisa de atenção</strong> (imprevistos, atrasadas, tarefas de hoje), com os botões para resolver ali mesmo.', '<strong>Calendário</strong> do mês e <strong>O que cobrar da equipe</strong>, por pessoa.'] },
-      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: tudo o que é para fazer',
-        text: 'Em cima, a semana (ou o mês inteiro). Embaixo, o dia escolhido por horário: rotina, tarefas, imprevistos, reuniões e compromissos juntos. Mais abaixo, as <strong>Pendências</strong>.',
+        points: ['<strong>Calendário</strong>: bata o olho nos compromissos do mês. Toque num dia para ver a lista dele.', '<strong>O que fazer hoje</strong>: próximas atividades da agenda.', '<strong>O que resolver</strong>: urgentes, alta prioridade e atrasados.', '<strong>O que cobrar da equipe</strong>: itens com responsável definido.', 'Toque nos cartões para abrir a lista correspondente.'] },
+      { icon: 'clock', color: 'var(--primary)', title: 'Agenda: o seu dia numa lista só',
+        text: 'Em cima, a semana (ou o mês inteiro, em <strong>Ver o mês inteiro</strong>). Embaixo, o dia escolhido por horário: rotina, reuniões, compromissos e prazos juntos.',
         mock: m.agenda(),
         points: ['Toque na atividade para mudar horário, prioridade ou observações.', 'Toque num dia do calendário para ver a lista dele. Arraste para os lados para trocar de semana.', '<strong>+</strong> → <strong>Intervalo agora</strong> marca o almoço na hora em que você for e empurra o resto do dia.', '<strong>Reorganizar</strong> move as atrasadas para o próximo dia útil.', '<strong>Horário fixo</strong> só impede que a atividade seja empurrada; ela continua contando no progresso.'] },
       { icon: 'alert', color: 'var(--primary)', title: 'Imprevistos: o urgente sem bagunçar o dia',
-        text: 'Registre pelo botão <strong>+</strong> da Agenda. Eles ficam em destaque no topo das Pendências até serem resolvidos.',
+        text: 'Registre demandas que exigem atenção imediata pelo botão <strong>+</strong> da tela Imprevistos (ou da Agenda).',
         mock: m.occ(),
         points: ['<strong>Encaixar na agenda</strong> reserva um horário e empurra as atividades seguintes, sem mexer no intervalo.', 'Defina um <strong>responsável</strong> para acompanhar em “O que cobrar”.', '<strong>Resolver</strong> encerra o imprevisto e conclui o horário reservado.'] },
       { icon: 'tasks', color: 'var(--primary)', title: 'Tarefas com prazo e alertas',
-        text: 'Crie pelo <strong>+</strong> da Agenda. Com prazo, entram no dia certo; sem prazo, ficam em Pendências.',
+        text: 'Cadastre pendências com prazo, prioridade e, se delegar, o responsável.',
         mock: m.task(),
-        points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', '<strong>▶</strong> começa, <strong>✓</strong> conclui, <strong>✕</strong> cancela. A busca das Pendências acha qualquer tarefa ou imprevisto.', 'Com <strong>horário de prazo</strong>, o app pode te avisar na hora: ligue em Configurações → <strong>Lembretes</strong>.'] },
-      { icon: 'users', color: 'var(--primary)', title: 'Equipe: pessoas, feedbacks e reuniões',
-        text: 'Tudo sobre a equipe numa tela, com as abas Pessoas e Reuniões.',
+        points: ['<span class="c-yellow"><strong>Amarelo</strong></span>: vence hoje ou em breve. <span class="c-red"><strong>Vermelho</strong></span>: atrasada.', 'Os contadores no topo funcionam como filtros (Abertas, Atrasadas, Concluídas…).', 'Com <strong>horário de prazo</strong>, o app pode te avisar na hora: ligue em Configurações → <strong>Lembretes</strong>.'] },
+      { icon: 'users', color: 'var(--primary)', title: 'Reuniões e feedbacks',
+        text: 'As conversas com a equipe ficam numa tela só, com duas abas. Abra pelo menu ☰.',
         mock: m.plan(),
-        points: ['<strong>Reuniões</strong>: pauta antes; durante, gravação com transcrição ao vivo; depois, a IA escreve a ata.', '<strong>Pessoas</strong>: cada uma tem a sua página, com o que está com ela, as missões e os feedbacks (grave a conversa e a IA escreve o registro).'] },
+        points: ['<strong>Reuniões</strong>: pauta antes; durante, gravação com transcrição ao vivo; depois, a IA escreve a ata.', '<strong>Feedbacks</strong>: grave a conversa com o colaborador e a IA escreve o registro no padrão do seu agente.'] },
       { icon: 'download', color: 'var(--primary)', title: 'Seus dados', final: true,
         text: `Tudo o que você cadastra fica salvo ${this.whereData()}.`,
         mock: m.data(),
@@ -5372,17 +5472,17 @@ Views.guia = {
     ${sec('inicio', 'flag', 'Primeiros passos (5 minutos)', `<ol>
       <li><strong>Configurações → Jornada</strong>: confira entrada, saída, intervalo e dias de trabalho.</li>
       <li><strong>Configurações → Rotina padrão</strong>: cadastre as atividades que se repetem no seu dia (há uma de exemplo para editar ou excluir). Elas montam a agenda de cada dia útil.</li>
-      <li><strong>Equipe</strong>: toque em <strong>+</strong> → <strong>Adicionar pessoa</strong> para cadastrar quem trabalha com você.</li>
+      <li><strong>Configurações → Equipe</strong>: cadastre as pessoas da equipe para usar como responsáveis e nos feedbacks.</li>
       <li>Opcional: <strong>Configurações → Aparência</strong>: escreva o nome da sua empresa ou equipe (aparece no menu).</li>
-      <li><strong>Agenda</strong>: crie as tarefas pelo botão <strong>+</strong>.</li>
+      <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
     ${sec('nav', 'menu', 'Navegação', li([
-      'No celular, a <strong>barra de baixo</strong> tem as quatro telas: Início, Agenda, Equipe e Jornada.',
+      'No celular, a <strong>barra de baixo</strong> tem os atalhos do dia a dia: Início, Agenda, Tarefas e Imprevistos.',
       'Toque em <strong>☰</strong> (canto superior esquerdo) para abrir o menu com todas as telas. No celular, também dá para <strong>arrastar o dedo a partir da borda esquerda</strong>; para fechar, arraste para a esquerda ou toque fora.',
       'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início e na Agenda ele mostra a lista do que dá para criar: atividade, intervalo, tarefa, reunião, feedback, imprevisto ou compromisso.',
-      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Equipe, Jornada) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
-      'Os <strong>números</strong> no menu indicam, na Agenda, imprevistos abertos e tarefas atrasadas; na Equipe, reuniões para registrar.',
+      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões e feedbacks, Imprevistos) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
+      'Um <strong>ponto vermelho</strong> no ☰ e os <strong>números</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
       'O menu <strong>⋯</strong> reúne as ações menos usadas (adiar, mover, duplicar, excluir).',
@@ -5397,12 +5497,15 @@ Views.guia = {
       '<strong>Agenda do dia</strong>, no fim da lista, abre o cronograma por horário daquele dia.',
     ]))}
 
-    ${sec('dash', 'dashboard', 'Início', li([
-      'No topo, a <strong>saudação, a data e o relógio</strong>. Logo abaixo, o cartão <strong>Hoje</strong>: sequência, XP, nível e meta do dia (toque para abrir a Jornada) e o expediente com a <strong>barra do dia</strong> (roxo = concluído, vermelho = atrasado).',
-      '<strong>Agora</strong>: a atividade do momento e a próxima, com <strong>✓</strong> para concluir. Embaixo, <strong>Precisa de atenção</strong>: imprevistos abertos, tarefas atrasadas e de hoje e reuniões para registrar, com os botões para resolver ali mesmo.',
-      'O <strong>calendário</strong> do mês (veja o tema Calendário).',
-      '<strong>O que cobrar da equipe</strong>: quem tem algo em aberto com você. Toque na pessoa para abrir a página dela.',
-      `<strong>Semana</strong>: conclusão da agenda por dia${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,
+    ${sec('dash', 'dashboard', 'Início (Dashboard)', li([
+      '<strong>Progresso do dia</strong>: atividades da agenda concluídas (o intervalo e as canceladas não contam).',
+      '<strong>Tarefas concluídas / pendentes / atrasadas</strong>: toque no cartão para abrir a lista filtrada.',
+      '<strong>O que fazer hoje</strong>: a atividade atual (marcada “Agora”) e as próximas.',
+      '<strong>O que resolver</strong>: imprevistos abertos, tarefas urgentes, de alta prioridade ou atrasadas.',
+      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido.',
+      'A <strong>linha do tempo</strong> abaixo da data mostra o dia inteiro: blocos roxos estão concluídos, o claro é o que acontece agora e os vermelhos estão atrasados. Toque nela para abrir a agenda.',
+      'Logo abaixo, o <strong>calendário</strong> (veja o tema Calendário).',
+      `<strong>Resumo da semana</strong>${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,
     ]))}
 
     ${sec('agenda', 'clock', 'Agenda', `<p>O seu dia numa tela só. Em cima, o <strong>calendário da semana</strong>; toque num dia para abri-lo, ou em <strong>Ver o mês inteiro</strong>. Embaixo, a <strong>lista do dia por horário</strong>: as atividades da rotina e, no meio delas, reuniões, compromissos e prazos.</p>${li([
@@ -5417,17 +5520,24 @@ Views.guia = {
     ])}<p class="guide-note"><strong>Horário fixo</strong> significa só que a atividade não é empurrada quando o dia é reorganizado. Ela continua contando no progresso normalmente.</p>
     <p class="guide-note"><strong>Rotina padrão × dia:</strong> cada dia começa com a rotina padrão. Mudanças feitas em um dia valem só para ele. Para mudar todos os dias, edite em Configurações → Rotina padrão, ou marque “Aplicar também à rotina padrão” ao editar.</p>`)}
 
-    ${sec('pendencias', 'tasks', 'Tarefas e imprevistos (na Agenda)', li([
-      'Crie pelo <strong>+</strong> da Agenda: <strong>Tarefa</strong> (nome, prazo, horário, prioridade e responsável) ou <strong>Imprevisto</strong> (já encaixado no dia, se quiser).',
-      'Com prazo, a tarefa aparece no <strong>dia certo</strong> da agenda. Em <strong>Pendências</strong>, embaixo do dia, ficam: <strong>imprevistos abertos</strong> (em destaque), <strong>atrasadas</strong>, <strong>próximos dias</strong>, <strong>sem prazo</strong> e <strong>mais adiante</strong>. A busca acha qualquer uma pelo nome ou pela pessoa.',
-      'Tarefa: <strong>▶</strong> começa, <strong>✓</strong> conclui (com “Desfazer”), <strong>✕</strong> cancela, <strong>↶</strong> reabre e <strong>⋯</strong> → Editar ou Excluir.',
-      'Imprevisto: <strong>📅</strong> encaixa na agenda (reserva um horário e empurra as atividades seguintes, sem mexer no intervalo), <strong>✓</strong> resolve (e conclui o horário reservado) e <strong>⋯</strong> → Editar, Começar agora ou Excluir.',
-      'Com <strong>responsável</strong>, o item aparece na página da pessoa (Equipe) e no Início, em “O que cobrar”.',
-      'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada. As concluídas dos últimos 14 dias ficam no fim, recolhidas.',
+    ${sec('imprevistos', 'alert', 'Imprevistos', li([
+      'Registre pelo botão <strong>+</strong> na tela Imprevistos, ou pelo <strong>+</strong> da Agenda (aí ele já é encaixado no dia).',
+      'Preencha título, prioridade, prazo e <strong>responsável</strong> (aparece em “O que cobrar”).',
+      '<strong>Encaixar na agenda</strong>: escolha data, horário e duração. “Deslocar” empurra as atividades seguintes; “Apenas encaixar” mantém tudo como está.',
+      '<strong>Iniciar</strong> e <strong>Resolver</strong> atualizam o status. Ao resolver, o horário reservado na agenda é concluído.',
+      'Use as abas <strong>Abertos / Encerrados / Todos</strong> para consultar o histórico.',
+    ]))}
+
+    ${sec('tarefas', 'tasks', 'Tarefas', li([
+      'Botão <strong>+</strong>: nome, descrição, categoria, prioridade, status, início, prazo, horário e observações.',
+      '<strong>✓</strong> conclui (aparece “Desfazer” por alguns segundos) e <strong>↶</strong> reabre, como na Agenda.',
+      '<strong>▶</strong> começa (em andamento), <strong>✕</strong> cancela e <strong>⋯</strong> → Editar ou Excluir.',
+      'Os <strong>contadores do topo</strong> filtram a lista. Abaixo, há busca e filtros por categoria, prioridade e prazo.',
+      'Alertas: <span class="c-yellow"><strong>amarelo</strong></span> = vence hoje ou nos próximos dias (ajustável em Configurações); <span class="c-red"><strong>vermelho</strong></span> = atrasada.',
     ]))}
 
     ${sec('reunioes', 'users', 'Reuniões (pauta, registro e IA)', `
-      <p>Fica em <strong>Equipe</strong>, aba <strong>Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
+      <p>Fica em <strong>Menu → Reuniões e feedbacks</strong>, aba <strong>Reuniões</strong>. Serve para chegar na reunião com a pauta pronta, gravar com transcrição ao vivo e sair com os combinados registrados.</p>
       <ol>
         <li><strong>Antes:</strong> toque em <strong>+</strong> e preencha título, dia, horário e a <strong>pauta</strong>, um assunto por linha. Ou descreva o tema em <strong>Gerar pauta com IA</strong>: ela monta a pauta e pode incluir os assuntos que ficaram pendentes nas últimas reuniões.</li>
         <li><strong>Na hora:</strong> toque em <strong>Iniciar</strong> no cartão da reunião (ou abra a reunião e toque em <strong>Iniciar reunião</strong>). Dá para iniciar a qualquer momento, antes ou depois do horário marcado.</li>
@@ -5439,9 +5549,9 @@ Views.guia = {
       <p class="guide-note">Sem gravar também funciona: escreva ou dite (microfone do teclado) suas anotações e toque em <strong>Preencher com IA</strong>. A chave da IA fica em <strong>Configurações → IA</strong> (ou cole direto na tela da reunião).</p>`)}
 
     ${sec('feedbacks', 'chat', 'Feedbacks da equipe', `
-      <p>Fica em <strong>Equipe → Pessoas</strong>: toque na pessoa → <strong>Registrar feedback</strong> (ou <strong>+</strong> → Registrar feedback). A página da pessoa mostra todo o histórico, o que está com ela e as missões.</p>
+      <p>Fica em <strong>Menu → Reuniões e feedbacks</strong>, aba <strong>Feedbacks</strong>. Registra as conversas individuais com cada colaborador, com histórico por pessoa.</p>
       <ol>
-        <li>Escolha o colaborador (quem não estiver na lista entra sozinho), o tipo (feedback, orientação verbal ou advertência formal) e o tom.</li>
+        <li>Toque em <strong>+</strong>, escreva o nome do colaborador (ele entra na lista da equipe), o tipo (feedback, orientação verbal ou advertência formal) e o tom.</li>
         <li>Na conversa, toque em <strong>Iniciar gravação</strong>. A transcrição aparece na tela enquanto vocês conversam. Também dá para só escrever ou ditar anotações.</li>
         <li>Toque em <strong>Encerrar gravação</strong>: a IA escreve o registro no padrão do seu agente (2 ou 3 parágrafos) e separa os <strong>acordos</strong>.</li>
         <li>Ajuste com <strong>Natural</strong>, <strong>Compactar</strong> ou <strong>Detalhar</strong>, marque se quer criar tarefas para os acordos (com o colaborador como responsável) e toque em <strong>Salvar feedback</strong>.</li>
@@ -5460,13 +5570,13 @@ Views.guia = {
         'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
       ])}`)}
 
-    ${sec('equipe', 'users', 'Equipe na nuvem (Conta FlowFire)', `
-      <p>Fica em <strong>Equipe → Pessoas</strong>, no bloco <strong>Equipe na nuvem</strong>. Precisa estar com a Conta FlowFire conectada (Configurações → Conta).</p>
+    ${sec('equipe', 'users', 'Equipe (Conta FlowFire)', `
+      <p>Fica em <strong>Menu → Equipe</strong>. Precisa estar com a Conta FlowFire conectada (Configurações → Conta).</p>
       <ol>
         <li><strong>Criar uma equipe</strong>: dê um nome. Você vira o <strong>gestor</strong>.</li>
         <li><strong>Convidar</strong>: mande o link pelo WhatsApp. A pessoa abre, entra com a conta Google e aparece no seu painel. No app do celular dela: Equipe → <strong>Entrar com convite</strong> e cola o link.</li>
         <li><strong>Enviar missões</strong>: escolha a pessoa da equipe; as missões chegam sozinhas no app dela (tarefas, reuniões e imprevistos já criados e no calendário).</li>
-        <li>Cada pessoa da equipe aparece em <strong>Pessoas</strong> com nível e sequência; na página dela você vê XP, meta de hoje e o progresso de cada missão, atualizando ao vivo.</li>
+        <li>O <strong>painel</strong> mostra de cada pessoa: nível, XP, sequência, meta de hoje e o progresso das missões, atualizando ao vivo. Toque na pessoa para ver cada missão.</li>
       </ol>
       <p class="guide-note">Privacidade: o gestor vê só esse resumo. Tarefas, feedbacks, atas e anotações de cada pessoa continuam privados. Para tirar alguém: toque na pessoa → <strong>Remover da equipe</strong> (o link de convite é trocado). Quem quiser sair: Equipe → Sair da equipe.</p>`)}
 
@@ -6030,7 +6140,7 @@ const Equipes = {
     await d.set(this.p(id, 'membros', uid), { papel: 'gestor', entrouEm: Date.now(), ...this.resumo(id) });
     this.list().push({ id, nome, papel: 'gestor', convite });
     commit(); this.start();
-    App.ui.eqTab = 'pessoas'; App.ui.pessoa = null; App.go('equipe');
+    App.ui.eqSel = id; App.go('equipe');
     UI.toast(`Equipe “${nome}” criada. Agora convide as pessoas.`);
   },
   link(e) { return `${Missoes.SITE}${CANAL_TESTE ? 'teste/' : ''}#equipe?e=${e.id}&c=${e.convite}&n=${encodeURIComponent(e.nome)}`; },
@@ -6054,14 +6164,14 @@ const Equipes = {
     const o = Object.fromEntries(new URLSearchParams(q));
     if (!o.e || !o.c) return UI.toast('Convite inválido.', 'error');
     const nome = String(o.n || 'equipe').slice(0, 60);
-    if (this.list().some(e => e.id === o.e)) { App.go('equipe'); return UI.toast('Você já está nessa equipe.'); }
+    if (this.list().some(e => e.id === o.e)) { App.ui.eqSel = o.e; App.go('equipe'); return UI.toast('Você já está nessa equipe.'); }
     UI.confirm(`Você foi convidado para a equipe <strong>${U.esc(nome)}</strong> no FlowFire.<br><small class="muted">Quem lidera a equipe vai ver só um resumo seu: nível, XP, sequência, meta do dia e o progresso das missões que ele enviar. Suas tarefas, feedbacks e atas continuam privados.</small>`, async () => {
       try {
         if (!this.ativo()) { await Fire.connect(); if (!Fire.user) return; }
         await Fire.api.d.set(this.p(o.e, 'membros', Fire.user.uid), { papel: 'membro', convite: o.c, entrouEm: Date.now(), ...this.resumo(o.e) });
         this.list().push({ id: o.e, nome, papel: 'membro' });
         commit(); this.start();
-        App.go('equipe');
+        App.ui.eqSel = o.e; App.go('equipe');
         UI.toast(`Você entrou na equipe “${nome}”.`);
       } catch (x) { UI.toast(/permission/i.test(String(x && (x.code || x.message))) ? 'Este convite não vale mais. Peça um link novo a quem lidera a equipe.' : 'Não foi possível entrar: ' + Fire.erro(x), 'error'); }
     }, { title: 'Convite de equipe', okLabel: 'Entrar na equipe' });
@@ -6148,181 +6258,79 @@ const Equipes = {
   },
 };
 
+Views.equipe = {
+  title: 'Equipe', icon: 'user', nav: 'Equipe',
+  render() {
+    if (!Fire.supported()) return H.empty('Equipes não funcionam dentro do link do Claude. Use o app ou o site.');
+    if (!Fire.user) return `<div class="card eq-hero"><h2>${U.icon('users')} Equipes</h2>
+      <p>Crie a sua equipe, convide as pessoas por link e envie missões direto para o app de cada uma. Você acompanha o nível, a sequência e o progresso das missões de todos, ao vivo.</p>
+      <p class="muted small">Para usar equipes, entre na sua Conta FlowFire (a mesma conta Google em todos os aparelhos).</p>
+      <button class="btn primary" data-act="fireEntrar">Entrar com Google</button></div>`;
+    const eqs = Equipes.list();
+    const novo = `<section class="grid-2">
+      <form class="card eq-new" data-submit="eqCriar"><h3>${U.icon('plus')} Criar uma equipe</h3><p class="muted small">Você vira o gestor: convida as pessoas e envia missões.</p>
+        <div class="inline-add"><input name="nome" maxlength="60" required placeholder="Nome da equipe (ex.: Equipe técnica)"><button class="btn primary">Criar</button></div></form>
+      <form class="card eq-new" data-submit="eqEntrar"><h3>${U.icon('download')} Entrar com convite</h3><p class="muted small">Cole o link que você recebeu de quem lidera a equipe.</p>
+        <div class="inline-add"><input name="link" required placeholder="Cole aqui o link do convite"><button class="btn">Entrar</button></div></form>
+    </section>`;
+    if (!eqs.length) return `<div class="card eq-hero"><h2>${U.icon('users')} Equipes</h2><p>Você ainda não está em nenhuma equipe.</p></div>${novo}`;
+    const sel = eqs.find(e => e.id === App.ui.eqSel) || eqs[0];
+    const tabs = eqs.length > 1 ? `<div class="tabs mt-tabs">${eqs.map(e => `<button class="tab ${e.id === sel.id ? 'active' : ''}" data-act="eqSel" data-id="${e.id}">${U.esc(e.nome)}</button>`).join('')}</div>` : '';
+    return tabs + (sel.papel === 'gestor' ? this.gestor(sel) : this.membro(sel)) + `<details class="card eq-more"><summary>${U.icon('plus', 15)} Criar outra equipe ou entrar em outra</summary>${novo}</details>`;
+  },
+  gestor(e) {
+    const ms = (Equipes.membros[e.id] || []).slice().sort((a, b) => (a.papel === 'gestor') - (b.papel === 'gestor') || (b.resumo?.xp || 0) - (a.resumo?.xp || 0));
+    const card = m => {
+      const r = m.resumo || {}, miss = m.missoes || [], feitas = miss.filter(x => x.feitaEm).length, mp = Math.min(100, Math.round((r.hoje || 0) / (r.meta || 40) * 100));
+      return `<div class="card eq-m" role="button" tabindex="0" data-act="eqMembro" data-e="${e.id}" data-id="${m.id}">
+        <div class="eq-m-h"><span class="fb-av">${U.esc(FB.initials(m.nome || '?'))}</span>
+          <span class="eq-m-n"><strong>${U.esc(m.nome || 'Sem nome')}${m.id === Fire.user.uid ? ' <small class="muted">(você)</small>' : ''}</strong><small class="muted">${Equipes.quando(m.atualizadoEm)}</small></span>
+          <span class="jg-lvb num" title="Nível">${r.nivel || 1}</span></div>
+        <div class="eq-m-stats"><span class="jg-stat jg-flame ${r.streak ? 'lit' : ''}">${U.icon('flame', 15)}<b class="num">${r.streak || 0}</b></span><span class="jg-stat jg-xp">${U.icon('bolt', 14)}<b class="num">${r.xp || 0}</b> XP</span>
+          <span class="eq-m-miss">${miss.length ? `${U.icon('target', 14)} ${feitas}/${miss.length} missões` : '<span class="muted">Sem missões</span>'}</span></div>
+        <div class="jg-meta-t"><span>Meta de hoje</span><b class="num">${Math.min(r.hoje || 0, r.meta || 40)}/${r.meta || 40}</b></div>
+        <span class="jg-bar gold"><i style="width:${Math.max(mp, 3)}%"></i></span>
+      </div>`;
+    };
+    return `<section class="card eq-head">
+        <div><h2>${U.esc(e.nome)}</h2><p class="muted small">Você é o gestor · ${U.plural(ms.length, 'pessoa', 'pessoas')} · atualiza ao vivo</p></div>
+        <span class="grow"></span>
+        <button class="btn" data-act="eqConvidar" data-id="${e.id}">${U.icon('users', 15)} Convidar</button>
+        <button class="btn primary" data-act="eqMissoes" data-id="${e.id}">${U.icon('target', 15)} Enviar missões</button>
+      </section>
+      ${ms.length > 1 ? '' : `<p class="muted small">Ninguém entrou ainda. Toque em <strong>Convidar</strong> e mande o link pelo WhatsApp.</p>`}
+      <div class="eq-grid">${ms.map(card).join('')}</div>
+      <p class="muted small">Você vê só o resumo de cada pessoa. Tarefas, feedbacks e atas delas continuam privados. <a class="link" href="#equipe" data-act="eqSair" data-id="${e.id}">Excluir equipe</a></p>`;
+  },
+  membro(e) {
+    const r = Jogo.calc(), miss = r.miss.filter(m => m.equipe === e.id);
+    return `<section class="card eq-head"><div><h2>${U.esc(e.nome)}</h2><p class="muted small">Você é membro. Quem lidera vê o seu nível, XP, sequência e as missões que enviou.</p></div></section>
+      <section class="card"><div class="card-h"><h3>${U.icon('target')} Missões desta equipe</h3><a class="link" href="#jornada">Abrir a Jornada</a></div>
+        ${miss.length ? `<ul class="jg-miss">${miss.map(m => `<li class="${m.feitaEm ? 'ok' : ''}"><span class="jg-chk">${m.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(m.titulo)}</span><small class="muted">+${m.xp} XP${m.prazo ? ` · até ${U.fmtShort(m.prazo)}` : ''}</small></span><span class="jg-miss-n num">${m.n}/${m.de}</span></li>`).join('')}</ul>`
+          : '<p class="muted small">Nenhuma missão desta equipe ainda. Quando chegarem, elas aparecem aqui, na Jornada e, se forem tarefas ou reuniões, direto nas telas delas.</p>'}</section>
+      <p class="muted small"><a class="link" href="#equipe" data-act="eqSair" data-id="${e.id}">Sair da equipe</a></p>`;
+  },
+};
+
 Object.assign(Actions, {
   eqCriar(_, f) { const nome = f.elements.nome.value.trim(); if (nome) Equipes.criar(nome).catch(x => UI.toast('Não foi possível criar: ' + Fire.erro(x), 'error')); },
   eqEntrar(_, f) { const v = f.elements.link.value.trim(), q = v.includes('?') ? v.slice(v.indexOf('?') + 1) : v; Equipes.aceitarConvite(q); },
+  eqSel({ id }) { App.ui.eqSel = id; App.render(); },
   eqConvidar({ id }) { const e = Equipes.list().find(x => x.id === id); if (e) Equipes.convidar(e); },
   eqSair({ id }) { const e = Equipes.list().find(x => x.id === id); if (e) Equipes.sair(e); },
   eqMissoes({ id }) { Missoes.form(true, { equipe: id }); },
-});
-
-</script>
-  <script>/* js/views/equipe.js */
-'use strict';
-/* Equipe — tudo sobre pessoas num lugar só (substitui Reuniões e feedbacks):
-   - aba Pessoas: o que fazer agora (reuniões a registrar, feedbacks pedidos), a equipe na nuvem (gestor: convidar e
-     enviar missões) e a lista de pessoas. Cada pessoa tem uma página: tarefas e imprevistos com ela, missões e feedbacks.
-   - aba Reuniões: próximas, para registrar e registradas.
-   A lista de pessoas junta a equipe cadastrada, quem tem feedback, quem é responsável por algo e os membros da equipe na nuvem. */
-const Pessoas = {
-  chave: n => (n || '').trim().toLowerCase(),
-  /* Todas as pessoas, com o que há de cada uma */
-  todas() {
-    const mapa = new Map(), add = (nome, extra = {}) => {
-      nome = (nome || '').trim(); if (!nome) return null;
-      const k = this.chave(nome);
-      if (!mapa.has(k)) mapa.set(k, { nome, tec: null, membro: null, eq: null, fbs: [], abertas: [], missFb: [] });
-      return Object.assign(mapa.get(k), extra);
-    };
-    S.settings.technicians.forEach(t => add(t.name, { tec: t }));
-    if (typeof Equipes !== 'undefined' && Equipes.ativo())
-      for (const e of Equipes.gestorDe()) for (const m of Equipes.membros[e.id] || []) if (m.id !== Fire.user.uid) add(m.nome || m.email, { membro: m, eq: e });
-    FB.list().forEach(f => { const p = add(f.pessoa); if (p) p.fbs.push(f); });
-    [...S.tasks.filter(x => OPEN(x.status)), ...S.occurrences.filter(o => OPEN(o.status))].forEach(x => { const p = add(x.responsible); if (p) p.abertas.push(x); });
-    Missoes.list().filter(m => m.tipo === 'feedbackItem' && !Missoes.itemFeito(m)).forEach(m => { const p = add(m.pessoa); if (p) p.missFb.push(m); });
-    return [...mapa.values()].map(p => ({ ...p, fbs: p.fbs.sort((a, b) => b.date.localeCompare(a.date)) }))
-      .sort((a, b) => (b.missFb.length - a.missFb.length) || (b.abertas.filter(D.taskLate).length - a.abertas.filter(D.taskLate).length) || a.nome.localeCompare(b.nome));
-  },
-  uma(nome) { return this.todas().find(p => this.chave(p.nome) === this.chave(nome)); },
-  /* Renomear: atualiza a lista e tudo que cita a pessoa */
-  renomear(antigo, novo) {
-    const k = this.chave(antigo), troca = v => (this.chave(v) === k ? novo : v);
-    S.settings.technicians.forEach(t => { t.name = troca(t.name); });
-    S.tasks.forEach(x => { x.responsible = troca(x.responsible); });
-    S.occurrences.forEach(o => { o.responsible = troca(o.responsible); });
-    S.projects.forEach(p => { p.responsible = troca(p.responsible); });
-    FB.list().forEach(f => { f.pessoa = troca(f.pessoa); });
-    Missoes.list().forEach(m => { if (m.pessoa) { const n = troca(m.pessoa); if (n !== m.pessoa) { m.pessoa = n; m.titulo = 'Feedback com ' + n; } } });
-    (S.indicators || []).forEach(r => { r.technician = troca(r.technician); });
-  },
-};
-
-Views.equipe = {
-  title: 'Equipe', icon: 'users', nav: 'Equipe',
-  fab() {
-    if (App.ui.eqTab === 'reunioes') return { act: 'mtNew', label: 'Nova reunião' };
-    if (App.ui.pessoa) return { act: 'fbNew', label: 'Registrar feedback', data: { n: App.ui.pessoa } };
-    return { act: 'eqAdd', label: 'Adicionar' };
-  },
-  render() {
-    const tab = App.ui.eqTab === 'reunioes' ? 'reunioes' : 'pessoas';
-    const nReg = Meetings.toRegister().length;
-    const tabs = `<div class="tabs mt-tabs" role="tablist">${[['pessoas', 'Pessoas', 0], ['reunioes', 'Reuniões', nReg]].map(([v, l, n]) => `<button class="tab ${tab === v ? 'active' : ''}" role="tab" aria-selected="${tab === v}" data-act="eqTab" data-v="${v}">${l}${n ? ` <span class="tab-n">${n}</span>` : ''}</button>`).join('')}</div>`;
-    if (tab === 'reunioes') return tabs + Meetings.lista();
-    if (App.ui.pessoa) return this.pessoa(App.ui.pessoa);
-    return tabs + this.pessoas();
-  },
-
-  /* ---------- Aba Pessoas ---------- */
-  pessoas() {
-    const ps = Pessoas.todas(), reg = Meetings.toRegister(), fbPend = ps.flatMap(p => p.missFb.map(m => ({ p, m })));
-    const agora = [
-      ...reg.slice(0, 3).map(e => Meetings.card(e, '<span class="btn sm primary">Registrar</span>')),
-      ...fbPend.map(({ p, m }) => `<div class="mt-card" role="button" tabindex="0" data-act="msAbrir" data-id="${m.id}"><span class="fb-av">${U.esc(FB.initials(p.nome))}</span>
-        <span class="mt-body"><span class="mt-title">${U.esc(m.titulo)}</span><span class="mt-meta">Missão${m.de_ ? ` de ${U.esc(m.de_)}` : ''}${m.data ? ` · ${U.fmtShort(m.data)}` : ''} · +${m.xp} XP</span></span><span class="btn sm primary">Registrar</span></div>`),
-    ];
-    const card = p => {
-      const late = p.abertas.filter(x => D.taskLate(x) || D.occLate(x)).length, r = p.membro && p.membro.resumo, f = p.fbs[0];
-      const linha = [p.abertas.length ? `${U.plural(p.abertas.length, 'item aberto', 'itens abertos')}${late ? ` · <span class="c-red">${late} atrasado${late > 1 ? 's' : ''}</span>` : ''}` : '',
-        f ? `feedback em ${U.fmtShort(f.date)}` : 'sem feedback ainda'].filter(Boolean).join(' · ');
-      return `<div class="fb-person" role="button" tabindex="0" data-act="pessoaAbrir" data-n="${U.esc(p.nome)}">
-        <span class="fb-av">${U.esc(FB.initials(p.nome))}</span>
-        <span class="fb-p-body"><strong>${U.esc(p.nome)}${p.tec ? H.demo(p.tec) : ''}</strong><small class="muted">${linha}</small></span>
-        ${r ? `<span class="pes-jg"><span class="jg-stat jg-flame ${r.streak ? 'lit' : ''}">${U.icon('flame', 13)}<b>${r.streak || 0}</b></span><span class="jg-lvb">${r.nivel || 1}</span></span>` : ''}
-        ${p.missFb.length ? '<span class="badge b-yellow">Feedback</span>' : f ? H.chip(IA.TONS[f.tom] || 'Neutro', FB.TOM_COLOR[f.tom] || '#8e87a3') : ''}${U.icon('right', 15)}</div>`;
-    };
-    return `
-      ${agora.length ? `<section class="mt-sec"><h3 class="mt-h">Para fazer agora <span class="badge b-yellow">${agora.length}</span></h3><div class="mt-list">${agora.join('')}</div></section>` : ''}
-      ${this.nuvem()}
-      <section class="mt-sec"><h3 class="mt-h">Pessoas <span class="muted small">${ps.length || ''}</span></h3>
-        ${ps.length ? `<div class="fb-people">${ps.map(card).join('')}</div>` : `<div class="card mt-empty"><h3>Sua equipe aparece aqui</h3><p class="muted small">Toque em <strong>+</strong> → <strong>Adicionar pessoa</strong>. Também entram sozinhas quem recebe um feedback, quem é responsável por uma tarefa e quem entra na sua equipe pela Conta FlowFire.</p></div>`}
-      </section>`;
-  },
-  /* Bloco da equipe na nuvem (Conta FlowFire) */
-  nuvem() {
-    if (!Fire.supported()) return '';
-    if (!Fire.user) return `<div class="card eq-cta"><span>${U.icon('users', 18)}</span><div><strong>Equipe na nuvem</strong><small class="muted">Convide as pessoas, envie missões direto para o app delas e acompanhe o nível e a sequência de cada uma, ao vivo.</small></div><button class="btn sm" data-act="fireEntrar">Entrar com Google</button></div>`;
-    const eqs = Equipes.list();
-    if (!eqs.length) return `<details class="card eq-more"><summary>${U.icon('users', 16)} Montar a equipe na nuvem</summary>
-      <section class="grid-2">
-        <form class="eq-new" data-submit="eqCriar"><h4>Criar uma equipe</h4><p class="muted small">Você vira o gestor: convida as pessoas e envia missões.</p>
-          <div class="inline-add"><input name="nome" maxlength="60" required placeholder="Nome da equipe"><button class="btn primary">Criar</button></div></form>
-        <form class="eq-new" data-submit="eqEntrar"><h4>Entrar com convite</h4><p class="muted small">Cole o link que você recebeu.</p>
-          <div class="inline-add"><input name="link" required placeholder="Link do convite"><button class="btn">Entrar</button></div></form>
-      </section></details>`;
-    return eqs.map(e => e.papel === 'gestor'
-      ? `<section class="card eq-head"><div><h3>${U.icon('users', 17)} ${U.esc(e.nome)}</h3><p class="muted small">Equipe na nuvem · você é o gestor · ${U.plural((Equipes.membros[e.id] || []).filter(m => m.id !== Fire.user.uid).length, 'pessoa', 'pessoas')} · atualiza ao vivo</p></div><span class="grow"></span>
-          <button class="btn sm" data-act="eqConvidar" data-id="${e.id}">Convidar</button><button class="btn sm primary" data-act="eqMissoes" data-id="${e.id}">${U.icon('target', 14)} Enviar missões</button>
-          <button class="icon-btn" data-act="eqSair" data-id="${e.id}" title="Excluir equipe" aria-label="Excluir equipe">${U.icon('trash', 15)}</button></section>`
-      : (() => { const miss = Jogo.calc().miss.filter(m => m.equipe === e.id), feitas = miss.filter(m => m.feitaEm).length;
-        return `<section class="card eq-head"><div><h3>${U.icon('users', 17)} ${U.esc(e.nome)}</h3><p class="muted small">Você é membro · ${miss.length ? `${feitas}/${miss.length} missões concluídas` : 'nenhuma missão ainda'} · quem lidera vê só o seu resumo</p></div><span class="grow"></span>
-          <a class="btn sm" href="#jornada">Ver missões</a><button class="btn sm ghost" data-act="eqSair" data-id="${e.id}">Sair</button></section>`; })()).join('');
-  },
-
-  /* ---------- Página de uma pessoa ---------- */
-  pessoa(nome) {
-    const p = Pessoas.uma(nome);
-    if (!p) { App.ui.pessoa = null; return this.render(); }
-    const r = p.membro && p.membro.resumo, miss = (p.membro && p.membro.missoes) || [];
-    const tom = k => p.fbs.filter(f => f.tom === k).length;
-    return `
-      <div class="toolbar"><button class="btn sm ghost" data-act="pessoaAbrir" data-n="">${U.icon('left', 15)} Pessoas</button></div>
-      <section class="card pes-head">
-        <span class="fb-av big">${U.esc(FB.initials(p.nome))}</span>
-        <div class="pes-head-t"><h2>${U.esc(p.nome)}</h2>
-          <p class="muted small">${p.fbs.length ? `${U.plural(p.fbs.length, 'feedback')}: ${tom('positivo')} positivos, ${tom('neutro')} neutros, ${tom('melhorar')} a melhorar` : 'Nenhum feedback ainda'}${p.eq ? ` · equipe ${U.esc(p.eq.nome)} (${Equipes.quando(p.membro.atualizadoEm)})` : ''}</p>
-          ${r ? `<div class="eq-m-stats"><span class="jg-stat jg-flame ${r.streak ? 'lit' : ''}">${U.icon('flame', 15)}<b>${r.streak || 0}</b></span><span class="jg-stat jg-xp">${U.icon('bolt', 14)}<b>${r.xp || 0}</b> XP</span><span class="jg-lv"><span class="jg-lvb">${r.nivel || 1}</span>Nível</span><span class="muted small">Meta de hoje ${Math.min(r.hoje || 0, r.meta || 40)}/${r.meta || 40}</span></div>` : ''}
-        </div>
-        <div class="pes-acts">
-          <button class="btn sm primary" data-act="fbNew" data-n="${U.esc(p.nome)}">${U.icon('chat', 14)} Registrar feedback</button>
-          <button class="btn sm" data-act="pessoaTarefa" data-n="${U.esc(p.nome)}">${U.icon('tasks', 14)} Nova tarefa</button>
-          ${p.membro ? `<button class="btn sm" data-act="eqMissoesPara" data-e="${p.eq.id}" data-id="${p.membro.id}">${U.icon('target', 14)} Enviar missões</button>` : ''}
-        </div>
-        <button class="icon-btn pes-mais" data-act="pessoaMais" data-n="${U.esc(p.nome)}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
-      </section>
-      ${p.missFb.length ? `<section class="mt-sec"><h3 class="mt-h">Feedback pedido</h3><div class="mt-list">${p.missFb.map(m => `<div class="mt-card" role="button" tabindex="0" data-act="msAbrir" data-id="${m.id}"><span class="mt-body"><span class="mt-title">${U.esc(m.titulo)}</span><span class="mt-meta">Missão${m.de_ ? ` de ${U.esc(m.de_)}` : ''}${m.data ? ` · ${U.fmtShort(m.data)}` : ''}</span></span><span class="btn sm primary">Registrar</span></div>`).join('')}</div></section>` : ''}
-      <section class="mt-sec"><h3 class="mt-h">Com ${U.esc(p.nome.split(' ')[0])} <span class="muted small">${p.abertas.length || ''}</span></h3>
-        ${p.abertas.length ? `<div class="task-list">${p.abertas.map(x => S.occurrences.includes(x) ? Occ.row(x) : Tasks.row(x, { semResp: true })).join('')}</div>` : '<p class="muted small">Nada em aberto. Use <strong>Nova tarefa</strong> para passar algo e acompanhar aqui (e no Início, em "O que cobrar").</p>'}
-      </section>
-      ${miss.length ? `<section class="mt-sec"><h3 class="mt-h">Missões</h3><ul class="jg-miss card">${miss.map(x => `<li class="${x.feitaEm ? 'ok' : x.expirada ? 'exp' : ''}"><span class="jg-chk">${x.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(x.titulo)}</span><small class="muted">${x.feitaEm ? 'concluída em ' + U.fmtShort(x.feitaEm) : x.expirada ? 'prazo encerrado' : x.prazo ? 'até ' + U.fmtShort(x.prazo) : 'em andamento'} · +${x.xp} XP</small></span><span class="jg-miss-n num">${x.n}/${x.de}</span></li>`).join('')}</ul></section>` : ''}
-      <section class="mt-sec"><h3 class="mt-h">Feedbacks</h3>
-        ${p.fbs.length ? `<div class="mt-list">${p.fbs.map(f => FB.card(f, false)).join('')}</div>` : '<p class="muted small">Toque em <strong>Registrar feedback</strong> para gravar a conversa e a IA escrever o registro.</p>'}</section>`;
-  },
-};
-
-Object.assign(Actions, {
-  eqTab({ v }) { App.ui.eqTab = v; App.ui.pessoa = null; App.render({ resetScroll: true }); },
-  pessoaAbrir({ n }) { App.ui.pessoa = n || null; App.render({ resetScroll: true }); },
-  pessoaTarefa({ n }) { Tasks.form(null, { responsible: n }); },
-  eqMissoesPara({ e, id }) { Missoes.form(true, { equipe: e, membro: id }); },
-  eqAdd() {
-    const gestor = typeof Equipes !== 'undefined' && Equipes.ativo() && Equipes.gestorDe().length;
-    UI.sheet('Adicionar', [
-      { label: 'Registrar feedback', hint: 'Conversa individual, com gravação e IA', icon: 'chat', onClick: () => FB.form(null) },
-      { label: 'Nova reunião', hint: 'Com pauta, gravação e ata', icon: 'users', onClick: () => Events.form(null, U.today(), { reuniao: true }) },
-      { label: 'Adicionar pessoa', hint: 'Entra na lista da equipe', icon: 'user', onClick: () => Actions.pessoaNova() },
-      ...(gestor ? [{ label: 'Enviar missões', hint: 'Chegam direto no app da pessoa', icon: 'target', onClick: () => Missoes.form(true, { equipe: Equipes.gestorDe()[0].id }) }] : []),
-    ]);
-  },
-  pessoaNova() {
-    UI.form({
-      title: 'Adicionar pessoa', submitLabel: 'Adicionar',
-      fields: [{ name: 'nome', label: 'Nome', required: true, placeholder: 'Ex.: Carlos Silva' }],
-      validate: v => D.techNames().some(n => Pessoas.chave(n) === Pessoas.chave(v.nome)) ? 'Essa pessoa já está na lista.' : null,
-      onSubmit(v) { S.settings.technicians.push({ id: U.uid(), name: v.nome.trim() }); commit(); UI.toast(`${v.nome.trim()} entrou na lista.`); },
+  eqMembro({ e, id }) {
+    const eq = Equipes.list().find(x => x.id === e), m = (Equipes.membros[e] || []).find(x => x.id === id); if (!eq || !m) return;
+    const miss = m.missoes || [];
+    const mo = UI.modal({
+      title: m.nome || 'Membro',
+      body: `<p class="muted small">${U.esc(m.email || '')} · atualizado ${Equipes.quando(m.atualizadoEm)}</p>
+        <div class="eq-m-stats big"><span class="jg-stat jg-flame ${m.resumo?.streak ? 'lit' : ''}">${U.icon('flame', 17)}<b>${m.resumo?.streak || 0}</b> dias</span><span class="jg-stat jg-xp">${U.icon('bolt', 16)}<b>${m.resumo?.xp || 0}</b> XP</span><span class="jg-lv"><span class="jg-lvb">${m.resumo?.nivel || 1}</span>Nível</span></div>
+        <h4>Missões</h4>${miss.length ? `<ul class="jg-miss">${miss.map(x => `<li class="${x.feitaEm ? 'ok' : x.expirada ? 'exp' : ''}"><span class="jg-chk">${x.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(x.titulo)}</span><small class="muted">${x.feitaEm ? 'concluída em ' + U.fmtShort(x.feitaEm) : x.expirada ? 'prazo encerrado' : x.prazo ? 'até ' + U.fmtShort(x.prazo) : 'em andamento'} · +${x.xp} XP</small></span><span class="jg-miss-n num">${x.n}/${x.de}</span></li>`).join('')}</ul>` : '<p class="muted small">Nenhuma missão ainda.</p>'}`,
+      footer: `${m.id !== Fire.user.uid ? '<button class="btn ghost danger-text" data-rm>Remover da equipe</button>' : ''}<span class="grow"></span><button class="btn primary" data-env>${U.icon('target', 15)} Enviar missões</button>`,
     });
-  },
-  pessoaMais({ n }) {
-    const p = Pessoas.uma(n); if (!p) return;
-    UI.sheet(p.nome, [
-      { label: 'Renomear', hint: 'Atualiza tarefas, feedbacks e missões com o novo nome', icon: 'edit', onClick: () => UI.form({
-        title: 'Renomear', submitLabel: 'Salvar', fields: [{ name: 'nome', label: 'Nome', required: true, value: p.nome }],
-        validate: v => Pessoas.chave(v.nome) !== Pessoas.chave(p.nome) && Pessoas.uma(v.nome) ? 'Já existe alguém com esse nome.' : null,
-        onSubmit(v) { Pessoas.renomear(p.nome, v.nome.trim()); App.ui.pessoa = v.nome.trim(); commit(); },
-      }) },
-      ...(p.membro ? [{ label: 'Remover da equipe na nuvem', hint: 'Deixa de ver o resumo; o link de convite é trocado', icon: 'x', onClick: () => Equipes.remover(p.eq, p.membro) }] : []),
-      ...(p.tec ? [{ sep: true }, { label: 'Tirar da lista', hint: 'O histórico (feedbacks e tarefas) continua guardado', icon: 'trash', danger: true, onClick: () => UI.confirm(`Tirar <strong>${U.esc(p.nome)}</strong> da lista?`, () => { S.settings.technicians = S.settings.technicians.filter(t => t !== p.tec); App.ui.pessoa = null; commit(); }, { danger: true, okLabel: 'Tirar' }) }] : []),
-    ]);
+    mo.el.querySelector('[data-env]').onclick = () => { mo.close(); Missoes.form(true, { equipe: e, membro: id }); };
+    const rm = mo.el.querySelector('[data-rm]'); if (rm) rm.onclick = () => { mo.close(); Equipes.remover(eq, m); };
   },
 });
 
@@ -6402,15 +6410,15 @@ const Reports = {
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'equipe', 'jornada']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada', 'equipe']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
 /* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
-const BOTTOM = ['dashboard', 'agenda', 'equipe', 'jornada'];
+const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
   const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : true;
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : id === 'equipe' ? (typeof Fire === 'undefined' || Fire.supported()) : true;
 };
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
@@ -6435,24 +6443,20 @@ const App = {
     if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
     if (path === 'equipe' && /(^|&)e=/.test(qs || '')) { this.ui.eqPend = qs; this.route = 'equipe'; this.params = {}; return; }   // link de convite
     if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
-    // Telas que viraram parte de outras (links antigos continuam funcionando)
-    if (path === 'tarefas' || path === 'imprevistos') { this.route = 'agenda'; this.params = {}; return; }
-    if (path === 'reunioes' || path === 'feedbacks') { this.ui.eqTab = path === 'reunioes' ? 'reunioes' : 'pessoas'; this.ui.pessoa = null; this.route = 'equipe'; this.params = {}; return; }
+    if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
-    if (this.route !== 'equipe') this.ui.pessoa = null;   // ao sair da Equipe, ela volta para a lista de pessoas
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
 
   renderNav() {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
-    const reg = Meetings.toRegister().length;
-    const badge = id => id === 'agenda' && occOpen + late ? `<span class="nav-badge">${occOpen + late}</span>` : id === 'equipe' && reg ? `<span class="nav-badge">${reg}</span>` : '';
+    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.filter(routeVisible).map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
     const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae!';
     document.getElementById('storage-status').innerHTML =
@@ -6622,7 +6626,7 @@ function commit() { Store.save(); App.render(); Jogo.check(); if (typeof Equipes
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
-Actions.goTasks = () => { App.ui.agendaDate = U.today(); App.go('agenda'); };
+Actions.goTasks = ({ status }) => { App.ui.taskF = { q: '', status, priority: '', category: '', period: '', from: '', to: '' }; App.go('tarefas'); };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
 
