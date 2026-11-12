@@ -249,15 +249,18 @@ label.inline input, .filters input, .filters select, .chart-ctrl select { min-he
 a.rail:hover .seg:not(.s-break) { filter: brightness(1.08); }
 
 /* ---------- Dashboard ---------- */
-.today { display: flex; flex-direction: column; gap: 16px; padding: 6px 0 4px; }
-.today-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
-.today-greet { color: var(--muted); margin: 0 0 4px; font-size: 14px; }
-.today-date { font-size: clamp(30px, 4.2vw, 46px); font-weight: 600; letter-spacing: -.03em; line-height: 1.02; margin-bottom: 10px; }
-.today-focus { margin: 0; color: var(--text-2); }
-.today-focus strong { color: var(--text); }
-.today-clock { text-align: right; flex-shrink: 0; }
-.today-clock span { display: block; font-family: var(--font-d); font-size: 38px; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; }
-.today-clock small { color: var(--muted); font-size: 12px; }
+.topbar.is-hero h1 { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.th-greet { font-size: 12.5px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.th-date { font-size: 23px; font-weight: 600; letter-spacing: -.025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar.is-hero .top-clock { display: block; font-family: var(--font-d); font-size: 22px; color: var(--text-2); letter-spacing: -.01em; }
+/* Cartão "Hoje" da tela inicial: Jornada (XP e meta) + expediente e barra do dia */
+.day-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.day-card .jg-card { border: 0; border-radius: 0; background: transparent; }
+.dc-day { padding: 12px 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+.jg-card + .dc-day { border-top: 1px solid var(--line); }
+.dc-day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.dc-day-h strong { color: var(--text); font-weight: 600; }
+.dc-prog { font-size: 12.5px; color: var(--muted); text-decoration: none; white-space: nowrap; } .dc-prog:hover { color: var(--text); }
 .kpis { display: grid; grid-template-columns: 1.5fr repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
 .kpis-ind { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .kpi { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 2px; min-width: 0; transition: background .15s; }
@@ -657,11 +660,10 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 #print-root { display: none; }
 
 /* ---------- Abertura (apenas no primeiro desenho da tela) ---------- */
-body.intro .today-date, body.intro .today-greet, body.intro .today-focus { animation: introUp .6s var(--ease) both; }
-body.intro .today-greet { animation-delay: .02s; }
-body.intro .today-date { animation-delay: .08s; }
-body.intro .today-focus { animation-delay: .16s; }
-body.intro .today .rail-track { animation: railIn 1s .2s var(--ease) both; }
+body.intro .th-greet, body.intro .th-date, body.intro .day-card { animation: introUp .6s var(--ease) both; }
+body.intro .th-date { animation-delay: .08s; }
+body.intro .day-card { animation-delay: .14s; }
+body.intro .day-card .rail-track { animation: railIn 1s .3s var(--ease) both; }
 body.intro .rail-now { animation: introFade .4s 1.05s both; }
 @keyframes introUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes introFade { from { opacity: 0; } to { opacity: 1; } }
@@ -693,7 +695,6 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .bottom-nav .nav-badge { position: absolute; top: 0; right: calc(50% - 28px); font-size: 10px; padding: 0 5px; line-height: 16px; border: 2px solid var(--side-bg); }
   #toast-root { bottom: calc(92px + env(safe-area-inset-bottom)); }
   .occ-list { grid-template-columns: 1fr; }
-  .today-top { align-items: flex-start; }
 }
 @media (max-width: 640px) {
   body { font-size: 14px; }
@@ -707,10 +708,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .toolbar > .grow { display: none; }
   .top-clock { display: none; }
   .topbar h1 { font-size: 19px; }
-  .today { gap: 12px; padding-top: 2px; }
-  .today-date { font-size: 30px; margin-bottom: 8px; }
-  .today-clock span { font-size: 17px; color: var(--muted); }
-  .today-clock small { display: none; }
+  .th-date { font-size: 18px; }
+  .topbar.is-hero .top-clock { font-size: 15px; color: var(--muted); }
   .row-actions { flex-wrap: wrap; }
   .row-actions .btn, .modal-foot .btn { white-space: normal; text-align: center; }
   .view { overflow-x: clip; }
@@ -1115,3 +1114,4 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .ms-f[hidden] { display: none; }
   .ms-f-data { grid-column: 1; } .ms-f-hora { grid-column: 2; }
 }
+.fire-status { margin: 0 0 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

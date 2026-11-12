@@ -3,6 +3,12 @@
 Views.dashboard = {
   title: 'Início', icon: 'dashboard', nav: 'Início',
   fab: () => ({ act: 'quickAdd', label: 'Adicionar', data: { k: Cal.st('home').sel, from: 'home' } }),
+  /* Topo da tela inicial: saudação e data no lugar do título (o relógio fica à direita) */
+  hero() {
+    const h = new Date().getHours(), t = U.today(), d = U.parse(t);
+    const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    return `<span class="th-greet">${greet}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
+  },
   render() {
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
@@ -72,17 +78,13 @@ Views.dashboard = {
 
     return `
     ${Updater.banner()}
-    ${Jogo.card()}
-    <section class="today">
-      <div class="today-top">
-        <div class="today-txt">
-          <p class="today-greet">${greet}</p>
-          <h2 class="today-date">${dDate}</h2>
-          <p class="today-focus">${workday ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong>` : `Expediente das ${S.settings.workStart} às ${S.settings.workEnd}`) : 'Hoje não é dia útil. Bom descanso.'}</p>
-        </div>
-        <div class="today-clock"><span id="dash-clock">${new Date().toLocaleTimeString('pt-BR')}</span>${workday && focus && focus.title ? `<small>Expediente ${S.settings.workStart}–${S.settings.workEnd}</small>` : ''}</div>
+    <section class="day-card">
+      ${Jogo.card()}
+      <div class="dc-day">
+        <div class="dc-day-h"><span>${workday ? (focus && focus.title ? `Foco: <strong>${U.esc(focus.title)}</strong> · ` : '') + `Expediente <strong>${S.settings.workStart}–${S.settings.workEnd}</strong>` : 'Hoje não é dia útil. Bom descanso.'}</span>
+          ${prog.total ? `<a class="dc-prog" href="#agenda">${prog.done} de ${U.plural(prog.total, 'atividade')} · ${prog.pct}%</a>` : ''}</div>
+        ${blocks.length ? H.dayRail(t) : ''}
       </div>
-      ${blocks.length ? H.dayRail(t) : ''}
     </section>
 
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
