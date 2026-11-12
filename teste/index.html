@@ -1127,6 +1127,25 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 }
 .fire-status { margin: 0 0 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+/* Equipes */
+.eq-hero h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.eq-hero p { max-width: 640px; }
+.eq-new h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.eq-new .inline-add { margin-top: 10px; }
+.eq-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.eq-head h2 { margin: 0 0 2px; }
+.eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.eq-m { display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: border-color .15s; }
+.eq-m:hover { border-color: var(--border-strong); }
+.eq-m-h { display: flex; align-items: center; gap: 10px; }
+.eq-m-n { flex: 1; min-width: 0; display: flex; flex-direction: column; } .eq-m-n strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-m-stats { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+.eq-m-stats .jg-stat { font-size: 15px; }
+.eq-m-stats.big { margin: 6px 0 14px; } .eq-m-stats.big .jg-stat { font-size: 18px; }
+.eq-m-miss { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
+.eq-more summary { cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.eq-more[open] summary { margin-bottom: 14px; }
+
 </style>
 </head>
 <body>
@@ -1353,6 +1372,7 @@ const Store = {
       events: [],
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
+      equipes: [],     // equipes de que a pessoa participa ({ id, nome, papel: gestor|membro }) — Conta FlowFire
       missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
       meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
@@ -3014,7 +3034,7 @@ const Fire = {
   /* ---------- Documentos ---------- */
   split(s) {
     const parts = {
-      core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly, missoes: s.missoes || [] },
+      core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly, missoes: s.missoes || [], equipes: s.equipes || [] },
       tasks: { items: s.tasks || [] }, projects: { items: s.projects || [] }, occurrences: { items: s.occurrences || [] },
     };
     const mes = (pre, k, put) => { const id = pre + '-' + String(k || '0000-00').slice(0, 7); put(parts[id] = parts[id] || (pre === 'days' ? { days: {} } : { items: [] })); };
@@ -3028,7 +3048,7 @@ const Fire = {
   },
   join(docs) {
     const core = docs.core || {};
-    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [],
+    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], equipes: core.equipes || [],
       tasks: (docs.tasks || {}).items || [], projects: (docs.projects || {}).items || [], occurrences: (docs.occurrences || {}).items || [],
       days: {}, indicators: [], events: [], feedbacks: [] };
     for (const [id, d] of Object.entries(docs)) {
@@ -3061,6 +3081,15 @@ const Fire = {
         if (snap.metadata.hasPendingWrites) return;
         const all = {}; snap.forEach(d => { all[d.id] = d.data(); }); cb(all);
       }, e => this.fail(e)),
+      // Operações gerais (equipes): caminho como lista, ex.: ['canais', 'oficial', 'equipes', id]
+      d: {
+        get: async p => { const x = await F.getDoc(F.doc(db, ...p)); return x.exists() ? x.data() : null; },
+        set: (p, data, merge) => F.setDoc(F.doc(db, ...p), data, merge ? { merge: true } : {}),
+        update: (p, data) => F.updateDoc(F.doc(db, ...p), data),
+        del: p => F.deleteDoc(F.doc(db, ...p)),
+        onQuery: (p, w, cb, err) => F.onSnapshot(w ? F.query(F.collection(db, ...p), F.where(w[0], '==', w[1])) : F.collection(db, ...p),
+          snap => { const out = []; snap.forEach(x => out.push({ id: x.id, ...x.data() })); cb(out); }, err),
+      },
     };
     return this.api;
   },
@@ -3129,7 +3158,8 @@ const Fire = {
     }
     this.listen();
     this.setState('on');
-    if (App.route === 'config') App.render();
+    if (typeof Equipes !== 'undefined') Equipes.start();
+    if (['config', 'equipe'].includes(App.route)) App.render();
   },
   ask(remoteAt) {
     const localAt = (S.meta && S.meta.updatedAt) || 0, fmt = t => t ? new Date(t).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'sem data';
@@ -3146,7 +3176,7 @@ const Fire = {
       m.el.querySelector('[data-nuvem]').onclick = () => { m.close(); res('nuvem'); };
     });
   },
-  detach() { if (this.unsub) { try { this.unsub(); } catch (e) { /* ok */ } } this.unsub = null; clearTimeout(this.timer); this.last = {}; },
+  detach() { if (typeof Equipes !== 'undefined') Equipes.stop(); if (this.unsub) { try { this.unsub(); } catch (e) { /* ok */ } } this.unsub = null; clearTimeout(this.timer); this.last = {}; },
 
   /* ---------- Sincronização ---------- */
   schedule() {
@@ -3178,7 +3208,9 @@ const Fire = {
         else if (id in local) next[id] = local[id];
       }
       if (!changed) return;
+      const eqAntes = JSON.stringify(S.equipes || []);
       Store.replace(this.join(this.parse(next)), { fromCloud: true });
+      if (typeof Equipes !== 'undefined' && JSON.stringify(S.equipes || []) !== eqAntes) Equipes.start();
       const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
       if (busy) this.pendingRender = true; else App.render();
       this.schedule();   // se algo deste aparelho ainda não subiu, envia agora
@@ -5538,6 +5570,16 @@ Views.guia = {
         'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
       ])}`)}
 
+    ${sec('equipe', 'users', 'Equipe (Conta FlowFire)', `
+      <p>Fica em <strong>Menu → Equipe</strong>. Precisa estar com a Conta FlowFire conectada (Configurações → Conta).</p>
+      <ol>
+        <li><strong>Criar uma equipe</strong>: dê um nome. Você vira o <strong>gestor</strong>.</li>
+        <li><strong>Convidar</strong>: mande o link pelo WhatsApp. A pessoa abre, entra com a conta Google e aparece no seu painel. No app do celular dela: Equipe → <strong>Entrar com convite</strong> e cola o link.</li>
+        <li><strong>Enviar missões</strong>: escolha a pessoa da equipe; as missões chegam sozinhas no app dela (tarefas, reuniões e imprevistos já criados e no calendário).</li>
+        <li>O <strong>painel</strong> mostra de cada pessoa: nível, XP, sequência, meta de hoje e o progresso das missões, atualizando ao vivo. Toque na pessoa para ver cada missão.</li>
+      </ol>
+      <p class="guide-note">Privacidade: o gestor vê só esse resumo. Tarefas, feedbacks, atas e anotações de cada pessoa continuam privados. Para tirar alguém: toque na pessoa → <strong>Remover da equipe</strong> (o link de convite é trocado). Quem quiser sair: Equipe → Sair da equipe.</p>`)}
+
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>
       ${li([
@@ -5887,7 +5929,12 @@ const Missoes = {
   },
 
   /* Formulário de uma ou mais missões (para mim ou para enviar) */
-  form(paraOutro) {
+  form(paraOutro, opts = {}) {
+    // Gestor de equipe: escolhe um membro (as missões chegam direto no app dele) ou "Outra pessoa" (por link)
+    const eqs = typeof Equipes !== 'undefined' && Equipes.ativo() ? Equipes.gestorDe() : [];
+    const alvos = eqs.map(e => [e, (Equipes.membros[e.id] || []).filter(x => x.id !== Fire.user.uid)]).filter(([, ms]) => ms.length);
+    const pre = opts.membro ? `eq:${opts.equipe}:${opts.membro}` : opts.equipe && alvos.some(([e]) => e.id === opts.equipe) ? `eq:${opts.equipe}:${alvos.find(([e]) => e.id === opts.equipe)[1][0].id}` : alvos.length ? `eq:${alvos[0][0].id}:${alvos[0][1][0].id}` : '__link';
+    const paraSel = alvos.length ? `<select name="alvo">${alvos.map(([e, ms]) => `<optgroup label="Equipe ${U.esc(e.nome)} (chega direto no app)">${ms.map(m => `<option value="eq:${e.id}:${m.id}" ${pre === `eq:${e.id}:${m.id}` ? 'selected' : ''}>${U.esc(m.nome || m.email || 'Sem nome')}</option>`).join('')}</optgroup>`).join('')}<option value="__link" ${pre === '__link' ? 'selected' : ''}>Outra pessoa (enviar por link)</option></select>` : '';
     const opt = (k, l) => `<option value="${k}">${l}</option>`;
     const tipos = `<optgroup label="Atribuir (cria no app da pessoa)">${Object.entries(this.ITENS).map(([k, [l]]) => opt(k, l)).join('')}</optgroup>
       <optgroup label="Metas (o app conta sozinho)">${Object.entries(this.TIPOS).filter(([k]) => k !== 'manual').map(([k, [l]]) => opt(k, l)).join('')}</optgroup>
@@ -5904,17 +5951,19 @@ const Missoes = {
       title: paraOutro ? 'Enviar missões' : 'Criar missão para mim',
       wide: true,
       body: `${paraOutro ? `<div class="form-grid">
-          <div class="field"><label>Para quem</label><input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa"></div>
-          <div class="field"><label>Seu nome (aparece para a pessoa)</label><input name="de" maxlength="60" value="${U.esc(S.settings.meuNome || '')}" placeholder="Ex.: Victor"></div></div>` : ''}
+          <div class="field"><label>Para quem</label>${paraSel}<input name="para" list="ms-pessoas" maxlength="60" placeholder="Nome da pessoa" ${paraSel && pre !== '__link' ? 'hidden' : ''}></div>
+          <div class="field"><label>Seu nome (aparece para a pessoa)</label><input name="de" maxlength="60" value="${U.esc(S.settings.meuNome || (typeof Fire !== 'undefined' && Fire.user && Fire.user.name) || '')}" placeholder="Ex.: Victor"></div></div>` : ''}
         <datalist id="ms-pessoas">${D.techNames().map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>
         <p class="muted small"><strong>Atribuir</strong> cria o item ${paraOutro ? 'no app da pessoa' : 'no seu app'} (a tarefa em Tarefas, a reunião na agenda, o feedback em Feedbacks) e, com data, ele aparece no calendário. A missão fica concluída quando o item for concluído. <strong>Metas</strong> contam o que for feito a partir de ${paraOutro ? 'quando a pessoa aceitar' : 'hoje'}. O XP é calculado sozinho.</p>
         <div class="ms-rows">${linha()}</div>
         <button type="button" class="btn sm ghost ms-add">${U.icon('plus', 15)} Adicionar outra missão</button>
         <div class="field ms-prazo"><label>Prazo para tudo (opcional)</label><input type="date" name="prazo" min="${U.today()}"></div>
         <p class="form-error" hidden></p>`,
-      footer: `<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-ok>${paraOutro ? `${U.icon('arrow', 15)} Gerar link` : 'Salvar'}</button>`,
+      footer: `<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-ok>${paraOutro ? (paraSel && pre !== '__link' ? `${U.icon('arrow', 15)} Enviar` : `${U.icon('arrow', 15)} Gerar link`) : 'Salvar'}</button>`,
     });
     const el = m.el, rows = el.querySelector('.ms-rows');
+    const selAlvo = el.querySelector('[name=alvo]');
+    if (selAlvo) selAlvo.onchange = () => { const link = selAlvo.value === '__link'; el.querySelector('[name=para]').hidden = !link; el.querySelector('[data-ok]').innerHTML = `${U.icon('arrow', 15)} ${link ? 'Gerar link' : 'Enviar'}`; };
     const ler = row => {
       const tipo = row.querySelector('.ms-tipo').value;
       return { tipo, alvo: Math.min(999, Math.max(1, Math.round(Number(row.querySelector('.ms-n').value) || 1))), titulo: row.querySelector('.ms-txt').value.trim(), data: row.querySelector('.ms-data').value || '', hora: row.querySelector('.ms-hora').value || '' };
@@ -5949,10 +5998,11 @@ const Missoes = {
       if (lista.some(x => (this.ITENS[x.tipo] || x.tipo === 'manual') && !x.titulo)) return fail('Preencha o campo de cada missão (ex.: o nome da tarefa ou de quem recebe o feedback).');
       if (lista.some(x => x.tipo === 'reuniaoItem' && !x.data)) return fail('Informe a data da reunião.');
       if (!paraOutro) { this.aceitar({ de: '', prazo, missoes: lista }); m.close(); UI.toast(U.plural(lista.length, 'missão criada', 'missões criadas') + '.'); return; }
-      const para = el.querySelector('[name=para]').value.trim(), de = el.querySelector('[name=de]').value.trim();
-      if (!para) return fail('Informe para quem são as missões.');
+      const alvo = selAlvo ? selAlvo.value : '__link', para = el.querySelector('[name=para]').value.trim(), de = el.querySelector('[name=de]').value.trim();
+      if (alvo === '__link' && !para) return fail('Informe para quem são as missões.');
       if (de && de !== S.settings.meuNome) { S.settings.meuNome = de; Store.save(); }
       m.close();
+      if (alvo !== '__link') { const [, eq, uid] = alvo.split(':'); Equipes.enviar(eq, uid, { id: U.uid(), de, prazo, missoes: lista }).catch(x => UI.toast('Não foi possível enviar: ' + Fire.erro(x), 'error')); return; }
       this.compartilhar({ id: U.uid(), de, para, prazo, missoes: lista });
     };
   },
@@ -6005,7 +6055,7 @@ const Missoes = {
     const now = new Date().toISOString(), origem = p.de ? `Missão de ${p.de}.` : 'Missão da Jornada.';
     const cat = id => (S.settings.categories.some(c => c.id === id) ? id : (S.settings.categories[0] || {}).id || '');
     p.missoes.forEach(x => {
-      const m = { id: U.uid(), pacote, de_: p.de || '', titulo: this.titulo(x), tipo: x.tipo, alvo: x.alvo, xp: x.xp, prazo: p.prazo || '', data: x.data || '', hora: x.hora || '', desde: t, feitaEm: null };
+      const m = { id: U.uid(), pacote, equipe: p.equipe || '', de_: p.de || '', titulo: this.titulo(x), tipo: x.tipo, alvo: x.alvo, xp: x.xp, prazo: p.prazo || '', data: x.data || '', hora: x.hora || '', desde: t, feitaEm: null };
       const quando = x.data || p.prazo || '';
       if (x.tipo === 'tarefaItem') {
         const k = { id: U.uid(), title: x.titulo, description: origem, category: cat('equipe'), priority: 'alta', status: 'pendente', startDate: '', dueDate: quando, dueTime: x.hora || '', responsible: '', notes: '', createdAt: now, completedAt: null, missao: m.id };
@@ -6051,6 +6101,237 @@ Object.assign(Actions, {
   msDel({ id }) { const m = Missoes.list().find(x => x.id === id); if (!m) return; UI.confirm(`Remover a missão <strong>${U.esc(m.titulo)}</strong>?`, () => { S.missoes = Missoes.list().filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
   msProgresso() { Missoes.progresso(); },
   msAbrir({ id }) { const m = Missoes.list().find(x => x.id === id); if (m) Missoes.abrir(m); },
+});
+
+</script>
+  <script>/* js/equipes.js */
+'use strict';
+/* Equipes (usa a Conta FlowFire / Firebase).
+   - O gestor cria a equipe e convida por link (#equipe?e=<id>&c=<convite>&n=<nome>).
+   - Cada membro publica só um RESUMO (nível, XP, sequência, meta de hoje e progresso das missões da equipe).
+     Tarefas, feedbacks, atas etc. continuam privados.
+   - O gestor envia pacotes de missões direto para um membro; o app do membro aceita sozinho e cria os itens.
+   Caminho: canais/{canal}/equipes/{id}/(membros|pacotes). Regras em firestore.rules. */
+const Equipes = {
+  membros: {},     // id da equipe -> lista de membros (só para o gestor)
+  subs: [], timer: null,
+  list() { return S.equipes || (S.equipes = []); },
+  gestorDe() { return this.list().filter(e => e.papel === 'gestor'); },
+  ativo() { return !!(typeof Fire !== 'undefined' && Fire.user && Fire.api && Fire.api.d); },
+  p(...rest) { return ['canais', Fire.canal(), 'equipes', ...rest]; },
+  rnd(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => 'abcdefghijkmnpqrstuvwxyz23456789'[x % 32]).join(''); },
+  eu() { const u = Fire.user || {}; return { nome: (S.settings.meuNome || u.name || (u.email || '').split('@')[0] || 'Sem nome').slice(0, 60), email: u.email || '', foto: u.photo || '' }; },
+
+  /* Resumo que o gestor vê (nada além disto sai do aparelho do membro) */
+  resumo(eq) {
+    const r = Jogo.calc();
+    return {
+      ...this.eu(),
+      resumo: { xp: r.total, nivel: r.geral.L, streak: r.streak, hoje: r.hoje, meta: Jogo.META },
+      missoes: r.miss.filter(m => m.equipe === eq).map(m => ({ titulo: m.titulo, n: m.n, de: m.de, feitaEm: m.feitaEm || null, expirada: !!m.expirada, xp: m.xp, data: m.data || '', prazo: m.prazo || '' })),
+      atualizadoEm: Date.now(),
+    };
+  },
+
+  /* ---------- Criar, convidar, entrar, sair ---------- */
+  async criar(nome) {
+    const id = this.rnd(12), convite = this.rnd(20), d = Fire.api.d, uid = Fire.user.uid;
+    await d.set(this.p(id), { nome, dono: uid, donoNome: this.eu().nome, convite, criadaEm: Date.now() });
+    await d.set(this.p(id, 'membros', uid), { papel: 'gestor', entrouEm: Date.now(), ...this.resumo(id) });
+    this.list().push({ id, nome, papel: 'gestor', convite });
+    commit(); this.start();
+    App.ui.eqSel = id; App.go('equipe');
+    UI.toast(`Equipe “${nome}” criada. Agora convide as pessoas.`);
+  },
+  link(e) { return `${Missoes.SITE}${CANAL_TESTE ? 'teste/' : ''}#equipe?e=${e.id}&c=${e.convite}&n=${encodeURIComponent(e.nome)}`; },
+  convidar(e) {
+    const txt = `${this.eu().nome} te convidou para a equipe “${e.nome}” no FlowFire.\nAbra o link e entre com a sua conta Google (no app do celular: Equipe → Entrar com convite e cole o link):\n${this.link(e)}`;
+    const m = UI.modal({
+      title: `Convidar para ${e.nome}`,
+      body: `<p>Mande este convite para cada pessoa da equipe. Ela abre o link, entra com a conta Google e já aparece no seu painel.</p>
+        <textarea class="ms-share" rows="6" readonly>${U.esc(txt)}</textarea>
+        <p class="muted small">Quem tiver o link consegue entrar. Se ele vazar, use <strong>Gerar novo link</strong>: o antigo deixa de funcionar.</p>`,
+      footer: `<button class="btn ghost" data-novo>Gerar novo link</button><span class="grow"></span><button class="btn ghost" data-copy>Copiar</button><a class="btn primary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(txt)}">Enviar pelo WhatsApp</a>`,
+    });
+    m.el.querySelector('[data-copy]').onclick = async () => { try { await navigator.clipboard.writeText(txt); UI.toast('Copiado.'); } catch (x) { UI.toast('Selecione o texto e copie.', 'warn'); } };
+    m.el.querySelector('[data-novo]').onclick = async () => {
+      try { const convite = this.rnd(20); await Fire.api.d.update(this.p(e.id), { convite }); e.convite = convite; commit(); m.close(); this.convidar(e); UI.toast('Link novo gerado. O anterior não funciona mais.'); }
+      catch (x) { UI.toast('Não foi possível gerar: ' + Fire.erro(x), 'error'); }
+    };
+  },
+  /* Abriu um link de convite */
+  async aceitarConvite(q) {
+    const o = Object.fromEntries(new URLSearchParams(q));
+    if (!o.e || !o.c) return UI.toast('Convite inválido.', 'error');
+    const nome = String(o.n || 'equipe').slice(0, 60);
+    if (this.list().some(e => e.id === o.e)) { App.ui.eqSel = o.e; App.go('equipe'); return UI.toast('Você já está nessa equipe.'); }
+    UI.confirm(`Você foi convidado para a equipe <strong>${U.esc(nome)}</strong> no FlowFire.<br><small class="muted">Quem lidera a equipe vai ver só um resumo seu: nível, XP, sequência, meta do dia e o progresso das missões que ele enviar. Suas tarefas, feedbacks e atas continuam privados.</small>`, async () => {
+      try {
+        if (!this.ativo()) { await Fire.connect(); if (!Fire.user) return; }
+        await Fire.api.d.set(this.p(o.e, 'membros', Fire.user.uid), { papel: 'membro', convite: o.c, entrouEm: Date.now(), ...this.resumo(o.e) });
+        this.list().push({ id: o.e, nome, papel: 'membro' });
+        commit(); this.start();
+        App.ui.eqSel = o.e; App.go('equipe');
+        UI.toast(`Você entrou na equipe “${nome}”.`);
+      } catch (x) { UI.toast(/permission/i.test(String(x && (x.code || x.message))) ? 'Este convite não vale mais. Peça um link novo a quem lidera a equipe.' : 'Não foi possível entrar: ' + Fire.erro(x), 'error'); }
+    }, { title: 'Convite de equipe', okLabel: 'Entrar na equipe' });
+  },
+  sair(e) {
+    UI.confirm(e.papel === 'gestor' ? `Excluir a equipe <strong>${U.esc(e.nome)}</strong>? Os membros deixam de aparecer no seu painel. Os dados de cada um continuam no app deles.` : `Sair da equipe <strong>${U.esc(e.nome)}</strong>? Quem lidera deixa de ver o seu resumo.`, async () => {
+      try {
+        if (e.papel === 'gestor') { for (const m of this.membros[e.id] || []) await Fire.api.d.del(this.p(e.id, 'membros', m.id)).catch(() => {}); await Fire.api.d.del(this.p(e.id)); }
+        else await Fire.api.d.del(this.p(e.id, 'membros', Fire.user.uid));
+      } catch (x) { /* já não era membro */ }
+      S.equipes = this.list().filter(x => x.id !== e.id); commit(); this.start();
+      UI.toast(e.papel === 'gestor' ? 'Equipe excluída.' : 'Você saiu da equipe.');
+    }, { danger: true, okLabel: e.papel === 'gestor' ? 'Excluir equipe' : 'Sair' });
+  },
+  remover(e, m) {
+    UI.confirm(`Remover <strong>${U.esc(m.nome)}</strong> da equipe? Para voltar, a pessoa vai precisar de um link novo.`, async () => {
+      try {
+        await Fire.api.d.del(this.p(e.id, 'membros', m.id));
+        const convite = this.rnd(20); await Fire.api.d.update(this.p(e.id), { convite }); e.convite = convite; commit();
+        UI.toast(`${m.nome} foi removido. O link de convite foi trocado.`);
+      } catch (x) { UI.toast('Não foi possível remover: ' + Fire.erro(x), 'error'); }
+    }, { danger: true, okLabel: 'Remover' });
+  },
+
+  /* ---------- Missões direto para um membro ---------- */
+  async enviar(eqId, uid, pacote) {
+    const e = this.list().find(x => x.id === eqId), m = (this.membros[eqId] || []).find(x => x.id === uid);
+    const doc = JSON.parse(JSON.stringify({ ...pacote, para: uid, paraNome: m ? m.nome : '', deUid: Fire.user.uid, criadoEm: Date.now(), aceitoEm: null }));
+    await Fire.api.d.set(this.p(eqId, 'pacotes', pacote.id), doc);
+    UI.toast(`${U.plural(pacote.missoes.length, 'missão enviada', 'missões enviadas')} para ${m ? m.nome : 'a pessoa'}${e ? ' (' + e.nome + ')' : ''}. Chegam no app dela sozinhas.`);
+  },
+  pac: {},   // últimos pacotes vistos por equipe
+  receber(eqId, pacotes) {
+    this.pac[eqId] = pacotes;
+    // Espera um instante antes de aceitar: se a mesma pessoa estiver com outro aparelho aberto, só um aceita
+    clearTimeout(this['rt' + eqId]);
+    this['rt' + eqId] = setTimeout(() => this.aceitarNovos(eqId), 600 + Math.random() * 1400);
+  },
+  aceitarNovos(eqId) {
+    const pacotes = this.pac[eqId] || [];
+    const novos = pacotes.filter(p => !p.aceitoEm && !Missoes.list().some(m => m.pacote === p.id));
+    for (const p of novos) {
+      Missoes.aceitar({ ...p, equipe: eqId });
+      Fire.api.d.update(this.p(eqId, 'pacotes', p.id), { aceitoEm: Date.now() }).catch(() => {});
+      UI.toast(`${p.de || 'Sua equipe'} te enviou ${U.plural(p.missoes.length, 'missão', 'missões')}. Veja na Jornada.`, 'ok', { label: 'Ver', onClick: () => App.go('jornada') });
+    }
+    pacotes.filter(p => !p.aceitoEm && Missoes.list().some(m => m.pacote === p.id)).forEach(p => Fire.api.d.update(this.p(eqId, 'pacotes', p.id), { aceitoEm: Date.now() }).catch(() => {}));
+  },
+
+  /* ---------- Ouvir as mudanças ao vivo ---------- */
+  stop() { this.subs.forEach(f => { try { f(); } catch (x) { /* ok */ } }); this.subs = []; clearTimeout(this.timer); },
+  start() {
+    this.stop();
+    if (!this.ativo()) return;
+    const uid = Fire.user.uid, d = Fire.api.d;
+    for (const e of this.list()) {
+      const perdeu = x => { if (/permission/i.test(String(x && (x.code || x.message)))) this.removido(e); };
+      this.subs.push(d.onQuery(this.p(e.id, 'pacotes'), ['para', uid], ps => this.receber(e.id, ps), perdeu));
+      if (e.papel === 'gestor') this.subs.push(d.onQuery(this.p(e.id, 'membros'), null, ms => { this.membros[e.id] = ms; this.redesenhar(); }, x => console.warn(x)));
+    }
+    this.publicar();
+  },
+  redesenhar() {
+    const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
+    if (App.route === 'equipe' && !busy) App.render();
+  },
+  /* Publica o resumo deste aparelho em cada equipe (chamado após salvar) */
+  schedule() { if (!this.ativo() || !this.list().length) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.publicar(), 2500); },
+  publicar() {
+    if (!this.ativo()) return;
+    for (const e of this.list()) Fire.api.d.update(this.p(e.id, 'membros', Fire.user.uid), JSON.parse(JSON.stringify(this.resumo(e.id))))
+      .catch(x => { if (/permission|not-found/i.test(String(x && (x.code || x.message)))) this.removido(e); else console.warn('resumo', x); });
+  },
+  /* Quem lidera removeu esta pessoa (ou excluiu a equipe) */
+  removido(e) {
+    if (!this.list().some(x => x.id === e.id)) return;
+    S.equipes = this.list().filter(y => y.id !== e.id); commit(); this.start();
+    UI.toast(`Você não faz mais parte da equipe “${e.nome}”.`, 'warn');
+  },
+  quando(t) {
+    if (!t) return 'ainda não atualizou';
+    const min = Math.round((Date.now() - t) / 60000);
+    return min < 1 ? 'agora' : min < 60 ? `há ${min} min` : min < 1440 ? `há ${Math.round(min / 60)} h` : `há ${Math.round(min / 1440)} dias`;
+  },
+};
+
+Views.equipe = {
+  title: 'Equipe', icon: 'user', nav: 'Equipe',
+  render() {
+    if (!Fire.supported()) return H.empty('Equipes não funcionam dentro do link do Claude. Use o app ou o site.');
+    if (!Fire.user) return `<div class="card eq-hero"><h2>${U.icon('users')} Equipes</h2>
+      <p>Crie a sua equipe, convide as pessoas por link e envie missões direto para o app de cada uma. Você acompanha o nível, a sequência e o progresso das missões de todos, ao vivo.</p>
+      <p class="muted small">Para usar equipes, entre na sua Conta FlowFire (a mesma conta Google em todos os aparelhos).</p>
+      <button class="btn primary" data-act="fireEntrar">Entrar com Google</button></div>`;
+    const eqs = Equipes.list();
+    const novo = `<section class="grid-2">
+      <form class="card eq-new" data-submit="eqCriar"><h3>${U.icon('plus')} Criar uma equipe</h3><p class="muted small">Você vira o gestor: convida as pessoas e envia missões.</p>
+        <div class="inline-add"><input name="nome" maxlength="60" required placeholder="Nome da equipe (ex.: Equipe técnica)"><button class="btn primary">Criar</button></div></form>
+      <form class="card eq-new" data-submit="eqEntrar"><h3>${U.icon('download')} Entrar com convite</h3><p class="muted small">Cole o link que você recebeu de quem lidera a equipe.</p>
+        <div class="inline-add"><input name="link" required placeholder="Cole aqui o link do convite"><button class="btn">Entrar</button></div></form>
+    </section>`;
+    if (!eqs.length) return `<div class="card eq-hero"><h2>${U.icon('users')} Equipes</h2><p>Você ainda não está em nenhuma equipe.</p></div>${novo}`;
+    const sel = eqs.find(e => e.id === App.ui.eqSel) || eqs[0];
+    const tabs = eqs.length > 1 ? `<div class="tabs mt-tabs">${eqs.map(e => `<button class="tab ${e.id === sel.id ? 'active' : ''}" data-act="eqSel" data-id="${e.id}">${U.esc(e.nome)}</button>`).join('')}</div>` : '';
+    return tabs + (sel.papel === 'gestor' ? this.gestor(sel) : this.membro(sel)) + `<details class="card eq-more"><summary>${U.icon('plus', 15)} Criar outra equipe ou entrar em outra</summary>${novo}</details>`;
+  },
+  gestor(e) {
+    const ms = (Equipes.membros[e.id] || []).slice().sort((a, b) => (a.papel === 'gestor') - (b.papel === 'gestor') || (b.resumo?.xp || 0) - (a.resumo?.xp || 0));
+    const card = m => {
+      const r = m.resumo || {}, miss = m.missoes || [], feitas = miss.filter(x => x.feitaEm).length, mp = Math.min(100, Math.round((r.hoje || 0) / (r.meta || 40) * 100));
+      return `<div class="card eq-m" role="button" tabindex="0" data-act="eqMembro" data-e="${e.id}" data-id="${m.id}">
+        <div class="eq-m-h"><span class="fb-av">${U.esc(FB.initials(m.nome || '?'))}</span>
+          <span class="eq-m-n"><strong>${U.esc(m.nome || 'Sem nome')}${m.id === Fire.user.uid ? ' <small class="muted">(você)</small>' : ''}</strong><small class="muted">${Equipes.quando(m.atualizadoEm)}</small></span>
+          <span class="jg-lvb num" title="Nível">${r.nivel || 1}</span></div>
+        <div class="eq-m-stats"><span class="jg-stat jg-flame ${r.streak ? 'lit' : ''}">${U.icon('flame', 15)}<b class="num">${r.streak || 0}</b></span><span class="jg-stat jg-xp">${U.icon('bolt', 14)}<b class="num">${r.xp || 0}</b> XP</span>
+          <span class="eq-m-miss">${miss.length ? `${U.icon('target', 14)} ${feitas}/${miss.length} missões` : '<span class="muted">Sem missões</span>'}</span></div>
+        <div class="jg-meta-t"><span>Meta de hoje</span><b class="num">${Math.min(r.hoje || 0, r.meta || 40)}/${r.meta || 40}</b></div>
+        <span class="jg-bar gold"><i style="width:${Math.max(mp, 3)}%"></i></span>
+      </div>`;
+    };
+    return `<section class="card eq-head">
+        <div><h2>${U.esc(e.nome)}</h2><p class="muted small">Você é o gestor · ${U.plural(ms.length, 'pessoa', 'pessoas')} · atualiza ao vivo</p></div>
+        <span class="grow"></span>
+        <button class="btn" data-act="eqConvidar" data-id="${e.id}">${U.icon('users', 15)} Convidar</button>
+        <button class="btn primary" data-act="eqMissoes" data-id="${e.id}">${U.icon('target', 15)} Enviar missões</button>
+      </section>
+      ${ms.length > 1 ? '' : `<p class="muted small">Ninguém entrou ainda. Toque em <strong>Convidar</strong> e mande o link pelo WhatsApp.</p>`}
+      <div class="eq-grid">${ms.map(card).join('')}</div>
+      <p class="muted small">Você vê só o resumo de cada pessoa. Tarefas, feedbacks e atas delas continuam privados. <a class="link" href="#equipe" data-act="eqSair" data-id="${e.id}">Excluir equipe</a></p>`;
+  },
+  membro(e) {
+    const r = Jogo.calc(), miss = r.miss.filter(m => m.equipe === e.id);
+    return `<section class="card eq-head"><div><h2>${U.esc(e.nome)}</h2><p class="muted small">Você é membro. Quem lidera vê o seu nível, XP, sequência e as missões que enviou.</p></div></section>
+      <section class="card"><div class="card-h"><h3>${U.icon('target')} Missões desta equipe</h3><a class="link" href="#jornada">Abrir a Jornada</a></div>
+        ${miss.length ? `<ul class="jg-miss">${miss.map(m => `<li class="${m.feitaEm ? 'ok' : ''}"><span class="jg-chk">${m.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(m.titulo)}</span><small class="muted">+${m.xp} XP${m.prazo ? ` · até ${U.fmtShort(m.prazo)}` : ''}</small></span><span class="jg-miss-n num">${m.n}/${m.de}</span></li>`).join('')}</ul>`
+          : '<p class="muted small">Nenhuma missão desta equipe ainda. Quando chegarem, elas aparecem aqui, na Jornada e, se forem tarefas ou reuniões, direto nas telas delas.</p>'}</section>
+      <p class="muted small"><a class="link" href="#equipe" data-act="eqSair" data-id="${e.id}">Sair da equipe</a></p>`;
+  },
+};
+
+Object.assign(Actions, {
+  eqCriar(_, f) { const nome = f.elements.nome.value.trim(); if (nome) Equipes.criar(nome).catch(x => UI.toast('Não foi possível criar: ' + Fire.erro(x), 'error')); },
+  eqEntrar(_, f) { const v = f.elements.link.value.trim(), q = v.includes('?') ? v.slice(v.indexOf('?') + 1) : v; Equipes.aceitarConvite(q); },
+  eqSel({ id }) { App.ui.eqSel = id; App.render(); },
+  eqConvidar({ id }) { const e = Equipes.list().find(x => x.id === id); if (e) Equipes.convidar(e); },
+  eqSair({ id }) { const e = Equipes.list().find(x => x.id === id); if (e) Equipes.sair(e); },
+  eqMissoes({ id }) { Missoes.form(true, { equipe: id }); },
+  eqMembro({ e, id }) {
+    const eq = Equipes.list().find(x => x.id === e), m = (Equipes.membros[e] || []).find(x => x.id === id); if (!eq || !m) return;
+    const miss = m.missoes || [];
+    const mo = UI.modal({
+      title: m.nome || 'Membro',
+      body: `<p class="muted small">${U.esc(m.email || '')} · atualizado ${Equipes.quando(m.atualizadoEm)}</p>
+        <div class="eq-m-stats big"><span class="jg-stat jg-flame ${m.resumo?.streak ? 'lit' : ''}">${U.icon('flame', 17)}<b>${m.resumo?.streak || 0}</b> dias</span><span class="jg-stat jg-xp">${U.icon('bolt', 16)}<b>${m.resumo?.xp || 0}</b> XP</span><span class="jg-lv"><span class="jg-lvb">${m.resumo?.nivel || 1}</span>Nível</span></div>
+        <h4>Missões</h4>${miss.length ? `<ul class="jg-miss">${miss.map(x => `<li class="${x.feitaEm ? 'ok' : x.expirada ? 'exp' : ''}"><span class="jg-chk">${x.feitaEm ? U.icon('check', 15) : ''}</span><span class="jg-miss-t"><span>${U.esc(x.titulo)}</span><small class="muted">${x.feitaEm ? 'concluída em ' + U.fmtShort(x.feitaEm) : x.expirada ? 'prazo encerrado' : x.prazo ? 'até ' + U.fmtShort(x.prazo) : 'em andamento'} · +${x.xp} XP</small></span><span class="jg-miss-n num">${x.n}/${x.de}</span></li>`).join('')}</ul>` : '<p class="muted small">Nenhuma missão ainda.</p>'}`,
+      footer: `${m.id !== Fire.user.uid ? '<button class="btn ghost danger-text" data-rm>Remover da equipe</button>' : ''}<span class="grow"></span><button class="btn primary" data-env>${U.icon('target', 15)} Enviar missões</button>`,
+    });
+    mo.el.querySelector('[data-env]').onclick = () => { mo.close(); Missoes.form(true, { equipe: e, membro: id }); };
+    const rm = mo.el.querySelector('[data-rm]'); if (rm) rm.onclick = () => { mo.close(); Equipes.remover(eq, m); };
+  },
 });
 
 </script>
@@ -6129,7 +6410,7 @@ const Reports = {
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada', 'equipe']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
@@ -6137,7 +6418,7 @@ const NAV_GROUPS = [
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
   const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : true;
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : id === 'equipe' ? (typeof Fire === 'undefined' || Fire.supported()) : true;
 };
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
@@ -6160,6 +6441,7 @@ const App = {
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
     if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'equipe' && /(^|&)e=/.test(qs || '')) { this.ui.eqPend = qs; this.route = 'equipe'; this.params = {}; return; }   // link de convite
     if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
     if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
@@ -6219,6 +6501,7 @@ const App = {
     }
     this.renderNav();
     if (opts.resetScroll) window.scrollTo(0, 0); else window.scrollTo(0, scroll);
+    if (this.ui.eqPend) { const q = this.ui.eqPend; this.ui.eqPend = null; history.replaceState(null, '', '#equipe'); setTimeout(() => Equipes.aceitarConvite(q), 300); }
     if (this.ui.msPend !== undefined && this.ui.msPend !== null) {   // abriu um link de missões
       const q = this.ui.msPend; this.ui.msPend = null;
       history.replaceState(null, '', '#jornada');
@@ -6339,7 +6622,7 @@ const Theme = {
 };
 
 /* Salva e redesenha a tela atual */
-function commit() { Store.save(); App.render(); Jogo.check(); }
+function commit() { Store.save(); App.render(); Jogo.check(); if (typeof Equipes !== 'undefined') Equipes.schedule(); }
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
