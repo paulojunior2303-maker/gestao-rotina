@@ -260,13 +260,18 @@ label.inline input, .filters input, .filters select, .chart-ctrl select { min-he
 a.rail:hover .seg:not(.s-break) { filter: brightness(1.08); }
 
 /* ---------- Dashboard ---------- */
-.topbar.is-hero { border-bottom-color: transparent; }
 .topbar.is-hero h1 { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
 .th-greet { font-size: 12.5px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
 .th-date { font-size: 23px; font-weight: 600; letter-spacing: -.025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar.is-hero .top-clock { display: block; font-family: var(--font-d); font-size: 22px; color: var(--text-2); letter-spacing: -.01em; }
-.hero-extra { margin: -28px -36px 0; padding: 0 36px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
-.hero-focus { margin: 0; color: var(--text-2); font-size: 13.5px; } .hero-focus strong { color: var(--text); }
+/* Cartão "Hoje" da tela inicial: Jornada (XP e meta) + expediente e barra do dia */
+.day-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.day-card .jg-card { border: 0; border-radius: 0; background: transparent; }
+.dc-day { padding: 12px 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+.jg-card + .dc-day { border-top: 1px solid var(--line); }
+.dc-day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); }
+.dc-day-h strong { color: var(--text); font-weight: 600; }
+.dc-prog { font-size: 12.5px; color: var(--muted); text-decoration: none; white-space: nowrap; } .dc-prog:hover { color: var(--text); }
 .kpis { display: grid; grid-template-columns: 1.5fr repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
 .kpis-ind { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .kpi { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 2px; min-width: 0; transition: background .15s; }
@@ -666,10 +671,10 @@ label.check.radio input:checked + span, .cfg-form label.check input:checked + sp
 #print-root { display: none; }
 
 /* ---------- Abertura (apenas no primeiro desenho da tela) ---------- */
-body.intro .th-greet, body.intro .th-date, body.intro .hero-focus { animation: introUp .6s var(--ease) both; }
+body.intro .th-greet, body.intro .th-date, body.intro .day-card { animation: introUp .6s var(--ease) both; }
 body.intro .th-date { animation-delay: .08s; }
-body.intro .hero-focus { animation-delay: .16s; }
-body.intro .hero-extra .rail-track { animation: railIn 1s .2s var(--ease) both; }
+body.intro .day-card { animation-delay: .14s; }
+body.intro .day-card .rail-track { animation: railIn 1s .3s var(--ease) both; }
 body.intro .rail-now { animation: introFade .4s 1.05s both; }
 @keyframes introUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes introFade { from { opacity: 0; } to { opacity: 1; } }
@@ -716,7 +721,6 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .topbar h1 { font-size: 19px; }
   .th-date { font-size: 18px; }
   .topbar.is-hero .top-clock { font-size: 15px; color: var(--muted); }
-  .hero-extra { margin: -18px -16px 0; padding: 0 16px 14px; }
   .row-actions { flex-wrap: wrap; }
   .row-actions .btn, .modal-foot .btn { white-space: normal; text-align: center; }
   .view { overflow-x: clip; }
@@ -1130,7 +1134,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="76 76 360 360" aria-hidden="true"><g transform="translate(5.2 -16.0) scale(0.8000)"><path d="M352 128 C 395 175 398 240 360 282 C 330 315 280 340 252 378 C 232 405 225 445 222 480 C 190 455 175 405 188 365 C 205 315 255 285 300 255 C 340 228 360 185 352 128 Z" fill="#7a30f2"/><path d="M425 275 C 452 330 445 380 405 412 C 370 440 330 455 308 490 C 296 510 288 530 285 552 C 262 520 262 470 290 438 C 318 405 368 390 398 360 C 424 335 432 305 425 275 Z" fill="#7a30f2"/></g></svg>
-        <div><strong>FlowFire</strong><small id="brand-sub">Calma Pae</small></div>
+        <div><strong>FlowFire</strong><small id="brand-sub">Calma Pae!</small></div>
       </div>
       <nav id="nav" class="nav"></nav>
       <div class="sidebar-foot" id="storage-status"></div>
@@ -3598,12 +3602,15 @@ Views.dashboard = {
     const showGoals = !!S.settings.showIndicadores, showProj = !!S.settings.showProjetos;
 
     return `
-    <section class="hero-extra">
-      <p class="hero-focus">${workday ? (focus && focus.title ? `Foco do dia: <strong>${U.esc(focus.title)}</strong> · ` : '') + `Expediente das ${S.settings.workStart} às ${S.settings.workEnd}` : 'Hoje não é dia útil. Bom descanso.'}</p>
-      ${blocks.length ? H.dayRail(t) : ''}
-    </section>
     ${Updater.banner()}
-    ${Jogo.card()}
+    <section class="day-card">
+      ${Jogo.card()}
+      <div class="dc-day">
+        <div class="dc-day-h"><span>${workday ? (focus && focus.title ? `Foco: <strong>${U.esc(focus.title)}</strong> · ` : '') + `Expediente <strong>${S.settings.workStart}–${S.settings.workEnd}</strong>` : 'Hoje não é dia útil. Bom descanso.'}</span>
+          ${prog.total ? `<a class="dc-prog" href="#agenda">${prog.done} de ${U.plural(prog.total, 'atividade')} · ${prog.pct}%</a>` : ''}</div>
+        ${blocks.length ? H.dayRail(t) : ''}
+      </div>
+    </section>
 
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
 
@@ -6169,7 +6176,7 @@ const App = {
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
     document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
-    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae';
+    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae!';
     document.getElementById('storage-status').innerHTML =
       fv === 'on' ? '<span class="dot-ok"></span> Sincronizado com a sua conta'
       : fv === 'syncing' || fv === 'loading' ? '<span class="dot-wait"></span> Sincronizando com a sua conta…'
