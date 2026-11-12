@@ -1115,3 +1115,22 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .ms-f-data { grid-column: 1; } .ms-f-hora { grid-column: 2; }
 }
 .fire-status { margin: 0 0 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Equipes */
+.eq-hero h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.eq-hero p { max-width: 640px; }
+.eq-new h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.eq-new .inline-add { margin-top: 10px; }
+.eq-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.eq-head h2 { margin: 0 0 2px; }
+.eq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.eq-m { display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: border-color .15s; }
+.eq-m:hover { border-color: var(--border-strong); }
+.eq-m-h { display: flex; align-items: center; gap: 10px; }
+.eq-m-n { flex: 1; min-width: 0; display: flex; flex-direction: column; } .eq-m-n strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-m-stats { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+.eq-m-stats .jg-stat { font-size: 15px; }
+.eq-m-stats.big { margin: 6px 0 14px; } .eq-m-stats.big .jg-stat { font-size: 18px; }
+.eq-m-miss { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
+.eq-more summary { cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.eq-more[open] summary { margin-bottom: 14px; }

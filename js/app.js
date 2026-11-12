@@ -3,7 +3,7 @@
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'reunioes', 'imprevistos', 'jornada', 'equipe']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
@@ -11,7 +11,7 @@ const NAV_GROUPS = [
 const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
   const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : true;
+  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : id === 'equipe' ? (typeof Fire === 'undefined' || Fire.supported()) : true;
 };
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
@@ -34,6 +34,7 @@ const App = {
     const [path, qs] = h.split('?');
     // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
     if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
+    if (path === 'equipe' && /(^|&)e=/.test(qs || '')) { this.ui.eqPend = qs; this.route = 'equipe'; this.params = {}; return; }   // link de convite
     if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
     if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
@@ -93,6 +94,7 @@ const App = {
     }
     this.renderNav();
     if (opts.resetScroll) window.scrollTo(0, 0); else window.scrollTo(0, scroll);
+    if (this.ui.eqPend) { const q = this.ui.eqPend; this.ui.eqPend = null; history.replaceState(null, '', '#equipe'); setTimeout(() => Equipes.aceitarConvite(q), 300); }
     if (this.ui.msPend !== undefined && this.ui.msPend !== null) {   // abriu um link de missões
       const q = this.ui.msPend; this.ui.msPend = null;
       history.replaceState(null, '', '#jornada');
@@ -213,7 +215,7 @@ const Theme = {
 };
 
 /* Salva e redesenha a tela atual */
-function commit() { Store.save(); App.render(); Jogo.check(); }
+function commit() { Store.save(); App.render(); Jogo.check(); if (typeof Equipes !== 'undefined') Equipes.schedule(); }
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };

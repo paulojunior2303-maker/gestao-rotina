@@ -1,39 +1,13 @@
 // Conta FlowFire (Firebase): sincronização entre dois "aparelhos" com uma nuvem simulada (sem internet).
 const { chromium } = require('playwright');
 const useRoutine12 = require('./rotina-exemplo');
+const F = require('./fake-fire');
 let pass = 0, fail = 0;
 const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 (async () => {
   const b = await chromium.launch();
-  const nuvem = {}, pages = [];
-  const fake = () => {   // roda dentro da página: implementa a mesma interface usada pelo app
-    let user = JSON.parse(localStorage.getItem('__ffuser') || 'null'), auth = [], ls = [];
-    const setUser = u => { user = u; localStorage.setItem('__ffuser', JSON.stringify(u)); auth.forEach(cb => cb(u)); };
-    window.__ffNotify = async () => { if (!user) return; const all = await window.__ffGet(user.uid); ls.forEach(cb => cb(all)); };
-    window.__fireFake = {
-      onAuth: cb => { auth.push(cb); setTimeout(() => cb(user), 0); return () => {}; },
-      signInPopup: async () => setUser({ uid: 'u1', email: 'victor@teste.com', name: 'Victor' }),
-      signInToken: async () => setUser({ uid: 'u1', email: 'victor@teste.com', name: 'Victor' }),
-      signOut: async () => setUser(null),
-      getAll: uid => window.__ffGet(uid),
-      set: (uid, id, data) => window.__ffSet(uid, id, data),
-      del: (uid, id) => window.__ffDel(uid, id),
-      listen: (uid, cb) => { ls.push(cb); setTimeout(() => window.__ffNotify(), 0); return () => { ls = ls.filter(x => x !== cb); }; },
-    };
-  };
-  const device = async name => {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    const notify = async src => { for (const p of pages) if (p !== src) await p.evaluate(() => window.__ffNotify && window.__ffNotify()).catch(() => {}); };
-    await ctx.exposeBinding('__ffGet', (_, uid) => JSON.parse(JSON.stringify(nuvem[uid] || {})));
-    await ctx.exposeBinding('__ffSet', async (src, uid, id, data) => { (nuvem[uid] = nuvem[uid] || {})[id] = data; await notify(src.page); });
-    await ctx.exposeBinding('__ffDel', async (src, uid, id) => { delete (nuvem[uid] || {})[id]; await notify(src.page); });
-    await ctx.addInitScript(fake);
-    const p = await ctx.newPage(); pages.push(p);
-    const errs = []; p.on('pageerror', e => errs.push(e.message)); p.errs = errs;
-    await p.goto('http://localhost:8765/'); await p.waitForTimeout(500);
-    if (await p.locator('[data-tour=skip]').count()) { await p.locator('[data-tour=skip]').click(); await p.waitForTimeout(200); }
-    return p;
-  };
+  const VICTOR = { uid: 'u1', email: 'victor@teste.com', name: 'Victor' };
+  const device = name => F.device(b, VICTOR), nuvem = F.nuvem, pages = F.pages;
   const W = (p, ms = 300) => p.waitForTimeout(ms);
   const titles = p => p.evaluate(() => S.tasks.map(t => t.title).sort().join('|'));
 

@@ -258,6 +258,16 @@ Views.guia = {
         'Para desligar: <strong>Configurações → Aparência → Modo jogo</strong>.',
       ])}`)}
 
+    ${sec('equipe', 'users', 'Equipe (Conta FlowFire)', `
+      <p>Fica em <strong>Menu → Equipe</strong>. Precisa estar com a Conta FlowFire conectada (Configurações → Conta).</p>
+      <ol>
+        <li><strong>Criar uma equipe</strong>: dê um nome. Você vira o <strong>gestor</strong>.</li>
+        <li><strong>Convidar</strong>: mande o link pelo WhatsApp. A pessoa abre, entra com a conta Google e aparece no seu painel. No app do celular dela: Equipe → <strong>Entrar com convite</strong> e cola o link.</li>
+        <li><strong>Enviar missões</strong>: escolha a pessoa da equipe; as missões chegam sozinhas no app dela (tarefas, reuniões e imprevistos já criados e no calendário).</li>
+        <li>O <strong>painel</strong> mostra de cada pessoa: nível, XP, sequência, meta de hoje e o progresso das missões, atualizando ao vivo. Toque na pessoa para ver cada missão.</li>
+      </ol>
+      <p class="guide-note">Privacidade: o gestor vê só esse resumo. Tarefas, feedbacks, atas e anotações de cada pessoa continuam privados. Para tirar alguém: toque na pessoa → <strong>Remover da equipe</strong> (o link de convite é trocado). Quem quiser sair: Equipe → Sair da equipe.</p>`)}
+
     ${sec('lembretes', 'clock', 'Lembretes (avisos)', `
       <p>O app avisa na hora certa, ${Native.available() ? 'mesmo com o app fechado' : 'enquanto o site estiver aberto em alguma aba'}. Ligue em <strong>Configurações → Lembretes</strong>.</p>
       ${li([

@@ -1,12 +1,48 @@
 rules_version = '2';
-// FlowFire: cada pessoa só lê e grava os próprios documentos.
-// Caminho: canais/{oficial|teste}/usuarios/{uid}/docs/{documento}
+// FlowFire — regras do banco de dados (Firestore)
+// 1) Dados pessoais: canais/{oficial|teste}/usuarios/{uid}/docs/{doc} → só a própria pessoa.
+// 2) Equipes: canais/{canal}/equipes/{eq}
+//    - o gestor (dono) cria a equipe e vê todos os membros e pacotes de missões;
+//    - entrar exige o código de convite do link; cada membro só lê e grava o próprio resumo;
+//    - pacotes de missões: só o gestor cria, para um membro da equipe; o membro só lê os dele e marca "aceito".
 service cloud.firestore {
   match /databases/{database}/documents {
+    function logado() { return request.auth != null; }
+
     match /canais/{canal}/usuarios/{uid}/docs/{doc} {
-      allow read, write: if request.auth != null
-        && request.auth.uid == uid
-        && canal in ['oficial', 'teste'];
+      allow read, write: if logado() && request.auth.uid == uid && canal in ['oficial', 'teste'];
+    }
+
+    match /canais/{canal}/equipes/{eq} {
+      function equipe() { return get(/databases/$(database)/documents/canais/$(canal)/equipes/$(eq)).data; }
+      function gestor() { return logado() && equipe().dono == request.auth.uid; }
+      function membro() { return logado() && exists(/databases/$(database)/documents/canais/$(canal)/equipes/$(eq)/membros/$(request.auth.uid)); }
+
+      allow create: if logado() && canal in ['oficial', 'teste']
+        && request.resource.data.dono == request.auth.uid
+        && request.resource.data.nome is string && request.resource.data.nome.size() <= 60
+        && request.resource.data.convite is string && request.resource.data.convite.size() >= 16;
+      allow read: if logado() && (resource.data.dono == request.auth.uid || membro());
+      allow update: if logado() && resource.data.dono == request.auth.uid && request.resource.data.dono == resource.data.dono;
+      allow delete: if logado() && resource.data.dono == request.auth.uid;
+
+      match /membros/{uid} {
+        allow read: if logado() && (request.auth.uid == uid || gestor());
+        allow create: if logado() && request.auth.uid == uid
+          && ((gestor() && request.resource.data.papel == 'gestor')
+              || (!gestor() && request.resource.data.papel == 'membro' && request.resource.data.convite == equipe().convite));
+        allow update: if logado() && request.auth.uid == uid && request.resource.data.papel == resource.data.papel;
+        allow delete: if logado() && (request.auth.uid == uid || gestor());
+      }
+
+      match /pacotes/{p} {
+        allow create: if gestor()
+          && exists(/databases/$(database)/documents/canais/$(canal)/equipes/$(eq)/membros/$(request.resource.data.para));
+        allow read: if logado() && (gestor() || (resource.data.para == request.auth.uid && membro()));
+        allow update: if logado() && resource.data.para == request.auth.uid && membro()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['aceitoEm']);
+        allow delete: if gestor();
+      }
     }
   }
 }
