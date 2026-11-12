@@ -50,7 +50,7 @@ const App = {
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
     document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
-    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Rotina e equipe';
+    const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae';
     document.getElementById('storage-status').innerHTML =
       fv === 'on' ? '<span class="dot-ok"></span> Sincronizado com a sua conta'
       : fv === 'syncing' || fv === 'loading' ? '<span class="dot-wait"></span> Sincronizando com a sua conta…'
@@ -75,7 +75,10 @@ const App = {
       focus = { sel: `[data-input="${document.activeElement.dataset.input}"]`, pos: document.activeElement.selectionStart };
     }
     const scroll = window.scrollY;
-    document.getElementById('page-title').textContent = view.title;
+    const top = document.querySelector('.topbar'), h1 = document.getElementById('page-title');
+    top.classList.toggle('is-hero', !!view.hero);
+    if (view.hero) h1.innerHTML = view.hero(); else h1.textContent = view.title;
+    this.tick && this.tick();
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
     document.title = `${view.title} · FlowFire${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
@@ -153,11 +156,11 @@ const App = {
     }, { passive: true });
 
     // Relógio e atualização periódica (status "agora"/"atrasada")
-    const tick = () => {
-      const now = new Date();
-      const s = now.toLocaleTimeString('pt-BR');
-      const c = document.getElementById('dash-clock'); if (c) c.textContent = s;
-      document.getElementById('top-clock').textContent = `${U.WD_SHORT[now.getDay()]}, ${U.fmtShort(U.today())} · ${s.slice(0, 5)}`;
+    // Relógio do topo: na tela inicial mostra a hora (a data já está no título); nas outras, dia e hora
+    const tick = this.tick = () => {
+      const now = new Date(), s = now.toLocaleTimeString('pt-BR');
+      const hero = document.querySelector('.topbar').classList.contains('is-hero'), estreito = window.innerWidth <= 640;
+      document.getElementById('top-clock').textContent = hero ? (estreito ? s.slice(0, 5) : s) : `${U.WD_SHORT[now.getDay()]}, ${U.fmtShort(U.today())} · ${s.slice(0, 5)}`;
     };
     tick(); setInterval(tick, 1000);
     let lastMin = U.nowMin(), lastDay = U.today();

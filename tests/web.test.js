@@ -150,7 +150,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   // ---- Indicadores (oculto por padrão; ativado em Configurações → Aparência)
   assert(await p.locator('#nav a[href="#indicadores"]').count() === 0, 'Indicadores fica oculto no menu por padrão');
   await go('indicadores');
-  assert(await p.textContent('#page-title') === 'Início', 'endereço #indicadores oculto volta ao Início');
+  assert(await p.evaluate(() => App.route) === 'dashboard', 'endereço #indicadores oculto volta ao Início');
   await go('config');
   assert(await p.locator('#cfg-metas').count() === 0, 'Metas ocultas junto com Indicadores');
   await p.click('[data-change=cfgIndicadores]'); await p.waitForTimeout(250);
@@ -208,7 +208,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(mig.theme === 'escuro' && mig.op === '#7b3fe4' && mig.v2, 'migração: tema escuro e nova paleta de cores');
 
   // ---- App genérico (para qualquer equipe): nome da empresa opcional; quem já usava mantém o seu
-  assert((await p.textContent('#brand-sub')).trim() === 'Rotina e equipe' && !(await p.content()).includes('Wi-bicam'), 'instalação nova sem marca de empresa');
+  assert((await p.textContent('#brand-sub')).trim() === 'Calma Pae' && !(await p.content()).includes('Wi-bicam'), 'instalação nova sem marca de empresa');
   const v4 = await p.evaluate(() => { const old = JSON.parse(JSON.stringify(S)); delete old.meta.v4; delete old.meta.v5; old.settings.empresa = 'Wi-bicam, CFTV IP'; old.settings.metricNames = {}; const m = Store.migrate(old); return [m.settings.empresa, m.settings.metricNames.pontosCamera]; });
   assert(v4[0] === '' && v4[1] === 'Pontos de câmera instalados', 'migração: tira "Wi-bicam, CFTV IP" de quem já usava e mantém os nomes dos indicadores');
   await go('config');
