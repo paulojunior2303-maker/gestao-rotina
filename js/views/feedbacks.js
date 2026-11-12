@@ -5,6 +5,13 @@ const FB = {
   TOM_COLOR: { positivo: '#3dbe8b', neutro: '#8e87a3', melhorar: '#e3a043' },
   TIPO_COLOR: { feedback: '#9461f5', orientacao: '#e3a043', advertencia: '#ee5a6f' },
   list() { return S.feedbacks || (S.feedbacks = []); },
+  people() {
+    const names = new Map();
+    S.settings.technicians.forEach(t => names.set(t.name, { name: t.name, demo: t.demo, items: [] }));
+    this.list().forEach(f => { if (!names.has(f.pessoa)) names.set(f.pessoa, { name: f.pessoa, items: [] }); names.get(f.pessoa).items.push(f); });
+    return [...names.values()].map(p => ({ ...p, items: p.items.sort((a, b) => b.date.localeCompare(a.date)) }))
+      .sort((a, b) => ((b.items[0] || {}).date || '').localeCompare((a.items[0] || {}).date || '') || a.name.localeCompare(b.name));
+  },
   initials(n) { return n.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); },
   chips(f) { return `${H.chip(IA.TONS[f.tom] || 'Neutro', this.TOM_COLOR[f.tom] || '#8e87a3')}${f.tipo && f.tipo !== 'feedback' ? H.chip(IA.TIPOS[f.tipo], this.TIPO_COLOR[f.tipo]) : ''}${f.transcricao ? `<span class="muted" title="Conversa gravada">${U.icon('mic', 13)}</span>` : ''}`; },
   card(f, showName) {
@@ -12,6 +19,39 @@ const FB = {
     return `<div class="fb-card" role="button" tabindex="0" data-act="fbView" data-id="${f.id}">
       <div class="fb-card-h">${showName ? `<strong>${U.esc(f.pessoa)}</strong>` : ''}<span class="muted small">${U.fmtDate(f.date)}</span>${this.chips(f)}</div>
       <p class="fb-card-t">${U.esc(first)}</p></div>`;
+  },
+};
+
+/* Aba "Feedbacks" da tela Reuniões e feedbacks */
+const FBPage = {
+  render() {
+    const who = App.ui.fbWho;
+    if (who) return this.person(who);
+    const people = FB.people(), recent = [...FB.list()].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+    // Feedbacks pedidos em missões (ainda não registrados)
+    const pend = (S.missoes || []).filter(m => m.tipo === 'feedbackItem' && !Missoes.itemFeito(m));
+    return `
+    ${pend.length ? `<section class="mt-sec"><h3 class="mt-h">Para fazer <span class="badge b-yellow">${pend.length}</span></h3><div class="mt-list">${pend.map(m => `<div class="mt-card" role="button" tabindex="0" data-act="msAbrir" data-id="${m.id}">
+        <span class="fb-av">${U.esc(FB.initials(m.pessoa || '?'))}</span>
+        <span class="mt-body"><span class="mt-title">${U.esc(m.titulo)}</span><span class="mt-meta">Missão${m.de_ ? ` de ${U.esc(m.de_)}` : ''}${m.data ? ` · ${U.fmtShort(m.data)}` : ''} · +${m.xp} XP</span></span>
+        <span class="btn sm primary">Registrar</span></div>`).join('')}</div></section>` : ''}
+    ${people.length ? `<section class="mt-sec"><h3 class="mt-h">Equipe</h3><div class="fb-people">${people.map(p => `<div class="fb-person" role="button" tabindex="0" data-act="fbWho" data-n="${U.esc(p.name)}">
+        <span class="fb-av">${U.esc(FB.initials(p.name))}</span>
+        <span class="fb-p-body"><strong>${U.esc(p.name)}${H.demo(p)}</strong><small class="muted">${p.items.length ? `${U.plural(p.items.length, 'feedback')} · último em ${U.fmtShort(p.items[0].date)}` : 'Nenhum feedback ainda'}</small></span>
+        ${p.items[0] ? H.chip(IA.TONS[p.items[0].tom] || 'Neutro', FB.TOM_COLOR[p.items[0].tom] || '#8e87a3') : ''}${U.icon('right', 15)}</div>`).join('')}</div></section>` : `<div class="card mt-empty"><h3>Como funciona</h3><ol class="mt-steps">
+        <li>Toque em <strong>+</strong> e escreva o nome do colaborador (ele entra na lista da equipe).</li>
+        <li>Na conversa, toque em <strong>Iniciar gravação</strong> (avise o colaborador). A transcrição aparece na tela.</li>
+        <li>No fim, toque em <strong>Encerrar gravação</strong>: a IA escreve o registro e separa os acordos. Confira e salve.</li></ol></div>`}
+    ${recent.length ? `<section class="mt-sec"><h3 class="mt-h">Recentes</h3><div class="mt-list">${recent.map(f => FB.card(f, true)).join('')}</div></section>` : ''}`;
+  },
+  person(name) {
+    const items = FB.list().filter(f => f.pessoa === name).sort((a, b) => b.date.localeCompare(a.date));
+    const count = k => items.filter(f => f.tom === k).length;
+    return `
+    <div class="toolbar"><button class="btn sm ghost" data-act="fbWho" data-n="">${U.icon('left', 15)} Equipe</button></div>
+    <div class="card fb-head"><span class="fb-av big">${U.esc(FB.initials(name))}</span><div><h2>${U.esc(name)}</h2>
+      <p class="muted small">${items.length ? `${U.plural(items.length, 'feedback')}: ${count('positivo')} positivos, ${count('neutro')} neutros, ${count('melhorar')} a melhorar` : 'Nenhum feedback registrado ainda.'}</p></div></div>
+    ${items.length ? `<div class="mt-list">${items.map(f => FB.card(f, false)).join('')}</div>` : H.empty('Toque em + para registrar a primeira conversa.')}`;
   },
 };
 
@@ -60,7 +100,7 @@ Object.assign(FB, {
           S.tasks.push({ id: U.uid(), title, description: `Acordo do feedback com ${v.pessoa} (${U.fmtShort(v.date)}).`, category: 'equipe', priority: 'media', status: 'pendente', responsible: v.pessoa, createdAt: new Date().toISOString(), startDate: U.today(), dueDate: '', dueTime: '', notes: '', completedAt: null });
         });
         warned = true;
-        if (App.route === 'equipe' && !App.ui.pessoa) App.ui.pessoa = v.pessoa;
+        if (App.route === 'reunioes' && App.ui.mtTab === 'feedbacks') App.ui.fbWho = v.pessoa;
         commit();
         UI.toast(n ? `Feedback salvo e ${U.plural(n, 'tarefa criada', 'tarefas criadas')}.` : 'Feedback salvo.');
       },
@@ -111,6 +151,7 @@ Object.assign(FB, {
 });
 
 Object.assign(Actions, {
-  fbNew({ n }) { FB.form(null, n || App.ui.pessoa || ''); },
+  fbNew({ n }) { FB.form(null, n || App.ui.fbWho || ''); },
+  fbWho({ n }) { App.ui.fbWho = n || null; App.render({ resetScroll: true }); },
   fbView({ id }) { const f = FB.list().find(x => x.id === id); if (f) FB.view(f); },
 });

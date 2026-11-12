@@ -15,7 +15,7 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ...(st.showIndicadores ? [['metas', 'Metas']] : []), ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -89,7 +89,9 @@ Views.config = {
         <div><h4>Status</h4><div class="cfg-list">${['pendente', 'andamento', 'concluida', 'cancelada'].map(k => `<div class="cfg-item"><input type="color" value="${st.statuses[k].color}" data-change="stColor" data-k="${k}"><input type="text" value="${U.esc(st.statuses[k].label)}" data-change="stLabel" data-k="${k}"></div>`).join('')}</div></div>
       </div>`)}
 
-    <p class="muted small">A lista de pessoas da equipe fica em <a class="link" href="#equipe">Equipe</a> (toque em + → Adicionar pessoa).</p>
+    ${sec('tecnicos', 'Equipe', 'As pessoas da sua equipe: usadas como responsáveis, nos feedbacks e na produtividade individual.', `
+      <div class="cfg-list">${st.technicians.length ? st.technicians.map(t => `<div class="cfg-item"><input type="text" value="${U.esc(t.name)}" data-change="tecName" data-id="${t.id}">${H.demo(t)}<button class="icon-btn xs" data-act="tecDel" data-id="${t.id}">${U.icon('trash', 14)}</button></div>`).join('') : '<p class="muted small">Ninguém cadastrado ainda.</p>'}</div>
+      <form class="inline-add" data-submit="tecAdd"><input name="name" placeholder="Nome da pessoa…" required><button class="btn sm">${U.icon('plus', 15)} Adicionar</button></form>`)}
 
     ${!st.showIndicadores ? '' : sec('metas', 'Indicadores e metas', 'Dê aos indicadores os nomes que fazem sentido para a sua equipe. As metas são comparadas com os dados lançados em Indicadores, tarefas e projetos.', `
       <div class="metric-names">${METRICS.map(m => `<label class="field"><span class="lbl">Indicador ${METRICS.indexOf(m) + 1}</span><input type="text" value="${U.esc(m.label)}" placeholder="${U.esc(METRIC_DEFAULT_NAMES[m.key])}" data-change="cfgMetricName" data-k="${m.key}" maxlength="40"></label>`).join('')}</div>
@@ -228,6 +230,9 @@ Object.assign(Actions, {
   prLabel({ k }, el) { if (el.value.trim()) { S.settings.priorities[k].label = el.value.trim(); commit(); } },
   stColor({ k }, el) { S.settings.statuses[k].color = el.value; commit(); },
   stLabel({ k }, el) { if (el.value.trim()) { S.settings.statuses[k].label = el.value.trim(); commit(); } },
+  tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Essa pessoa já está cadastrada.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
+  tecName({ id }, el) { const t = S.settings.technicians.find(x => x.id === id); if (el.value.trim()) { t.name = el.value.trim(); commit(); } },
+  tecDel({ id }) { const t = S.settings.technicians.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(t.name)}</strong>? Os lançamentos já feitos são mantidos.`, () => { S.settings.technicians = S.settings.technicians.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
   goalNew() { Goals.form(null); },
   goalEdit({ id }) { Goals.form(S.settings.goals.find(g => g.id === id)); },
   goalDel({ id }) { UI.confirm('Excluir esta meta?', () => { S.settings.goals = S.settings.goals.filter(g => g.id !== id); commit(); }, { danger: true, okLabel: 'Excluir' }); },

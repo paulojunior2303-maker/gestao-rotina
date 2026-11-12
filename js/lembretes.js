@@ -109,7 +109,7 @@ const Reminders = {
       return;
     }
     // Toque no aviso: abre a tela relacionada
-    const go = { tarefa: 'agenda', imprevisto: 'agenda', resumo: 'dashboard' }[x.kind];
+    const go = { tarefa: 'tarefas', imprevisto: 'imprevistos', resumo: 'dashboard' }[x.kind];
     if (go) App.go(go);
     else if (x.kind === 'evento') { const e = S.events.find(e => e.id === x.id); if (e) { App.go('mensal'); setTimeout(() => Events.view(e), 200); } }
   },

@@ -30,8 +30,8 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert((await p.textContent('#storage-status')).includes('sua conta'), 'conectado: dados salvos na conta');
   assert(Object.keys(store).includes('data/users/u123/core'), 'primeiro acesso envia o estado inicial para a conta');
   assert(await p.locator('.alert.a-red').count() === 0 || !(await p.textContent('#view')).includes('Não há onde salvar'), 'sem aviso de armazenamento');
-  await p.goto('http://localhost:8765/dist/gestao-rotina.html#agenda'); await p.waitForTimeout(1200);
-  await p.click('#fab'); await p.waitForTimeout(300); await p.click('.sheet-item:has-text("Tarefa")'); await p.waitForTimeout(300); await p.fill('.modal-wrap.open [name=title]', 'Tarefa na nuvem'); await p.fill('.modal-wrap.open [name=dueDate]', '2026-11-12'); await p.click('.modal-wrap.open [data-submit]');
+  await p.goto('http://localhost:8765/dist/gestao-rotina.html#tarefas'); await p.waitForTimeout(1200);
+  await p.click('[data-act=tkNew]'); await p.fill('.modal-wrap.open [name=title]', 'Tarefa na nuvem'); await p.fill('.modal-wrap.open [name=dueDate]', '2026-11-12'); await p.click('.modal-wrap.open [data-submit]');
   await p.goto('http://localhost:8765/dist/gestao-rotina.html#agenda'); await p.waitForTimeout(1200);
   await useRoutine12(p); await p.waitForTimeout(300);
   await p.locator('.blk:not(.blk-it)').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(1200);
@@ -49,9 +49,9 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(saved.some(s => s[0].endsWith('.xlsx')) && saved.some(s => s[0].endsWith('.html')) && saved.some(s => s[0].endsWith('.json')), 'Excel, relatório e backup entregues pela confirmação de download: ' + saved.map(s => s[0]).join(', '));
   // outro "aparelho": novo contexto, mesmos dados da conta
   const p2 = await mk();
-  await p2.goto('http://localhost:8765/dist/gestao-rotina.html#agenda'); await p2.waitForTimeout(1500);
+  await p2.goto('http://localhost:8765/dist/gestao-rotina.html#tarefas'); await p2.waitForTimeout(1500);
   assert(await p2.locator('.tour-wrap').count() === 0, 'tutorial não reaparece em outro aparelho da mesma conta');
-  assert((await p2.textContent('#view')).includes('Tarefa na nuvem'), 'outro aparelho carrega a tarefa da conta');
+  assert(await p2.locator('.task', { hasText: 'Tarefa na nuvem' }).count() === 1, 'outro aparelho carrega a tarefa da conta');
   await p2.goto('http://localhost:8765/dist/gestao-rotina.html#agenda'); await p2.waitForTimeout(1500);
   assert(await p2.locator('.blk.st-concluida').count() === 1, 'outro aparelho vê a atividade concluída');
   assert(!p.errs.length && !p2.errs.length, 'sem erros de página ' + p.errs.concat(p2.errs).join(' | '));

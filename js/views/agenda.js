@@ -1,8 +1,6 @@
 'use strict';
-/* Agenda — tudo o que é para fazer, numa tela só:
-   1) calendário compacto (semana; "Ver o mês inteiro" abre o mês);
-   2) o dia escolhido numa lista única por horário: rotina, tarefas, imprevistos, reuniões e compromissos, com os botões na frente;
-   3) Pendências: imprevistos abertos, atrasadas, próximos dias e sem prazo (com busca) e as concluídas recentes. */
+/* Agenda — uma tela só: calendário compacto em cima (semana; "Ver mês" abre o mês inteiro) e, embaixo,
+   o dia escolhido numa lista única por horário: atividades da rotina + reuniões, compromissos e prazos. */
 Views.agenda = {
   title: 'Agenda', icon: 'clock', nav: 'Agenda',
   fab: () => ({ act: 'quickAdd', label: 'Adicionar neste dia', data: { k: Agenda.day(), from: 'agenda' } }),
@@ -44,18 +42,11 @@ Views.agenda = {
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
-    const acoes = i => i.type === 'tarefa'
-        ? (i.done ? `<button class="icon-btn" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-          : `<button class="icon-btn ok" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`) + `<button class="icon-btn" data-act="tkMore" data-id="${i.id}" data-v="full" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>`
-      : i.type === 'imprevisto'
-        ? (i.done ? `<button class="icon-btn" data-act="occStatus" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-          : `<button class="icon-btn ok" data-act="occStatus" data-id="${i.id}" data-s="concluida" title="Resolver" aria-label="Resolver">${U.icon('check', 16)}</button>`) + `<button class="icon-btn" data-act="occMore" data-id="${i.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>`
-      : U.icon('right', 16);
-    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" ${i.type === 'tarefa' || i.type === 'imprevisto' ? '' : 'role="button" tabindex="0"'} data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
-          <small class="blk-kind">${i.type === 'tarefa' ? 'Tarefa' : Cal.TYPES[i.type]}${i.resp ? ` · ${U.esc(i.resp)}` : ''}${i.st === 'andamento' ? ' · em andamento' : ''}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
-        <div class="blk-actions">${acoes(i)}</div></div>`;
+          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
+        <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
     const list = [
       ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
       ...blocks.map(b => ({ t: b.start, h: row(b) })),
@@ -83,38 +74,6 @@ Views.agenda = {
       <div class="timeline">
         ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
       </div>
-    </section>
-    ${this.pendencias(k)}`;
-  },
-
-  /* Pendências: o que está em aberto, independente do dia escolhido */
-  pendencias(k) {
-    const t = U.today(), q = (App.ui.pq || '').trim().toLowerCase();
-    const bate = x => !q || [x.title, x.description, x.responsible, x.notes].some(v => (v || '').toLowerCase().includes(q));
-    const occ = S.occurrences.filter(o => OPEN(o.status) && bate(o))
-      .sort((a, b) => (D.occLate(b) - D.occLate(a)) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-    const abertas = S.tasks.filter(x => OPEN(x.status) && bate(x))
-      .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (a.dueTime || '99').localeCompare(b.dueTime || '99') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
-    const em14 = U.addDays(t, 14);
-    const grupos = [
-      ['Atrasadas', abertas.filter(D.taskLate), 'c-red'],
-      ...(k !== t || q ? [['Hoje', abertas.filter(x => !D.taskLate(x) && x.dueDate === t)]] : []),
-      ['Próximos dias', abertas.filter(x => !D.taskLate(x) && x.dueDate > t && x.dueDate <= em14)],
-      ['Sem prazo', abertas.filter(x => !x.dueDate)],
-      ['Mais adiante', abertas.filter(x => x.dueDate > em14)],
-    ].filter(([, l]) => l.length);
-    const desde = U.addDays(t, -14), dia = iso => iso ? U.key(new Date(iso)) : '';
-    const feitas = [...S.tasks.filter(x => x.status === 'concluida' && dia(x.completedAt) >= desde && bate(x)).map(x => ({ d: dia(x.completedAt), h: Tasks.row(x) })),
-      ...S.occurrences.filter(o => o.status === 'concluida' && (dia(o.resolvedAt) || o.date) >= desde && bate(o)).map(o => ({ d: dia(o.resolvedAt) || o.date, h: Occ.row(o) }))]
-      .sort((a, b) => b.d.localeCompare(a.d));
-    const total = occ.length + abertas.length;
-    return `<section class="pend">
-      <div class="pend-h"><h3>Pendências ${total ? `<span class="badge">${total}</span>` : ''}</h3><span class="grow"></span>
-        <input type="search" class="pend-q" placeholder="Buscar tarefa, imprevisto ou pessoa…" value="${U.esc(App.ui.pq || '')}" data-input="pendBusca" aria-label="Buscar nas pendências"></div>
-      ${occ.length ? `<div class="pend-g"><h4 class="c-red">${U.icon('alert', 15)} Imprevistos abertos</h4><div class="task-list">${occ.map(o => Occ.row(o)).join('')}</div></div>` : ''}
-      ${grupos.map(([nome, l, cls]) => `<div class="pend-g"><h4 class="${cls || ''}">${nome} <span class="muted">${l.length}</span></h4><div class="task-list">${l.map(x => Tasks.row(x)).join('')}</div></div>`).join('')}
-      ${!total ? `<p class="muted small">${q ? 'Nada encontrado com essa busca.' : 'Nenhuma pendência. Toque em <strong>+</strong> para criar uma tarefa ou registrar um imprevisto.'}</p>` : ''}
-      ${feitas.length ? `<details class="pend-g pend-feitas"><summary>Concluídas nos últimos 14 dias <span class="muted">${feitas.length}</span></summary><div class="task-list">${feitas.map(x => x.h).join('')}</div></details>` : ''}
     </section>`;
   },
 };
@@ -197,10 +156,6 @@ const Agenda = {
 };
 
 Object.assign(Actions, {
-  /* Concluir uma atividade de hoje a partir do Início */
-  agStatusHoje({ id }) { const k = U.today(), b = D.findBlock(k, id); if (!b) return; b.status = 'concluida'; commit(); },
-  pessoaIr({ n }) { App.ui.eqTab = 'pessoas'; App.ui.pessoa = n; App.go('equipe'); },
-  pendBusca(_, el) { App.ui.pq = el.value; App.render({ keepFocus: true }); },
   agShift({ n }) { n = Number(n); App.ui.agendaDate = n === 0 ? U.today() : U.addDays(Agenda.day(), n); App.render(); },
   agStatus({ id, s }) {
     const k = Agenda.day(); const b = D.findBlock(k, id); if (!b) return;

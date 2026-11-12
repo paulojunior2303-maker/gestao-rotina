@@ -30,10 +30,6 @@ e diga o que mudou e como testar no celular.
   A "régua do dia" (`H.dayRail`, em `js/ui.js`) é o elemento de assinatura: Dashboard e Agenda. `tests/theme.test.js` verifica o contraste.
 - **Projetos e Indicadores ficam ocultos** por padrão (`settings.showProjetos` / `settings.showIndicadores`, chaves em Configurações → Aparência; `routeVisible` em `app.js`).
   Projetos oculto também tira os prazos de projeto do calendário e o card do Dashboard. Indicadores oculto esconde Metas e o card de metas.
-- **Organização (desde a unificação)**: menu e barra de baixo = **Início, Agenda, Equipe, Jornada** (+ Projetos/Indicadores se ligados, Configurações, Guia).
-  - **Agenda** (`views/agenda.js`) junta agenda, tarefas e imprevistos: calendário + dia por horário (rotina, tarefas, imprevistos, reuniões; botões na frente) + **Pendências** (`Views.agenda.pendencias`: imprevistos abertos, atrasadas, hoje/próximos/sem prazo/mais adiante, busca `App.ui.pq`, concluídas 14 dias). Linhas: `Tasks.row` e `Occ.row`. Não há mais telas Tarefas/Imprevistos (`#tarefas`/`#imprevistos` redirecionam).
-  - **Equipe** (`views/equipe.js`) junta pessoas, feedbacks, reuniões e a equipe na nuvem: abas Pessoas | Reuniões (`App.ui.eqTab`), página de cada pessoa (`App.ui.pessoa`; `Pessoas.todas()` junta lista, feedbacks, responsáveis e membros da nuvem). A lista de pessoas saiu das Configurações. `#reunioes`/`#feedbacks` redirecionam.
-  - **Início**: cartão Hoje, "Agora" (atividade atual + Precisa de atenção com botões), calendário, O que cobrar (por pessoa), Semana.
 - **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Início, Agenda, Tarefas, Imprevistos), **sem** botão Menu.
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Início e Agenda usam `quickAdd`
   (lista: atividade, intervalo, tarefa, reunião, feedback, imprevisto, compromisso, no dia escolhido). Os botões "Novo…" das telas foram trocados pelo +.

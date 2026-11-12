@@ -84,9 +84,9 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await go('config');
   assert(await p.inputValue('#cfg-break') === 'flexivel', 'Configurações → Jornada: intervalo flexível, fixo ou sem intervalo');
 
-  // ---- Agenda unificada: imprevisto com encaixe (pelo +)
-  await go('agenda');
-  await fab('Imprevisto');
+  // ---- Imprevisto com encaixe
+  await go('imprevistos');
+  await p.click('[data-act=occNew]'); await p.waitForTimeout(200);
   await fill('title', 'NVR sem gravação no cliente Y'); await fill('responsible', 'João');
   await p.check('.modal-wrap.open [name=schedule]'); await submit(); await p.waitForTimeout(300);
   assert(await p.locator('.modal-wrap.open h2', { hasText: 'Encaixar imprevisto' }).count() === 1, 'diálogo de encaixe aberto');
@@ -96,31 +96,32 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(occ.scheduled && occ.scheduled.date, 'imprevisto vinculado à agenda');
   const ob = s.days[occ.scheduled.date].find(x => x.id === occ.scheduled.blockId);
   assert(ob && ob.start === '15:00' && ob.end === '15:30', 'bloco do imprevisto criado 15:00–15:30');
-  assert(await p.locator('.pend .occ-row', { hasText: 'NVR sem gravação' }).count() === 1, 'imprevisto aberto em destaque nas Pendências');
-  await p.click('.pend .occ-row [data-act=occStatus][data-s=concluida]'); await p.waitForTimeout(200);
+  await p.click('[data-act=occStatus][data-s=concluida]'); await p.waitForTimeout(200);
   s = await state();
   assert(s.days[occ.scheduled.date].find(x => x.id === occ.scheduled.blockId).status === 'concluida', 'resolver imprevisto conclui o bloco da agenda');
 
-  // ---- Agenda unificada: tarefas nas Pendências
-  await fab('Tarefa');
+  // ---- Tarefas
+  await go('tarefas');
+  await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);
   await fill('title', 'Cobrar relatório do técnico'); await fill('startDate', '2026-11-01'); await fill('dueDate', '2026-11-05');
   await p.selectOption('.modal-wrap.open [name=priority]', 'alta'); await submit();
-  assert(await p.locator('.pend .task .dl-late').count() === 1 && (await p.textContent('.pend')).includes('Atrasadas'), 'tarefa vencida vai para "Atrasadas" com o alerta');
-  await fab('Tarefa');
+  assert(await p.locator('.task .dl-late').count() === 1, 'tarefa vencida exibe alerta Atrasada');
+  await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);
   await fill('title', 'Atualizar planilha de materiais'); await fill('dueDate', '2026-12-20'); await submit();
-  assert((await p.textContent('.pend')).includes('Mais adiante'), 'tarefa com prazo distante vai para "Mais adiante"');
-  await p.fill('.pend-q', 'planilha'); await p.waitForTimeout(500);
-  assert(await p.locator('.pend .task').count() === 1 && await p.evaluate(() => document.activeElement.dataset.input) === 'pendBusca', 'busca filtra as pendências e mantém o foco');
-  await p.fill('.pend-q', ''); await p.waitForTimeout(500);
-  await p.locator('.pend .task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(200);
+  await p.selectOption('select[data-k=priority]', 'alta'); await p.waitForTimeout(150);
+  assert(await p.locator('.task').count() === 1, 'filtro por prioridade');
+  await p.click('[data-act=tkClear]'); await p.waitForTimeout(150);
+  await p.fill('[data-input=tkSearch]', 'planilha'); await p.waitForTimeout(500);
+  assert(await p.locator('.task').count() === 1 && await p.evaluate(() => document.activeElement.dataset.input) === 'tkSearch', 'busca filtra e mantém o foco');
+  await p.fill('[data-input=tkSearch]', ''); await p.waitForTimeout(500);
+  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(200);
   s = await state();
   assert(s.tasks.find(t => t.title === 'Cobrar relatório do técnico').status === 'concluida' && s.tasks.find(t => t.title === 'Cobrar relatório do técnico').completedAt, 'concluir tarefa registra data de conclusão');
-  await p.click('.pend-feitas summary'); await p.waitForTimeout(150);
-  assert(await p.locator('.pend-feitas .task', { hasText: 'Cobrar relatório' }).count() === 1, 'concluída aparece em "Concluídas nos últimos 14 dias"');
-  await p.locator('.pend-feitas .task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkMore]').click(); await p.waitForTimeout(250); await p.click('.sheet-item.danger:has-text("Excluir")'); await p.waitForTimeout(200);
+  await p.click('[data-act=tkStatusF][data-v=concluida]'); await p.waitForTimeout(150);
+  assert(await p.locator('.task').count() === 1, 'filtro por status concluída');
+  await p.locator('.task').first().locator('[data-act=tkMore]').click(); await p.waitForTimeout(250); await p.click('.sheet-item.danger:has-text("Excluir")'); await p.waitForTimeout(200);
   await p.click('.modal-wrap.open [data-yes]'); await p.waitForTimeout(200);
   assert((await state()).tasks.length === 1, 'excluir tarefa');
-  await go('tarefas'); assert(await p.evaluate(() => App.route) === 'agenda', 'endereço antigo #tarefas abre a Agenda');
 
   // ---- Projetos (oculto por padrão; ativado em Configurações → Aparência)
   assert(await p.locator('#nav a[href="#projetos"]').count() === 0, 'Projetos fica oculto no menu por padrão');
@@ -221,7 +222,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(await p.locator('.jg-card').count() === 1 && await p.locator('#nav a[href="#jornada"]').count() === 1, 'modo jogo ligado: cartão no Início e Jornada no menu');
   const xp0 = await p.evaluate(() => Jogo.calc().total);
   await p.evaluate(() => { S.tasks.push({ id: 'jg1', title: 'Teste XP', status: 'pendente', priority: 'media', category: 'equipe', dueDate: U.addDays(U.today(), 2), createdAt: new Date().toISOString() }); commit(); });
-  await go('agenda'); await p.locator('.pend .task', { hasText: 'Teste XP' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(300);
+  await go('tarefas'); await p.click('[data-act=tkStatusF][data-v=abertas]'); await p.waitForTimeout(150); await p.locator('.task', { hasText: 'Teste XP' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(300);
   assert(await p.evaluate(() => Jogo.calc().total) === xp0 + 15 && (await p.textContent('#xp-pop')).includes('+15 XP'), 'concluir tarefa no prazo dá +15 XP e mostra o aviso');
   await go('jornada');
   assert(await p.textContent('#page-title') === 'Jornada' && await p.locator('.jg-cls').count() === 4 && await p.locator('.jg-badge').count() === 13, 'Jornada: áreas e conquistas');
@@ -262,7 +263,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
     imp: S.occurrences.find(o => o.title === 'Câmera offline'), natan: D.techNames().includes('Natan'), cal: Cal.itemsOn(d).map(i => i.type).sort().join(',') }), amanha);
   assert(integ.tarefa && integ.tarefa.dueDate === amanha && integ.tarefa.dueTime === '10:00' && integ.reuniao && integ.reuniao.reuniao && integ.reuniao.date === amanha && integ.imp && integ.natan, 'aceitar cria a tarefa, a reunião, o imprevisto e a pessoa na equipe');
   assert(integ.cal === 'imprevisto,missao,reuniao,tarefa', 'tudo aparece no calendário do dia (' + integ.cal + ')');
-  await go('feedbacks'); assert(await p.evaluate(() => App.route) === 'equipe' && (await p.textContent('#view')).includes('Feedback com Natan'), 'o feedback pedido aparece em Equipe → Para fazer agora');
+  await go('feedbacks'); assert((await p.textContent('#view')).includes('Feedback com Natan'), 'o feedback pedido aparece em Feedbacks → Para fazer');
   const xp3 = await p.evaluate(() => Jogo.calc().total);
   await p.evaluate(() => { const t = S.tasks.find(x => x.title === 'Atualizar planilha'); Tasks.setStatus(t, 'concluida'); commit(); });
   assert(await p.evaluate(() => Jogo.calc().miss.find(m => m.titulo === 'Atualizar planilha').feitaEm) && await p.evaluate(() => Jogo.calc().total) === xp3 + 15 + 20, 'concluir a tarefa conclui a missão (+15 da tarefa no prazo, +20 da missão)');
@@ -275,9 +276,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await go('config');
   await p.fill('form[data-submit=cfgJornada] [name=workEnd]', '17:30'); await p.click('form[data-submit=cfgJornada] button'); await p.waitForTimeout(150);
   assert((await state()).settings.workEnd === '17:30', 'jornada editável');
-  await go('equipe'); await fab('Adicionar pessoa'); await fill('nome', 'Carlos'); await submit();
-  assert((await p.textContent('.fb-people')).includes('Carlos'), 'Equipe → + → Adicionar pessoa');
-  await go('config');
+  await p.fill('form[data-submit=tecAdd] input', 'Carlos'); await p.click('form[data-submit=tecAdd] button'); await p.waitForTimeout(150);
   await p.fill('form[data-submit=catAdd] [name=name]', 'Treinamentos'); await p.click('form[data-submit=catAdd] button'); await p.waitForTimeout(150);
   s = await state(); assert(s.settings.technicians.some(t => t.name === 'Carlos') && s.settings.categories.some(c => c.name === 'Treinamentos'), 'técnico e categoria cadastrados');
   await p.click('[data-act=goalNew]'); await p.waitForTimeout(200); await fill('target', '5'); await submit();
@@ -296,8 +295,8 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   s = await state(); assert(s.tasks.length === nTasks - 4 && !s.tasks.some(t => t.demo) && s.settings.technicians.length === 2, 'remover demonstração preserva dados reais');
 
   // ---- Persistência após recarregar
-  await p.reload(); await go('agenda');
-  assert(await p.locator('.pend .task', { hasText: 'Atualizar planilha de materiais' }).count() === 1, 'dados preservados após recarregar');
+  await p.reload(); await go('tarefas');
+  assert(await p.locator('.task', { hasText: 'Atualizar planilha' }).count() === 1, 'dados preservados após recarregar');
 
   // ---- Backup JSON
   await go('config');
