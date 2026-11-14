@@ -226,6 +226,30 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   const sc = await p.evaluate(() => { const j = Cloud.join(Cloud.split(S)); return [j.checks.length, j.checklists.length, !!j.diario['2026-11-11']]; });
   check(sc[0] === 1 && sc[1] === 1 && sc[2], 'e também no link do Claude');
 
+  console.log('\n[7] Revisão da semana');
+  await p.clock.setSystemTime(new Date('2026-11-13T14:30:00-03:00'));   // sexta-feira à tarde
+  await go('tarefas'); await go('dashboard');
+  check(await p.locator('.rt-banner[data-act=goSemana]').count() === 1 || await p.locator('.rt-banner[data-act=ritualAbrir]').count() === 1, 'sexta à tarde: convite no Início');
+  await p.evaluate(() => { Ritual.marca('2026-11-13', 'abertoEm', new Date().toISOString()); commit(); });
+  check(await p.locator('.rt-banner[data-act=goSemana]').count() === 1, 'convite "Revisão da semana" (depois de abrir o dia)');
+  await tap('.rt-banner[data-act=goSemana]');
+  check(await p.textContent('#page-title') === 'Revisão da semana' && await p.locator('.sm-n').count() === 6, 'abre a revisão com os números da semana');
+  const vt = await p.textContent('.view');
+  check(vt.includes('Gravador sem disco') && vt.includes('Lente da câmera 4 embaçada'), 'lista os imprevistos da semana');
+  check(vt.includes('Dia puxado no cliente X'), 'mostra as notas do "Fechar o dia"');
+  check(vt.includes('Conferir backup dos gravadores'), 'mostra o que vem na próxima semana');
+  check(vt.includes('Carlos Souza: nunca teve feedback'), 'lembra quem está sem feedback');
+  check(await p.locator('.view svg').count() >= 1, 'gráfico da agenda por dia');
+  await shot('7-semana'); await fits('Revisão da semana');
+  await tap('[data-act=semDone]');
+  s = await st();
+  check(s.diario['2026-11-13'].revisaoEm, 'revisão marcada como feita');
+  await go('dashboard');
+  check(await p.locator('.rt-banner').count() === 0, 'o convite some depois da revisão');
+  await go('semana'); await tap('[data-act=semNav][data-n="-7"]');
+  check((await p.textContent('.sm-nav')).includes('02/11 a 08/11'), 'dá para ver a semana anterior');
+  check(await p.locator('#nav a[href="#semana"]').count() === 1 && await p.locator('#nav a[href="#pessoas"]').count() === 1 && await p.locator('#nav a[href="#checklists"]').count() === 1, 'menu com Pessoas, Checklists e Revisão da semana');
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

@@ -75,7 +75,7 @@ Views.dashboard = {
       </div>
     </section>
 
-    ${Ritual.bannerHtml()}
+    ${Ritual.bannerHtml() || Semana.bannerHtml()}
     ${Agora.card()}
 
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
@@ -105,7 +105,7 @@ Views.dashboard = {
 
     <section class="${showGoals ? 'grid-2' : 'grid-1'} dash-foot">
       <div class="card flat">
-        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#agenda">Agenda</a></div>
+        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#semana" data-act="goSemana">Revisão completa</a></div>
         <div class="stat-row">
           ${wItems.length ? `<div><small>Checklist semanal</small><strong>${wPct}%</strong></div>` : ''}
           <div><small>Tarefas concluídas</small><strong>${doneWeek.length}</strong></div>

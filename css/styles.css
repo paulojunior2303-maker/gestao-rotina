@@ -1274,3 +1274,16 @@ button.ck-card { cursor: pointer; }
 .ck-res { font-size: 13px; color: var(--muted); }
 .ck-foot { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 10px 0; background: linear-gradient(transparent, var(--bg) 30%); }
 @media (min-width: 900px) { .ck-foot { bottom: 0; } }
+
+/* Revisão da semana */
+.sm-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.sm-nav > div { display: flex; flex-direction: column; align-items: center; }
+.sm-nav strong { font-family: var(--font-d); font-size: 18px; }
+.sm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 420px) { .sm-grid { grid-template-columns: repeat(2, 1fr); } }
+.sm-n { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; display: flex; flex-direction: column; min-width: 0; }
+.sm-n strong { font-family: var(--font-d); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.sm-n span { font-size: 12.5px; color: var(--text-2); }
+.sm-n small { font-size: 11.5px; color: var(--muted); }
+.sm-n.warn strong { color: var(--yellow-text); }
+.sm-n.bad strong { color: var(--red-text); }
