@@ -1,5 +1,6 @@
 // Conta FlowFire (Firebase): sincronização entre dois "aparelhos" com uma nuvem simulada (sem internet).
 const { chromium } = require('playwright');
+require('./completo');
 const useRoutine12 = require('./rotina-exemplo');
 const F = require('./fake-fire');
 let pass = 0, fail = 0;

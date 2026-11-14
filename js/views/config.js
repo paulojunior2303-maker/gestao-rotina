@@ -25,12 +25,13 @@ Views.config = {
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>
+      ${MODO_ENXUTO ? '' : `
       <label class="switch-row"><span><strong>Modo jogo (Jornada)</strong><small>XP, níveis, sequência de dias, missões e conquistas, calculados com o que você faz no app. Aparece no Início e no menu.</small></span>
         <input type="checkbox" class="switch" data-change="cfgJogo" ${st.jogo !== false ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Indicadores</strong><small>Lançamento diário de números da equipe (serviços, manutenções, retrabalhos), metas e relatórios em Excel e PDF. Os dados ficam guardados mesmo com a tela oculta.</small></span>
         <input type="checkbox" class="switch" data-change="cfgIndicadores" ${st.showIndicadores ? 'checked' : ''}></label>
       <label class="switch-row"><span><strong>Mostrar a tela Projetos</strong><small>Obras e projetos com etapas, Kanban e linha do tempo. Os dados ficam guardados mesmo com a tela oculta.</small></span>
-        <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`)}
+        <input type="checkbox" class="switch" data-change="cfgProjetos" ${st.showProjetos ? 'checked' : ''}></label>`}`)}
 
     ${Fire.section(sec)}
 

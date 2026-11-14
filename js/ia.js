@@ -50,8 +50,8 @@ const IA = {
   },
 
   /* Transcrição de um trecho de áudio (rápida: usa primeiro o modelo leve) */
-  async transcribe(audio) {
-    const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout: 45000,
+  async transcribe(audio, { timeout = 45000 } = {}) {
+    const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout,
       system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
       parts: [{ inlineData: { mimeType: audio.mime, data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
     return /^\[sil[eê]ncio\]$/i.test(t.trim()) ? '' : t.trim();

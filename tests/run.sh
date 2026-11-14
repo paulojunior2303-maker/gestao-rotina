@@ -5,7 +5,7 @@
 set -u
 cd "$(dirname "$0")/.."
 PORT=8765
-python3 build.py >/dev/null && python3 build.py --teste >/dev/null
+python3 build.py >/dev/null && python3 build.py --teste >/dev/null && python3 build.py --enxuto >/dev/null
 mkdir -p android-app/www && cp dist/gestao-rotina.html android-app/www/index.html
 python3 -m http.server $PORT >/dev/null 2>&1 & SRV=$!
 sleep 1

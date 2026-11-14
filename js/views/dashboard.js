@@ -9,7 +9,22 @@ Views.dashboard = {
     const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     return `<span class="th-greet">${greet}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
   },
+  /* Cópia enxuta: o Início é o calendário do mês, com o botão de gravar */
+  renderEnxuto() {
+    const rec = Gravador.recording();
+    const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
+    return `
+    ${Updater.banner()}
+    <button class="gv-rec-big ${rec ? 'on' : ''}" data-act="${rec ? 'gvTela' : 'gvRec'}">
+      <span class="gv-rec-ic">${U.icon(rec ? 'stop' : 'mic', 26)}</span>
+      <span><strong>${rec ? 'Gravando… toque para abrir' : 'Gravar reunião ou feedback'}</strong><small>${rec ? 'A gravação continua enquanto você usa o app' : 'Um toque para começar. Você descreve depois.'}</small></span>
+    </button>
+    ${atencao.length ? `<div class="card gv-att"><div class="card-h"><h3>${U.icon('mic')} Gravações para ver</h3><a class="link" href="#gravacoes">Todas</a></div>
+      ${atencao.map(g => `<button class="gv-att-it" data-act="gvOpen" data-id="${g.id}"><span><strong>${U.esc(Gravador.nome(g))}</strong><small>${U.fmtShort(g.date)} ${g.time} · ${Gravador.fmt(g.dur)}</small></span>${!g.tipo ? '<span class="badge b-blue">Descrever</span>' : Views.gravacoes.chip(g)}</button>`).join('')}</div>` : ''}
+    <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>`;
+  },
   render() {
+    if (MODO_ENXUTO) return this.renderEnxuto();
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
     const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -25,18 +40,6 @@ Views.dashboard = {
     const doneWeek = S.tasks.filter(x => x.status === 'concluida' && x.completedAt && x.completedAt.slice(0, 10) >= ws && x.completedAt.slice(0, 10) <= we);
     const doneTotal = S.tasks.filter(x => x.status === 'concluida').length;
     const openOcc = S.occurrences.filter(o => OPEN(o.status));
-
-    // Próximas atividades da agenda
-    const next = blocks.filter(b => !D.blockDone(b) && U.toMin(b.end) > nowM).slice(0, 5);
-
-    // Pendências prioritárias (o que resolver)
-    const prioItems = [
-      ...openOcc.map(o => ({ kind: 'Imprevisto', title: o.title, prio: o.priority, info: D.deadline(o.dueDate, o.dueTime, false), link: '#imprevistos', demo: o.demo })),
-      ...open.filter(x => ['urgente', 'alta'].includes(x.priority) || D.taskLate(x)).map(x => ({ kind: 'Tarefa', title: x.title, prio: x.priority, info: D.deadline(x.dueDate, x.dueTime, false), link: '#tarefas', demo: x.demo })),
-      // Reuniões com pauta que já aconteceram (últimos 7 dias) e ainda não foram registradas
-      ...Meetings.toRegister().filter(e => e.date >= U.addDays(t, -7))
-        .map(e => ({ kind: 'Registrar reunião', title: e.title, prio: 'media', info: null, link: '#reunioes', demo: e.demo, ev: e.id })),
-    ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late')) || PRIORITY_RANK[a.prio] - PRIORITY_RANK[b.prio]).slice(0, 7);
 
     // O que cobrar da equipe
     const charge = [
@@ -87,6 +90,9 @@ Views.dashboard = {
       </div>
     </section>
 
+    ${Ritual.bannerHtml() || Semana.bannerHtml()}
+    ${Agora.card()}
+
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
 
     <section class="kpis">
@@ -97,23 +103,11 @@ Views.dashboard = {
       ${kpi('Imprevistos abertos', openOcc.length, openOcc.filter(D.occLate).length ? `${openOcc.filter(D.occLate).length} com prazo vencido` : 'Nenhum vencido', openOcc.length ? 'k-yellow' : 'k-gray', '#imprevistos')}
     </section>
 
-    <section class="grid-2">
-      <div class="card">
-        <div class="card-h"><h3>${U.icon('clock')} O que fazer hoje</h3><a class="link" href="#agenda">Agenda</a></div>
-        ${next.length ? `<ul class="list">${next.map(b => `<li class="li ${D.blockNow(b, t) ? 'li-now' : ''}"><span class="li-time">${b.start}–${b.end}</span><span class="li-main" style="--c:${D.cat(b.category).color}"><span class="cat-dot"></span>${U.esc(b.title)}</span>${D.blockNow(b, t) ? '<span class="badge b-blue">Agora</span>' : b.status === 'andamento' ? H.status('andamento') : ''}</li>`).join('')}</ul>`
-          : H.empty(workday ? (prog.total ? 'Todas as atividades de hoje foram encerradas.' : 'Nenhuma atividade na agenda de hoje.') : 'Sem agenda para hoje.')}
-        ${lateBlocks.length ? `<div class="alert a-red">${U.icon('alert')} ${U.plural(lateBlocks.length, 'atividade')} da agenda ${lateBlocks.length > 1 ? 'passaram' : 'passou'} do horário sem conclusão. <a class="link" href="#agenda">Reorganizar</a></div>` : ''}
-      </div>
-      <div class="card">
-        <div class="card-h"><h3>${U.icon('alert')} O que resolver</h3><a class="link" href="#tarefas">Tarefas</a></div>
-        ${prioItems.length ? `<ul class="list">${prioItems.map(i => `<li class="li"><a href="${i.link}" class="li-main" ${i.ev ? `data-act="evView" data-id="${i.ev}"` : ''}>${i.ev ? H.chip('Reunião', '#9461f5') : H.prio(i.prio)} <span>${U.esc(i.title)}</span>${H.demo(i)}</a><span class="li-side"><small class="muted">${i.kind}</small>${H.deadline(i.info)}</span></li>`).join('')}</ul>`
-          : H.empty('Nenhuma pendência urgente, de alta prioridade ou atrasada.')}
-      </div>
-    </section>
+    <section class="grid-1">${Agora.hoje()}</section>
 
     <section class="${showProj ? 'grid-2' : 'grid-1'}">
       <div class="card">
-        <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3></div>
+        <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3><a class="link" href="#pessoas">Pessoas</a></div>
         ${charge.length ? `<ul class="list">${charge.map(c => `<li class="li li-stack"><div class="li-top"><strong>${U.esc(c.who)}</strong><small class="muted">${U.esc(c.kind)}</small>${H.deadline(c.info)}</div><div class="li-txt">${U.esc(c.what)}${H.demo(c)}</div></li>`).join('')}</ul>`
           : H.empty('Nada delegado em aberto. Defina um responsável em tarefas, imprevistos ou projetos para acompanhar aqui.')}
       </div>
@@ -126,7 +120,7 @@ Views.dashboard = {
 
     <section class="${showGoals ? 'grid-2' : 'grid-1'} dash-foot">
       <div class="card flat">
-        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#agenda">Agenda</a></div>
+        <div class="card-h"><h3>${U.icon('week')} Resumo da semana</h3><a class="link" href="#semana" data-act="goSemana">Revisão completa</a></div>
         <div class="stat-row">
           ${wItems.length ? `<div><small>Checklist semanal</small><strong>${wPct}%</strong></div>` : ''}
           <div><small>Tarefas concluídas</small><strong>${doneWeek.length}</strong></div>
@@ -144,3 +138,4 @@ Views.dashboard = {
     </section>`;
   },
 };
+if (MODO_ENXUTO) Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });

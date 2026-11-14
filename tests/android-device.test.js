@@ -2,6 +2,7 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
+require('./completo');
 const fs = require('fs');
 let pass = 0, fail = 0; const failures = [];
 const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; failures.push(m); console.log('  XX -', m); } };
@@ -174,7 +175,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[3] Imprevistos');
   await go('imprevistos');
-  await tap('[data-act=occNew]'); await fill('title', 'Câmeras offline no cliente'); await fill('responsible', 'Carlos');
+  await tap('#fab'); await p.locator(`${M} #cap-t`).fill('x'); await tap(`${M} [data-more]`); await W(300); await fill('title', 'Câmeras offline no cliente'); await fill('responsible', 'Carlos');
   await p.locator(`${M} [name=schedule]`).check(); await save(); await W(400);
   await fill('start', '16:00'); await fill('duration', '30'); await save(); await W(300);
   s = await st(); const occ = s.occurrences[0];

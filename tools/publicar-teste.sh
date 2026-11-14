@@ -16,7 +16,7 @@ cp dist/gestao-rotina-teste.html "$wt/teste/index.html"
   git commit -q -m "${1:-Site de teste atualizado}
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01Jb4fcepCHXkURu54pDv8Zs"
+Claude-Session: https://claude.ai/code/session_01Jb4fcf3XjAw1MmFGEMHmyn"
   git push -q origin HEAD:main
   echo "Site de teste enviado: $(git rev-parse --short HEAD)"
 )

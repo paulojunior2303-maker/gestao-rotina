@@ -147,7 +147,36 @@ Views.guia = {
     const el = root.querySelector('#g-' + id);
     if (el) setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
   },
+  /* Guia curto da cópia enxuta */
+  renderEnxuto() {
+    const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${open ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
+    const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
+    return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
+    ${sec('gravar', 'mic', 'Gravar uma reunião ou feedback', li([
+      'Toque em <strong>Gravar</strong> (no meio da barra de baixo, ou no botão grande do Calendário). Começa na hora: não precisa criar a reunião antes.',
+      'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
+      'Quer usar o app enquanto grava? Toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar.',
+      'No fim, toque em <strong>Encerrar gravação</strong> e diga se foi reunião ou feedback (e com quem). Pode deixar para depois.',
+    ]), true)}
+    ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
+      'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',
+      'Quando todas as partes estão prontas, a IA faz o <strong>resumo</strong> (ata da reunião ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>, que viram tarefas com um toque.',
+      'Precisa da chave da IA em <strong>Configurações → IA</strong>. Sem ela, as gravações ficam guardadas esperando.',
+    ]))}
+    ${sec('seguro', 'check', 'O áudio nunca se perde', li([
+      'O áudio vai para o celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, ao abrir de novo a gravação é <strong>recuperada</strong>.',
+      'Sem internet? As partes esperam e são transcritas <strong>sozinhas</strong> quando a conexão voltar.',
+      'O áudio fica guardado até você apagar (em Gravações → abra a gravação → <strong>Apagar o áudio</strong>). A transcrição e o resumo continuam.',
+      'Dá para ouvir e baixar cada parte do áudio.',
+    ]))}
+    ${sec('calendario', 'calendar', 'Calendário', li([
+      'O mês inteiro na tela inicial. Toque num dia para ver o que tem nele: gravações, reuniões, compromissos e prazos.',
+      'O <strong>+</strong> adiciona tarefa, compromisso ou atividade no dia escolhido.',
+      CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para os dados irem para a nuvem. O áudio e a transcrição completa ficam no aparelho.',
+    ]))}`;
+  },
   render() {
+    if (MODO_ENXUTO) return this.renderEnxuto();
     const want = App.ui.guideSec;
     const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${(want ? want === id : open) ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
@@ -165,11 +194,23 @@ Views.guia = {
       <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
+    ${sec('novo', 'spark', 'Novidades: o dia a dia mais prático', li([
+      '<strong>Anotação rápida</strong>: toque no <strong>+</strong>, escreva ou fale (microfone do teclado) e escolha Imprevisto, Tarefa ou Na agenda. O app entende “amanhã às 15h”, “sexta”, “30 min”, “toda segunda” e o nome de quem é da equipe.',
+      '<strong>Imprevisto que empurra o dia</strong>: diga quanto tempo ele vai tomar; ele entra na agenda agora e o resto do dia anda para frente (o que você fazia continua depois). Tem <strong>Desfazer</strong>.',
+      '<strong>Agora</strong> (no Início): o que fazer neste momento, quanto falta e o que vem a seguir, com <strong>Concluir</strong>, <strong>+15 min</strong> e <strong>Imprevisto</strong>. Terminou antes? O app oferece adiantar o resto.',
+      '<strong>Reorganizar meu dia</strong>: quando algo fica para trás, refaz os horários a partir de agora, mostra a prévia e manda para o próximo dia útil o que não couber.',
+      '<strong>Abrir o dia</strong> (de manhã) e <strong>Fechar o dia</strong> (no fim do expediente): 1 minuto para decidir o que ficou de ontem, escolher as 3 prioridades e não deixar nada pendurado.',
+      '<strong>Tarefas que se repetem</strong>: no campo Repetir (ou escrevendo “toda segunda”). Ao concluir, a próxima nasce sozinha.',
+      '<strong>Pessoas</strong>: tudo o que está com cada um da equipe, o último feedback e o botão <strong>Cobrar no WhatsApp</strong> com a lista pronta.',
+      '<strong>Checklists</strong>: modelos prontos (abertura de turno, manutenção preventiva, entrega de obra, passagem de turno). O que der problema vira imprevisto.',
+      '<strong>Revisão da semana</strong>: na sexta à tarde, 5 minutos com o que foi feito, o que atrasou e o que vem aí.',
+    ]))}
+
     ${sec('nav', 'menu', 'Navegação', li([
       'No celular, a <strong>barra de baixo</strong> tem os atalhos do dia a dia: Início, Agenda, Tarefas e Imprevistos.',
       'Toque em <strong>☰</strong> (canto superior esquerdo) para abrir o menu com todas as telas. No celular, também dá para <strong>arrastar o dedo a partir da borda esquerda</strong>; para fechar, arraste para a esquerda ou toque fora.',
-      'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início e na Agenda ele mostra a lista do que dá para criar: atividade, intervalo, tarefa, reunião, feedback, imprevisto ou compromisso.',
-      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões e feedbacks, Imprevistos) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
+      'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início, na Agenda e nos Imprevistos ele abre a <strong>anotação rápida</strong>; embaixo dela ficam as outras opções (reunião, feedback, compromisso, intervalo, checklist).',
+      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Imprevistos, Checklists), <strong>Equipe</strong> (Pessoas, Reuniões e feedbacks, Equipe na nuvem, Jornada), <strong>Planejamento</strong> (Revisão da semana; Projetos e Indicadores aparecem se você ligar em Configurações → Aparência) e <strong>Ajustes</strong>.',
       'Um <strong>ponto vermelho</strong> no ☰ e os <strong>números</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
@@ -188,9 +229,9 @@ Views.guia = {
     ${sec('dash', 'dashboard', 'Início (Dashboard)', li([
       '<strong>Progresso do dia</strong>: atividades da agenda concluídas (o intervalo e as canceladas não contam).',
       '<strong>Tarefas concluídas / pendentes / atrasadas</strong>: toque no cartão para abrir a lista filtrada.',
-      '<strong>O que fazer hoje</strong>: a atividade atual (marcada “Agora”) e as próximas.',
-      '<strong>O que resolver</strong>: imprevistos abertos, tarefas urgentes, de alta prioridade ou atrasadas.',
-      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido.',
+      '<strong>Agora</strong>: a atividade do momento, quanto falta e a próxima, com botões de um toque.',
+      '<strong>Para resolver hoje</strong>: suas 3 prioridades, imprevistos abertos, tarefas atrasadas, de hoje ou urgentes e reuniões para registrar, com ✓ na linha.',
+      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido (detalhes em <strong>Pessoas</strong>).',
       'A <strong>linha do tempo</strong> abaixo da data mostra o dia inteiro: blocos roxos estão concluídos, o claro é o que acontece agora e os vermelhos estão atrasados. Toque nela para abrir a agenda.',
       'Logo abaixo, o <strong>calendário</strong> (veja o tema Calendário).',
       `<strong>Resumo da semana</strong>${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,

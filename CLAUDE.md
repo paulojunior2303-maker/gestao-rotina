@@ -30,9 +30,35 @@ e diga o que mudou e como testar no celular.
   A "régua do dia" (`H.dayRail`, em `js/ui.js`) é o elemento de assinatura: Dashboard e Agenda. `tests/theme.test.js` verifica o contraste.
 - **Projetos e Indicadores ficam ocultos** por padrão (`settings.showProjetos` / `settings.showIndicadores`, chaves em Configurações → Aparência; `routeVisible` em `app.js`).
   Projetos oculto também tira os prazos de projeto do calendário e o card do Dashboard. Indicadores oculto esconde Metas e o card de metas.
-- **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Início, Agenda, Tarefas, Imprevistos), **sem** botão Menu.
+- **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, Gravar, Tarefas, Agenda no modo enxuto), **sem** botão Menu.
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Início e Agenda usam `quickAdd`
   (lista: atividade, intervalo, tarefa, reunião, feedback, imprevisto, compromisso, no dia escolhido). Os botões "Novo…" das telas foram trocados pelo +.
+- **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo
+  (Imprevisto · Tarefa · Na agenda). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
+  (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer".
+  As demais opções do antigo menu do "+" ficam embaixo ("Ou escolha"). Testes: `tests/captura.test.js`.
+- **Versão "turbinada" (só no ramo `teste` até o usuário aprovar)**, cada uma num commit:
+  - `js/agora.js` (`Agora`): cartão "Agora" no Início (atividade do momento, +15 min, Concluir, Imprevisto) e "Para resolver hoje" (`Agora.hoje`).
+  - `js/replan.js` (`Replan`): "Reorganizar meu dia" com prévia; `Replan.fromNow` adianta a agenda quando algo termina antes.
+  - `js/ritual.js` (`Ritual`): Abrir/Fechar o dia; `S.diario[data] = { abertoEm, fechadoEm, nota, revisaoEm }` (últimos 120 dias); prioridades do dia = `task.top = data`.
+  - Tarefas que se repetem: `task.repeat` (diaria|semanal|quinzenal|mensal, `repeatDay`), `Tasks.setStatus` cria a próxima (`nextId`) e a apaga ao reabrir.
+  - `js/views/pessoas.js` (`Pessoas`, `#pessoas`): ficha por pessoa, cobrança pelo WhatsApp (`technicians[].phone`), aviso de 30 dias sem feedback.
+  - `js/views/checklists.js` (`CK`, `#checklists`): `S.checklists` (modelos) e `S.checks` (feitos; nuvem em documentos `ck-AAAA-MM`). Problema → imprevisto.
+  - `js/views/semana.js` (`Semana`, `#semana`): revisão da semana calculada dos dados; convite no último dia útil depois das 14h.
+  - `UI.form`: campos com `more: true` ficam em "Mais opções" (`moreOpen`). Menu em grupos Dia a dia / Equipe / Planejamento / Ajustes.
+  - Testes: `tests/novidades.test.js` (relógio simulado numa quarta 10:02).
+- **Modo enxuto = app oficial** (aprovado pelo usuário): `MODO_ENXUTO` (`js/store.js`) vale para todo o app. Telas: Calendário do mês (Início), Gravações,
+  Tarefas, Agenda e Imprevistos (+ Configurações e Guia); botão **Gravar** no meio da barra de baixo; sem jogo, indicadores, projetos, equipe, pessoas,
+  checklists e revisão da semana (o código continua no app, só fica escondido). Conta FlowFire e Google Drive continuam no oficial.
+  `window.APP_COMPLETO = true` liga as telas antigas: **só os testes do app completo** usam isso, via `tests/completo.js`.
+- **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`
+  (`APP_CHANNEL = 'enxuto'` → `CANAL_ENXUTO`, também `CANAL_TESTE`; LocalStorage `…:enxuto`; sem Drive e sem conta FlowFire por enquanto). Publicar: `bash tools/publicar-enxuto.sh "msg"`
+  (grava `enxuto/index.html` no `main`; o `pages.yml` copia a pasta). Só telas `ENXUTO_ROUTES` (`app.js`); Início = calendário do mês (`Views.dashboard.renderEnxuto`);
+  barra de baixo com o botão **Gravar** no meio (`BOTTOM` com `REC`); sem jogo, indicadores e projetos; guia curto (`Guide.renderEnxuto`).
+  **Gravador** (`js/gravador.js`, `Gravador` + `AudioDB` + `Views.gravacoes`): um toque grava; pedaços a cada 5 s no IndexedDB (`pedacos`), parte de 10 min (`partes`)
+  transcrita assim que fecha (`IA.transcribe`, texto em `textos`); sem internet/chave fica `pendente` e tenta de novo (evento `online`, abrir o app, a cada 10 s/1 min);
+  app fechado no meio → `Gravador.recuperar()`; no fim `IA.ata`/`IA.feedback` e `Gravador.vincular` cria a reunião (`S.events`, `gravacaoId`) ou o feedback.
+  `S.gravacoes` (nuvem em `gv-AAAA-MM`); áudio e transcrição completa ficam só no aparelho até a pessoa apagar. Testes: `tests/enxuto.test.js` (microfone falso, partes de 3 s).
 - **Agenda numa tela só** (`js/views/agenda.js`): calendário compacto em cima (`Cal.render('agenda')`, semana; "Ver o mês inteiro" expande) e, embaixo,
   o dia escolhido numa lista única por horário: blocos da rotina + reuniões/compromissos/prazos (`.blk-it`). O dia da agenda é `App.ui.agendaDate`, sincronizado com `Cal.sync`.
   O planejamento semanal/mensal (foco, checklist, metas das 4 semanas) foi retirado da interface a pedido do usuário; `S.weekly`/`S.monthly` continuam guardados.

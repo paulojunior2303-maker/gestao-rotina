@@ -1,5 +1,6 @@
 // Equipes: gestor cria, convida por link, envia missões direto e acompanha o progresso ao vivo (nuvem simulada).
 const { chromium } = require('playwright');
+require('./completo');
 const F = require('./fake-fire');
 let pass = 0, fail = 0;
 const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };

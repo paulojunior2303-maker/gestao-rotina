@@ -1,5 +1,6 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+require('./completo');
 const useRoutine12 = require('./rotina-exemplo');
 const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('ok -', m); };
 (async () => {
@@ -86,7 +87,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
 
   // ---- Imprevisto com encaixe
   await go('imprevistos');
-  await p.click('[data-act=occNew]'); await p.waitForTimeout(200);
+  await p.click('#fab'); await p.waitForTimeout(200); await p.fill('.modal-wrap.open #cap-t', 'x'); await p.click('.modal-wrap.open [data-more]'); await p.waitForTimeout(400);
   await fill('title', 'NVR sem gravação no cliente Y'); await fill('responsible', 'João');
   await p.check('.modal-wrap.open [name=schedule]'); await submit(); await p.waitForTimeout(300);
   assert(await p.locator('.modal-wrap.open h2', { hasText: 'Encaixar imprevisto' }).count() === 1, 'diálogo de encaixe aberto');
@@ -103,7 +104,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   // ---- Tarefas
   await go('tarefas');
   await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);
-  await fill('title', 'Cobrar relatório do técnico'); await fill('startDate', '2026-11-01'); await fill('dueDate', '2026-11-05');
+  await fill('title', 'Cobrar relatório do técnico'); await p.click('.modal-wrap.open [data-more-tg]'); await fill('startDate', '2026-11-01'); await fill('dueDate', '2026-11-05');
   await p.selectOption('.modal-wrap.open [name=priority]', 'alta'); await submit();
   assert(await p.locator('.task .dl-late').count() === 1, 'tarefa vencida exibe alerta Atrasada');
   await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);

@@ -163,13 +163,13 @@ Object.assign(Actions, {
     if (s === 'andamento') D.ensureDay(k).forEach(x => { if (x !== b && x.status === 'andamento' && !D.isBreak(x)) x.status = 'pendente'; });
     commit();
   },
-  agNew() {
+  agNew(d = {}) {
     const k = Agenda.day();
     const bl = D.dayBlocks(k);
     const start = k === U.today() ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
     UI.form({
       title: `Nova atividade — ${U.fmtDate(k)}`,
-      fields: Agenda.blockFields({ start, end: U.fromMin(U.toMin(start) + 30), category: 'administrativo' }, true),
+      fields: Agenda.blockFields({ title: d.title || '', start, end: U.fromMin(U.toMin(start) + 30), category: 'administrativo' }, true),
       validate: Agenda.validateTimes,
       onSubmit(v) {
         const b = { id: U.uid(), title: v.title, start: v.start, end: v.end, category: v.category, priority: v.priority, status: v.status, fixed: v.fixed, notes: v.notes };
@@ -242,8 +242,11 @@ Object.assign(Actions, {
     const k = Agenda.day();
     const late = D.dayBlocks(k).filter(b => D.blockLate(b, k));
     UI.sheet('Reorganizar o dia', [
+      { label: 'Reorganizar meu dia', hint: 'Refaz os horários do que falta, em sequência (com prévia)', icon: 'timeline', onClick: () => Replan.open(k) },
       { label: `Mover atrasadas para o próximo dia útil (${late.length})`, hint: 'Mantém o horário original no novo dia', icon: 'arrow', onClick: () => { if (!late.length) return UI.toast('Não há atividades atrasadas.', 'warn'); const to = D.nextWorkday(k); late.forEach(b => D.moveBlock(k, b.id, to)); commit(); UI.toast(`${U.plural(late.length, 'atividade movida', 'atividades movidas')} para ${U.fmtShort(to)}.`); } },
       { label: 'Encaixar um imprevisto', icon: 'alert', onClick: () => Actions.agImprevisto() },
+      ...(k === U.today() ? [{ label: 'Abrir o dia', hint: 'O que ficou de ontem e as 3 prioridades', icon: 'spark', onClick: () => Ritual.abrir() },
+        { label: 'Fechar o dia', hint: 'O que não deu tempo vai para o lugar certo', icon: 'check', onClick: () => Ritual.fechar() }] : []),
       { sep: true },
       { label: 'Restaurar rotina padrão neste dia', hint: 'Descarta as alterações feitas neste dia', icon: 'undo', danger: true, onClick: () => UI.confirm('Restaurar a rotina padrão? As alterações e status deste dia serão perdidos.', () => { delete S.days[k]; S.occurrences.forEach(o => { if (o.scheduled && o.scheduled.date === k) o.scheduled = null; }); commit(); }, { danger: true, okLabel: 'Restaurar' }) },
       { label: 'Limpar todas as atividades do dia', icon: 'trash', danger: true, onClick: () => UI.confirm('Remover todas as atividades deste dia?', () => { S.days[k] = []; S.occurrences.forEach(o => { if (o.scheduled && o.scheduled.date === k) o.scheduled = null; }); commit(); }, { danger: true, okLabel: 'Limpar' }) },

@@ -1,5 +1,6 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+require('./completo');
 // meta.updatedAt muda ao importar (é uma alteração local, que sobe para o Google Drive): compara o resto
 const norm = j => { const o = JSON.parse(j); if (o.meta) delete o.meta.updatedAt; return JSON.stringify(o); };
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };

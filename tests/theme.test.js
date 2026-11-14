@@ -2,6 +2,7 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
+require('./completo');
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 (async () => {
   const b = await chromium.launch();
