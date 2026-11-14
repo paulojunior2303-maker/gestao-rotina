@@ -132,6 +132,34 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(!s.days[today].some(x => !['concluida', 'cancelada'].includes(x.status) && x.category !== 'intervalo'), 'nada da agenda de hoje fica pendurado');
   check(s.diario[today].fechadoEm && s.diario[today].nota === 'Dia puxado no cliente X', 'dia fechado com a nota');
 
+  console.log('\n[4] Tarefas que se repetem');
+  const R = await p.evaluate(() => [Capture.parse('conferir backup dos gravadores toda segunda'), Capture.parse('relatório todo dia 5'), Capture.parse('checar e-mails todo dia'), Capture.parse('reunião a cada 2 semanas')]);
+  check(R[0].repeat === 'semanal' && R[0].date === '2026-11-16', '"toda segunda" → toda semana, começando segunda');
+  check(R[1].repeat === 'mensal' && R[1].date === '2026-12-05', '"todo dia 5" → todo mês, dia 5');
+  check(R[2].repeat === 'diaria', '"todo dia" → todo dia útil');
+  check(R[3].repeat === 'quinzenal', '"a cada 2 semanas"');
+  await go('dashboard'); await tap('#fab');
+  await p.locator(`${M} #cap-t`).fill('Conferir backup dos gravadores toda segunda'); await W(150);
+  check(await p.locator(`${M} [data-type=tarefa].active`).count() === 1 && (await p.textContent(`${M} .cap-opts`)).includes('toda semana'), 'anotação rápida entende a repetição');
+  await tap(`${M} [data-save]`);
+  s = await st(); const rt = s.tasks.find(x => x.title.startsWith('Conferir backup'));
+  check(rt && rt.repeat === 'semanal' && rt.dueDate === '2026-11-16', 'tarefa salva com repetição semanal');
+  await go('tarefas');
+  check((await p.locator('.task', { hasText: 'Conferir backup' }).textContent()).includes('Toda semana'), 'a lista mostra que ela se repete');
+  await p.locator('.task', { hasText: 'Conferir backup' }).locator('[data-act=tkSet][data-s=concluida]').tap(); await W();
+  s = await st();
+  let reps = s.tasks.filter(x => x.title.startsWith('Conferir backup'));
+  check(reps.length === 2 && reps.some(x => x.status === 'pendente' && x.dueDate === '2026-11-23'), 'ao concluir, nasce a próxima (23/11)');
+  check((await p.locator('.toast', { hasText: 'próxima' }).last().textContent()).includes('23/11'), 'o aviso diz quando é a próxima');
+  await p.locator('.toast', { hasText: 'próxima' }).last().locator('.link').tap(); await W();
+  s = await st(); reps = s.tasks.filter(x => x.title.startsWith('Conferir backup'));
+  check(reps.length === 1 && reps[0].status === 'pendente', '"Desfazer" volta e apaga a próxima');
+  const nd = await p.evaluate(() => [Tasks.nextDue({ repeat: 'mensal', dueDate: '2026-01-31' }), Tasks.nextDue({ repeat: 'semanal', dueDate: '2026-10-01' }), Tasks.nextDue({ repeat: 'diaria', dueDate: '2026-11-11' })]);
+  check(nd[0] === '2026-11-30' && nd[1] === '2026-11-12' && nd[2] === '2026-11-12', `próximos prazos certos (fim de mês, atrasada, dia útil): ${nd.join(', ')}`);
+  await tap('#fab');
+  check(await p.locator(`${M} [name=repeat]`).count() === 1, 'campo "Repetir" no formulário da tarefa');
+  await p.keyboard.press('Escape'); await W();
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

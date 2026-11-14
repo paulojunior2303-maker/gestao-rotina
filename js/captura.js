@@ -39,6 +39,12 @@ const Capture = {
         if (d <= +U.monthEnd(mk).slice(8, 10)) out.date = `${mk}-${U.pad(d)}`;
       }
     }
+    // Repetição ("toda segunda", "todo dia", "todo mês", "todo dia 5")
+    if (/\btodo dia \d{1,2}\b|\btodo mes\b|\bmensalmente\b|\btodos os meses\b/.test(t)) out.repeat = 'mensal';
+    else if (/\btodo dia\b|\btodos os dias\b|\bdiariamente\b/.test(t)) out.repeat = 'diaria';
+    else if (/\ba cada (?:2|duas) semanas\b|\bquinzenal/.test(t)) out.repeat = 'quinzenal';
+    else if (/\btoda (?:segunda|terca|quarta|quinta|sexta|sabado)\b|\btodo (?:sabado|domingo)\b|\btoda semana\b|\btodas as semanas\b|\bsemanalmente\b/.test(t)) out.repeat = 'semanal';
+    if (out.repeat === 'diaria' && !out.date) out.date = D.isWorkday(base) ? base : D.nextWorkday(base);
     // Duração ("30 min", "meia hora", "levar 2h", "1 hora")
     if (/\bmeia hora\b/.test(t)) out.dur = 30;
     else if ((m = t.match(/\b(\d{1,3}) ?(?:min|mins|minutos?)\b/))) out.dur = +m[1];
@@ -60,7 +66,7 @@ const Capture = {
   /* Abre a anotação rápida. type: imprevisto | tarefa | agenda. k: dia (Agenda). others: outras opções (lista do "+") */
   open({ type, k, others = [] } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type || (k > t ? 'tarefa' : 'imprevisto'), dur: 0, due: k > t ? k : '', time: '', who: '', start: '', agDur: 30, touched: {} };
+    const st = { type: type || (k > t ? 'tarefa' : 'imprevisto'), dur: 0, due: k > t ? k : '', time: '', who: '', start: '', agDur: 30, repeat: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
     st.start = k === t ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
     const techs = D.techNames();
@@ -83,6 +89,7 @@ const Capture = {
         return `<span class="cap-l">Prazo</span>
           <div class="cap-chips">${btn('due', '', 'Sem prazo', !st.due)}${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
           <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
+          ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>. Ao concluir, a próxima é criada sozinha.</span><button type="button" class="link" data-norep>tirar</button></p>` : ''}
           ${st.due ? `<div class="cap-row"><label class="cap-l" for="cap-time">Horário (opcional)</label><input type="time" id="cap-time" class="cap-in" value="${st.time}"></div>` : ''}
           ${whoField('Quem faz?')}`;
       }
@@ -121,7 +128,8 @@ const Capture = {
       const p = Capture.parse(ta.value, t);
       const T = st.touched; let ch = false;
       const set = (key, v) => { if (!T[key] && v !== undefined && st[key] !== v) { st[key] = v; ch = true; } };
-      if (p.date && p.date !== t && !T.type && st.type === 'imprevisto') { st.type = 'tarefa'; ch = true; }
+      if ((p.repeat || (p.date && p.date !== t)) && !T.type && st.type === 'imprevisto') { st.type = 'tarefa'; ch = true; }
+      if (!T.repeat && (p.repeat || '') !== st.repeat) { st.repeat = p.repeat || ''; ch = true; }
       set('due', p.date); set('time', p.time); set('who', p.who);
       if (p.time) set('start', p.time);
       if (p.dur) { set('dur', p.dur); set('agDur', p.dur); }
@@ -132,6 +140,7 @@ const Capture = {
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
       if (b.dataset.agdur !== undefined) { st.agDur = +b.dataset.agdur; st.touched.agDur = true; paint(); return; }
+      if (b.hasAttribute('data-norep')) { st.repeat = ''; st.touched.repeat = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-more')) { const d = Capture.read(st, ta); m.close(); setTimeout(() => Capture.details(st.type, d, k), 160); return; }
@@ -180,9 +189,9 @@ const Capture = {
       return;
     }
     if (st.type === 'tarefa') {
-      S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: st.due || '', dueTime: st.due ? st.time || '' : '', notes: '' });
+      S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: st.due || (st.repeat ? t : ''), dueTime: st.due ? st.time || '' : '', notes: '', repeat: st.repeat || '' });
       commit();
-      UI.toast(st.due ? `Tarefa criada, prazo ${st.due === t ? 'hoje' : U.fmtShort(st.due)}${st.due && st.time ? ' às ' + st.time : ''}.` : 'Tarefa criada.');
+      UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : st.due ? `Tarefa criada, prazo ${st.due === t ? 'hoje' : U.fmtShort(st.due)}${st.due && st.time ? ' às ' + st.time : ''}.` : 'Tarefa criada.');
       return;
     }
     if (!st.start) return 'Informe o horário de início.';

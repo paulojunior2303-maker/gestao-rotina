@@ -43,6 +43,7 @@ Views.tarefas = {
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
           <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
             ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : '<span class="muted">Sem prazo</span>'}
+            ${x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''}
             ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
         </div>
         <div class="tk-side">
@@ -93,22 +94,55 @@ const Tasks = {
         { name: 'startDate', label: 'Data de início', type: 'date', value: x.startDate, half: true },
         { name: 'dueDate', label: 'Prazo de conclusão', type: 'date', value: x.dueDate, half: true },
         { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime, half: true },
+        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true, hint: 'Ao concluir, a próxima é criada sozinha.' },
         { type: 'html', html: isNew ? '' : `<p class="muted small">Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · Concluída em ${U.fmtDateTime(x.completedAt)}` : ''}</p>`, half: true },
         { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: x.notes },
       ],
       validate: v => v.startDate && v.dueDate && v.dueDate < v.startDate ? 'O prazo não pode ser anterior à data de início.' : null,
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); Actions.tkDelete({ id: x.id }); } }],
       onSubmit(v) {
+        if (v.repeat && !v.dueDate) v.dueDate = U.today();
         if (isNew) S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: v.status === 'concluida' ? new Date().toISOString() : null, ...v });
-        else { Tasks.setStatus(x, v.status); Object.assign(x, { ...v, status: x.status }); }
+        else { const st = v.status; Object.assign(x, { ...v, status: x.status }); Tasks.setStatus(x, st); }
         commit(); UI.toast(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.');
       },
     });
   },
   setStatus(x, s) {
+    const was = x.status;
     if (s === 'concluida' && x.status !== 'concluida') x.completedAt = new Date().toISOString();
     if (s !== 'concluida') x.completedAt = null;
     x.status = s;
+    // Tarefa que se repete: ao concluir, nasce a próxima; ao reabrir, a próxima (ainda intocada) some
+    if (x.repeat && s === 'concluida' && was !== 'concluida' && !(x.nextId && S.tasks.some(y => y.id === x.nextId))) {
+      const n = { ...x, id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, status: 'pendente', top: null, nextId: null, dueDate: Tasks.nextDue(x), startDate: U.today(), repeatDay: x.repeat === 'mensal' ? (x.repeatDay || +(x.dueDate || U.today()).slice(8, 10)) : undefined };
+      S.tasks.push(n); x.nextId = n.id;
+      return n;
+    }
+    if (s !== 'concluida' && x.nextId) {
+      const n = S.tasks.find(y => y.id === x.nextId);
+      if (n && n.status === 'pendente') S.tasks.splice(S.tasks.indexOf(n), 1);
+      x.nextId = null;
+    }
+    return null;
+  },
+  REPEAT: [['', 'Não repete'], ['diaria', 'Todo dia útil'], ['semanal', 'Toda semana'], ['quinzenal', 'A cada 2 semanas'], ['mensal', 'Todo mês']],
+  repeatLabel: r => (Tasks.REPEAT.find(x => x[0] === r) || [, ''])[1],
+  /* Próximo prazo de uma tarefa que se repete (nunca no passado) */
+  nextDue(x) {
+    const t = U.today();
+    const dia = x.repeatDay || +(x.dueDate || t).slice(8, 10);   // mensal: mantém o dia (31 → 28/fev → 31/mar)
+    const step = k => {
+      if (x.repeat === 'diaria') return D.nextWorkday(k);
+      if (x.repeat === 'semanal') return U.addDays(k, 7);
+      if (x.repeat === 'quinzenal') return U.addDays(k, 14);
+      const [y, m] = k.split('-').map(Number), mk = U.addMonths(`${y}-${U.pad(m)}`, 1);
+      return `${mk}-${U.pad(Math.min(dia, +U.monthEnd(mk).slice(8, 10)))}`;
+    };
+    let n = step(x.dueDate || t);
+    for (let i = 0; i < 400 && n < t; i++) n = step(n);
+    if (x.repeat === 'diaria' && n <= t) n = D.nextWorkday(t);
+    return n;
   },
 };
 
@@ -119,9 +153,9 @@ Object.assign(Actions, {
   tkSet({ id, s }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
     const prev = x.status, prevAt = x.completedAt;
-    Tasks.setStatus(x, s); commit();
-    const undo = { label: 'Desfazer', onClick: () => { x.status = prev; x.completedAt = prevAt; commit(); } };
-    if (s === 'concluida') UI.toast('Tarefa concluída.', 'ok', undo);
+    const nx = Tasks.setStatus(x, s); commit();
+    const undo = { label: 'Desfazer', onClick: () => { Tasks.setStatus(x, prev); x.completedAt = prevAt; commit(); } };
+    if (s === 'concluida') UI.toast(nx ? `Tarefa concluída. A próxima fica para ${U.fmtShort(nx.dueDate)}.` : 'Tarefa concluída.', 'ok', undo);
     else if (s === 'cancelada') UI.toast('Tarefa cancelada.', 'ok', undo);
   },
   tkMore({ id }) {
