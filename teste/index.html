@@ -1146,6 +1146,31 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .eq-more summary { cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .eq-more[open] summary { margin-bottom: 14px; }
 
+/* Anotação rápida (botão +) */
+.cap { display: flex; flex-direction: column; gap: 10px; }
+.cap-text, .cap-in { width: 100%; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; outline: none; transition: border-color .15s, box-shadow .15s; }
+.cap-text { font-size: 16px; min-height: 64px; resize: vertical; }
+.cap-in { min-height: 40px; font-size: 15px; }
+.cap-text:focus, .cap-in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cap-tip { display: flex; align-items: center; gap: 6px; margin: -4px 0 0; }
+.cap-types { display: flex; width: 100%; flex-wrap: nowrap; }
+.cap-types .tab { flex: 1; justify-content: center; padding: 8px 6px; font-size: 13.5px; }
+.cap-types .tab.active { background: var(--primary); color: #fff; }
+.cap-opts { display: flex; flex-direction: column; gap: 8px; }
+.cap-l { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.cap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cap-chip { position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 6px 13px; border-radius: 99px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 560; cursor: pointer; }
+.cap-chip.on { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); border-color: var(--accent); color: var(--text); }
+.cap-date input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.cap-row { display: grid; grid-template-columns: 1fr 130px; align-items: center; gap: 8px; }
+.cap-prev { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 9px 11px; border-radius: 11px; font-size: 13px; background: color-mix(in srgb, var(--lilac) 14%, transparent); }
+.cap-prev .ic { flex: none; margin-top: 2px; }
+.cap-more { align-self: flex-start; }
+.cap-others { border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.cap-others .sheet { margin: 0 -10px; }
+.occ-today { display: flex; align-items: center; gap: 10px; padding: 11px 14px; margin-bottom: 8px; font-size: 14px; border-left: 3px solid var(--red); }
+.occ-today .ic { color: var(--red); flex: none; }
+
 </style>
 </head>
 <body>
@@ -3455,19 +3480,16 @@ Object.assign(Actions, {
   quickAdd({ k, from }) {
     const t = U.today(); k = k || t;
     const onAgenda = from === 'agenda';
-    const dated = onAgenda || k !== t;   // prazo da tarefa: só se o dia foi escolhido
     const breakOk = onAgenda && (S.settings.breakMode || 'fixo') === 'flexivel' && !D.dayBlocks(k).some(b => D.isBreak(b) && b.status !== 'cancelada');
-    const activity = { label: 'Atividade na agenda', hint: 'Um horário no cronograma do dia', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
+    const activity = { label: 'Atividade na agenda', hint: 'Formulário completo, com categoria e prioridade', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
     const items = [
-      { label: dated ? 'Tarefa com prazo neste dia' : 'Tarefa', icon: 'tasks', onClick: () => Tasks.form(null, dated ? { dueDate: k } : {}) },
       { label: 'Reunião', hint: 'Com pauta, gravação e ata', icon: 'users', onClick: () => Events.form(null, k, { reuniao: true }) },
       { label: 'Feedback', hint: 'Conversa individual com o colaborador', icon: 'chat', onClick: () => FB.form(null) },
-      { label: 'Imprevisto', hint: onAgenda ? 'E já encaixa na agenda' : 'Demanda urgente', icon: 'alert', onClick: () => onAgenda ? Actions.agImprevisto() : Occ.form(null) },
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
     ];
-    if (onAgenda) items.unshift(activity); else items.push(activity);
-    if (breakOk) items.splice(1, 0, { label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
-    UI.sheet(k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`, items);
+    items.push(activity);
+    if (breakOk) items.unshift({ label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
+    Capture.open({ k, type: k > t ? 'tarefa' : 'imprevisto', others: items });
   },
 });
 
@@ -3869,13 +3891,13 @@ Object.assign(Actions, {
     if (s === 'andamento') D.ensureDay(k).forEach(x => { if (x !== b && x.status === 'andamento' && !D.isBreak(x)) x.status = 'pendente'; });
     commit();
   },
-  agNew() {
+  agNew(d = {}) {
     const k = Agenda.day();
     const bl = D.dayBlocks(k);
     const start = k === U.today() ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
     UI.form({
       title: `Nova atividade — ${U.fmtDate(k)}`,
-      fields: Agenda.blockFields({ start, end: U.fromMin(U.toMin(start) + 30), category: 'administrativo' }, true),
+      fields: Agenda.blockFields({ title: d.title || '', start, end: U.fromMin(U.toMin(start) + 30), category: 'administrativo' }, true),
       validate: Agenda.validateTimes,
       onSubmit(v) {
         const b = { id: U.uid(), title: v.title, start: v.start, end: v.end, category: v.category, priority: v.priority, status: v.status, fixed: v.fixed, notes: v.notes };
@@ -3989,13 +4011,15 @@ Object.assign(Actions, {
 /* Gestão de imprevistos — ocorrências que exigem atenção imediata */
 Views.imprevistos = {
   title: 'Imprevistos', icon: 'alert', nav: 'Imprevistos',
-  fab: { act: 'occNew', label: 'Registrar imprevisto' },
+  fab: { act: 'capture', label: 'Registrar imprevisto', data: { type: 'imprevisto' } },
   render() {
     const f = App.ui.occFilter || 'abertas';
     const all = S.occurrences;
     const list = all.filter(o => f === 'todas' ? true : f === 'abertas' ? OPEN(o.status) : !OPEN(o.status))
       .sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.occLate(b) - D.occLate(a)) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || (b.date + b.time).localeCompare(a.date + a.time));
     const nOpen = all.filter(o => OPEN(o.status)).length;
+    const tk = U.today();
+    const nToday = all.filter(o => o.date === tk).length, minToday = Capture.minutesOn(tk);
     const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
 
     const card = o => {
@@ -4028,15 +4052,16 @@ Views.imprevistos = {
     <div class="toolbar">
       <div class="tabs">${tab('abertas', 'Abertos', nOpen)}${tab('encerradas', 'Encerrados', all.length - nOpen)}${tab('todas', 'Todos', all.length)}</div>
     </div>
-    <p class="muted small">Registre aqui demandas urgentes que exigem sua atenção imediata. Use <strong>Encaixar na agenda</strong> para reservar um horário e reorganizar o dia automaticamente.</p>
+    ${nToday || minToday ? `<div class="occ-today card">${U.icon('alert', 18)}<span>Hoje: <strong>${U.plural(nToday, 'imprevisto')}</strong>${minToday ? ` · <strong>${U.fmtDur(minToday)}</strong> tomados da agenda` : ''}</span></div>` : ''}
+    <p class="muted small">Aconteceu algo? Toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai tomar: o app encaixa agora na agenda e empurra o resto do dia.</p>
     <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;
   },
 };
 
 const Occ = {
-  form(o, { scheduleAfter = false } = {}) {
+  form(o, { scheduleAfter = false, defaults = {} } = {}) {
     const isNew = !o;
-    o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime() };
+    o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime(), ...defaults };
     const fields = [
       { name: 'title', label: 'Título', required: true, value: o.title },
       { name: 'description', label: 'Descrição', type: 'textarea', value: o.description },
@@ -6402,6 +6427,246 @@ const Reports = {
     UI.toast('Na janela de impressão, escolha "Salvar como PDF".');
   },
 };
+
+</script>
+  <script>/* js/captura.js */
+'use strict';
+/* Anotação rápida (botão "+" do Início, da Agenda e dos Imprevistos).
+   Um campo só: a pessoa escreve (ou dita pelo microfone do teclado) e escolhe o tipo.
+   O texto é lido aqui mesmo, sem internet: datas ("amanhã", "sexta", "20/11"), horário ("às 15h"),
+   duração ("30 min", "1h") e nomes da equipe. Imprevisto com tempo é encaixado AGORA na agenda
+   e empurra o resto do dia (a atividade que estava em andamento continua depois). */
+const Capture = {
+  TYPES: [['imprevisto', 'Imprevisto', 'alert'], ['tarefa', 'Tarefa', 'tasks'], ['agenda', 'Na agenda', 'clock']],
+  DURS: [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
+  WD: ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
+
+  norm: s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
+
+  /* Lê o texto e devolve o que conseguiu entender: { date, time, dur, who } (cada um pode faltar) */
+  parse(text, base = U.today()) {
+    const t = ' ' + Capture.norm(text).replace(/\s+/g, ' ') + ' ';
+    const out = {};
+    // Data
+    let m;
+    if (/\bdepois de amanha\b/.test(t)) out.date = U.addDays(base, 2);
+    else if (/\bamanha\b/.test(t)) out.date = U.addDays(base, 1);
+    else if (/\bhoje\b/.test(t)) out.date = base;
+    else if ((m = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))) {
+      const d = +m[1], mo = +m[2]; let y = m[3] ? +m[3] : +base.slice(0, 4);
+      if (y < 100) y += 2000;
+      if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+        let k = `${y}-${U.pad(mo)}-${U.pad(d)}`;
+        if (!m[3] && k < base) k = `${y + 1}-${U.pad(mo)}-${U.pad(d)}`;
+        out.date = k;
+      }
+    } else if ((m = t.match(/\b(segunda|terca|quarta|quinta|sexta|sabado|domingo)\b/))) {
+      const wd = Capture.WD.indexOf(m[1]);
+      let k = base; for (let i = 0; i < 7 && U.weekday(k) !== wd; i++) k = U.addDays(k, 1);
+      out.date = k;
+    } else if ((m = t.match(/\bdia (\d{1,2})\b/))) {
+      const d = +m[1];
+      if (d >= 1 && d <= 31) {
+        let mk = base.slice(0, 7); if (d < +base.slice(8, 10)) mk = U.addMonths(mk, 1);
+        if (d <= +U.monthEnd(mk).slice(8, 10)) out.date = `${mk}-${U.pad(d)}`;
+      }
+    }
+    // Duração ("30 min", "meia hora", "levar 2h", "1 hora")
+    if (/\bmeia hora\b/.test(t)) out.dur = 30;
+    else if ((m = t.match(/\b(\d{1,3}) ?(?:min|mins|minutos?)\b/))) out.dur = +m[1];
+    else if ((m = t.match(/\b(?:por|leva|levar|vai levar|durante|uns|umas|cerca de) (\d{1,2}) ?(?:h|hs|horas?)\b/)) || (m = t.match(/\b(\d{1,2}) horas?\b/))) out.dur = +m[1] * 60;
+    // Horário ("às 15h", "as 9h30", "15:30", "14h")
+    const hm = (h, mi) => (h >= 0 && h <= 23 && mi >= 0 && mi <= 59) ? `${U.pad(h)}:${U.pad(mi)}` : null;
+    if ((m = t.match(/\b(?:as|a partir das|ate as|ate|para as|pras) (\d{1,2})(?:(?::|h) ?(\d{2}))? ?h?\b/))) out.time = hm(+m[1], +(m[2] || 0)) || undefined;
+    else if ((m = t.match(/\b(\d{1,2}):(\d{2})\b/))) out.time = hm(+m[1], +m[2]) || undefined;
+    else if (!out.dur && (m = t.match(/\b(\d{1,2})h(\d{2})?\b/)) && +m[1] >= 6) out.time = hm(+m[1], +(m[2] || 0)) || undefined;
+    if (!out.time) delete out.time;
+    // Pessoa da equipe citada no texto (nome completo primeiro, depois o primeiro nome)
+    const names = D.techNames();
+    const has = n => n && new RegExp(`\\b${Capture.norm(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(t);
+    out.who = names.find(has) || names.find(n => has(n.split(' ')[0]));
+    if (!out.who) delete out.who;
+    return out;
+  },
+
+  /* Abre a anotação rápida. type: imprevisto | tarefa | agenda. k: dia (Agenda). others: outras opções (lista do "+") */
+  open({ type, k, others = [] } = {}) {
+    const t = U.today(); k = k || t;
+    const st = { type: type || (k > t ? 'tarefa' : 'imprevisto'), dur: 0, due: k > t ? k : '', time: '', who: '', start: '', agDur: 30, touched: {} };
+    const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
+    st.start = k === t ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
+    const techs = D.techNames();
+    const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
+    const whoField = label => `<label class="cap-l" for="cap-who">${label}</label><input id="cap-who" class="cap-in" value="${U.esc(st.who)}" placeholder="Você ou alguém da equipe" list="cap-dl" autocomplete="off"><datalist id="cap-dl">${techs.map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>`;
+
+    const optsHtml = () => {
+      if (st.type === 'imprevisto') {
+        if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${whoField('Quem resolve?')}`;
+        const cur = Capture.current();
+        const s = nowStart(), e = U.fromMin(U.toMin(s) + st.dur);
+        return `<span class="cap-l">Vai tomar quanto tempo agora?</span>
+          <div class="cap-chips">${btn('dur', 0, 'Só registrar', !st.dur)}${Capture.DURS.map(([v, l]) => btn('dur', v, l, st.dur === v)).join('')}</div>
+          ${st.dur ? `<p class="cap-prev">${U.icon('clock', 14)} <span>Entra na agenda agora, das <strong>${s}</strong> às <strong>${e}</strong>, e o resto do dia é empurrado.${cur ? ` “${U.esc(cur.title)}” continua depois.` : ''}</span></p>` : ''}
+          ${whoField('Quem resolve?')}`;
+      }
+      if (st.type === 'tarefa') {
+        const tm = U.addDays(t, 1);
+        const other = st.due && st.due !== t && st.due !== tm;
+        return `<span class="cap-l">Prazo</span>
+          <div class="cap-chips">${btn('due', '', 'Sem prazo', !st.due)}${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
+          <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
+          ${st.due ? `<div class="cap-row"><label class="cap-l" for="cap-time">Horário (opcional)</label><input type="time" id="cap-time" class="cap-in" value="${st.time}"></div>` : ''}
+          ${whoField('Quem faz?')}`;
+      }
+      return `<div class="cap-row"><label class="cap-l" for="cap-start">${k === t ? 'Hoje' : U.fmtShort(k)}, começa às</label><input type="time" id="cap-start" class="cap-in" value="${st.start}"></div>
+        <span class="cap-l">Duração</span>
+        <div class="cap-chips">${Capture.DURS.map(([v, l]) => btn('agdur', v, l, st.agDur === v)).join('')}</div>`;
+    };
+    const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : st.type === 'tarefa' ? 'Criar tarefa' : 'Pôr na agenda';
+
+    const m = UI.modal({
+      title: k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`,
+      body: `<div class="cap">
+        <textarea id="cap-t" class="cap-text" rows="2" placeholder="O que aconteceu? Ex.: câmeras offline no cliente X" aria-label="Descreva em poucas palavras"></textarea>
+        <p class="hint cap-tip">${U.icon('chat', 13)} Dica: toque no microfone do teclado para falar em vez de digitar.</p>
+        <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
+        <div class="cap-opts"></div>
+        <div class="form-error" hidden></div>
+        <button type="button" class="link cap-more" data-more>Mais detalhes…</button>
+        ${others.length ? `<div class="cap-others"><span class="cap-l">Ou escolha</span><div class="sheet">${others.map((a, i) => `<button type="button" class="sheet-item" data-i="${i}">${a.icon ? U.icon(a.icon) : ''}<span>${a.label}${a.hint ? `<small>${a.hint}</small>` : ''}</span></button>`).join('')}</div></div>` : ''}
+      </div>`,
+      footer: `<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-save>${saveLabel()}</button>`,
+    });
+    const $ = s => m.el.querySelector(s);
+    const ta = $('#cap-t');
+    const paint = () => {
+      $('.cap-opts').innerHTML = optsHtml();
+      $('[data-save]').textContent = saveLabel();
+      m.el.querySelectorAll('[data-type]').forEach(b => { const on = b.dataset.type === st.type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
+    };
+    const err = msg => { const e = $('.form-error'); e.textContent = msg || ''; e.hidden = !msg; };
+    paint();
+
+    // O texto preenche sozinho o que não foi mexido à mão
+    ta.addEventListener('input', () => {
+      err('');
+      const p = Capture.parse(ta.value, t);
+      const T = st.touched; let ch = false;
+      const set = (key, v) => { if (!T[key] && v !== undefined && st[key] !== v) { st[key] = v; ch = true; } };
+      if (p.date && p.date !== t && !T.type && st.type === 'imprevisto') { st.type = 'tarefa'; ch = true; }
+      set('due', p.date); set('time', p.time); set('who', p.who);
+      if (p.time) set('start', p.time);
+      if (p.dur) { set('dur', p.dur); set('agDur', p.dur); }
+      if (ch) { const f = document.activeElement; paint(); if (f === ta) ta.focus(); }
+    });
+    m.el.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
+      if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
+      if (b.dataset.agdur !== undefined) { st.agDur = +b.dataset.agdur; st.touched.agDur = true; paint(); return; }
+      if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
+      if (b.hasAttribute('data-cancel')) { m.close(); return; }
+      if (b.hasAttribute('data-more')) { const d = Capture.read(st, ta); m.close(); setTimeout(() => Capture.details(st.type, d, k), 160); return; }
+      if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
+      if (b.dataset.i !== undefined) { m.close(); others[+b.dataset.i].onClick(); }
+    });
+    m.el.addEventListener('input', e => {
+      const id = e.target.id;
+      if (id === 'cap-who') { st.who = e.target.value.trim(); st.touched.who = true; }
+      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; }
+      if (id === 'cap-start') { st.start = e.target.value; st.touched.start = true; }
+    });
+    m.el.addEventListener('change', e => { if (e.target.id === 'cap-date' && e.target.value) { st.due = e.target.value; st.touched.due = true; paint(); } });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('[data-save]').click(); } });
+    setTimeout(() => ta.focus(), 80);
+    return m;
+  },
+
+  read(st, ta) {
+    const who = (document.getElementById('cap-who') || {}).value;
+    if (who !== undefined) st.who = who.trim();
+    return { title: ta.value.trim().replace(/\s+/g, ' '), who: st.who, due: st.due };
+  },
+
+  /* Abre o formulário completo de cada tipo, já com o que foi escrito */
+  details(type, d, k) {
+    if (type === 'imprevisto') Occ.form(null, { defaults: { title: d.title, responsible: d.who } });
+    else if (type === 'tarefa') Tasks.form(null, { title: d.title, responsible: d.who, dueDate: d.due || undefined });
+    else { App.ui.agendaDate = k; const go = () => Actions.agNew({ title: d.title }); if (App.route === 'agenda') go(); else { App.go('agenda'); setTimeout(go, 150); } }
+  },
+
+  /* Grava. Devolve uma mensagem de erro (string) ou nada */
+  save(st, ta, k) {
+    const d = Capture.read(st, ta);
+    if (!d.title) return 'Escreva em poucas palavras o que é.';
+    const t = U.today();
+    if (st.type === 'imprevisto') {
+      const now = !!st.dur && k === t;
+      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: '', priority: 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: '', dueTime: '', responsible: d.who, notes: '' };
+      S.occurrences.push(o);
+      if (!now) { commit(); UI.toast('Imprevisto registrado.', 'ok', { label: 'Encaixar na agenda', onClick: () => Agenda.scheduleDialog(o) }); return; }
+      const r = Capture.encaixarAgora(o, st.dur);
+      commit();
+      const over = D.overflowCount(t);
+      UI.toast(`Encaixado das ${r.start} às ${r.end}.${r.moved ? ` ${U.plural(r.moved, 'atividade empurrada', 'atividades empurradas')}.` : ''}${over ? ` ${U.plural(over, 'atividade passou', 'atividades passaram')} do fim do expediente.` : ''}`, over ? 'warn' : 'ok', { label: 'Desfazer', onClick: () => { r.undo(); commit(); UI.toast('Desfeito.'); } });
+      return;
+    }
+    if (st.type === 'tarefa') {
+      S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: st.due || '', dueTime: st.due ? st.time || '' : '', notes: '' });
+      commit();
+      UI.toast(st.due ? `Tarefa criada, prazo ${st.due === t ? 'hoje' : U.fmtShort(st.due)}${st.due && st.time ? ' às ' + st.time : ''}.` : 'Tarefa criada.');
+      return;
+    }
+    if (!st.start) return 'Informe o horário de início.';
+    const s = U.toMin(st.start), e = Math.min(1439, s + (st.agDur || 30));
+    if (e <= s) return 'Esse horário passa do fim do dia.';
+    const day = D.ensureDay(k);
+    const b = { id: U.uid(), title: d.title, start: st.start, end: U.fromMin(e), category: 'administrativo', priority: 'media', status: 'pendente', fixed: false, notes: '' };
+    day.push(b);
+    const moved = D.reflow(k, b.id);
+    commit();
+    UI.toast(`Na agenda: ${k === t ? 'hoje' : U.fmtShort(k)}, ${b.start}–${b.end}.${moved ? ` ${U.plural(moved, 'atividade empurrada', 'atividades empurradas')}.` : ''}`);
+  },
+
+  /* Atividade em andamento agora (a que o imprevisto interrompe) */
+  current() {
+    const k = U.today(), n = Math.round(U.nowMin() / 5) * 5;
+    return D.dayBlocks(k).find(b => !b.fixed && !D.isBreak(b) && !D.blockDone(b) && U.toMin(b.start) < n && U.toMin(b.end) > n) || null;
+  },
+
+  /* Põe o imprevisto na agenda de hoje, a partir de agora, e empurra o resto.
+     A atividade que estava em andamento é pausada e continua depois (com o tempo que faltava). */
+  encaixarAgora(o, dur) {
+    const k = U.today();
+    const day = D.ensureDay(k);
+    const snap = JSON.stringify(day);
+    const s = Math.round(U.nowMin() / 5) * 5, e = Math.min(1439, s + dur);
+    const cur = Capture.current();
+    if (cur) {
+      const rest = U.toMin(cur.end) - s;
+      cur.start = U.fromMin(e); cur.end = U.fromMin(e + rest); cur.status = 'pendente';
+      cur.notes = [cur.notes, `Pausada às ${U.fromMin(s)} por um imprevisto`].filter(Boolean).join(' · ');
+    }
+    day.forEach(b => { if (b.status === 'andamento' && !D.isBreak(b)) b.status = 'pendente'; });
+    const b = { id: U.uid(), start: U.fromMin(s), end: U.fromMin(e), title: 'Imprevisto: ' + o.title, category: 'imprevistos', priority: o.priority, status: 'andamento', notes: '', fixed: false, occurrenceId: o.id };
+    day.push(b);
+    o.scheduled = { date: k, blockId: b.id };
+    const moved = D.reflow(k, b.id) + (cur ? 1 : 0);
+    return {
+      start: b.start, end: b.end, moved,
+      undo() { S.days[k] = JSON.parse(snap); S.occurrences = S.occurrences.filter(x => x.id !== o.id); },
+    };
+  },
+
+  /* Tempo que os imprevistos tomaram da agenda num dia (minutos) */
+  minutesOn(k) {
+    return D.dayBlocks(k).filter(b => b.occurrenceId && b.status !== 'cancelada').reduce((a, b) => a + (U.toMin(b.end) - U.toMin(b.start)), 0);
+  },
+};
+
+Object.assign(Actions, {
+  capture({ type, k }) { Capture.open({ type, k }); },
+});
 
 </script>
   <script>/* js/app.js */
