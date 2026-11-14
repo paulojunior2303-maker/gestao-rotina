@@ -74,7 +74,7 @@ const Cal = {
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
-      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ ...(CANAL_ENXUTO ? { gravacao: 'Gravação' } : {}), reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto', ...((S.missoes || []).length ? { missao: 'Missão' } : {}) }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
+      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ ...(MODO_ENXUTO ? { gravacao: 'Gravação' } : {}), reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto', ...((S.missoes || []).length ? { missao: 'Missão' } : {}) }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
       ${id === 'agenda' ? `<button class="calx-exp" data-act="calMode" data-cal="${id}" data-v="${s.mode === 'week' ? 'month' : 'week'}" aria-expanded="${s.mode === 'month'}">${s.mode === 'week' ? `${U.icon('down', 16)} Ver o mês inteiro` : `${U.icon('up', 16)} Mostrar só a semana`}</button>` : ''}
     </div>`;
   },
@@ -141,7 +141,7 @@ Object.assign(Actions, {
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
     ];
     items.push(activity);
-    if (!CANAL_ENXUTO) items.push({ label: 'Checklist', hint: 'Abertura de turno, manutenção preventiva…', icon: 'list', onClick: () => App.go('checklists') });
+    if (!MODO_ENXUTO) items.push({ label: 'Checklist', hint: 'Abertura de turno, manutenção preventiva…', icon: 'list', onClick: () => App.go('checklists') });
     if (breakOk) items.unshift({ label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
     Capture.open({ k, type: k > t ? 'tarefa' : 'imprevisto', others: items });
   },

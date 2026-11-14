@@ -47,6 +47,9 @@ e diga o que mudou e como testar no celular.
   - `js/views/semana.js` (`Semana`, `#semana`): revisão da semana calculada dos dados; convite no último dia útil depois das 14h.
   - `UI.form`: campos com `more: true` ficam em "Mais opções" (`moreOpen`). Menu em grupos Dia a dia / Equipe / Planejamento / Ajustes.
   - Testes: `tests/novidades.test.js` (relógio simulado numa quarta 10:02).
+- **Modo enxuto no FlowFire de teste** (pedido do usuário: "se rodar lisinho, vai para o app principal"): `MODO_ENXUTO` (`js/store.js`) = `CANAL_TESTE`,
+  ou seja, o site de teste e a cópia enxuta usam as telas enxutas e o gravador. No teste a conta FlowFire continua ligada (canal `teste`; gravações em `gv-AAAA-MM`).
+  **Ao aprovar para o oficial**: levar o ramo `teste` para o `main` e trocar para `const MODO_ENXUTO = true;` (e ajustar os testes do app completo que dependem das telas retiradas).
 - **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`
   (`APP_CHANNEL = 'enxuto'` → `CANAL_ENXUTO`, também `CANAL_TESTE`; LocalStorage `…:enxuto`; sem Drive e sem conta FlowFire por enquanto). Publicar: `bash tools/publicar-enxuto.sh "msg"`
   (grava `enxuto/index.html` no `main`; o `pages.yml` copia a pasta). Só telas `ENXUTO_ROUTES` (`app.js`); Início = calendário do mês (`Views.dashboard.renderEnxuto`);

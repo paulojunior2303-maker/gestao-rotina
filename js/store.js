@@ -3,6 +3,8 @@
 /* Canal de teste (site …/teste/): dados guardados à parte, para nunca misturar com os reais */
 const CANAL_ENXUTO = typeof window !== 'undefined' && window.APP_CHANNEL === 'enxuto';   // cópia enxuta (calendário + gravar)
 const CANAL_TESTE = typeof window !== 'undefined' && (window.APP_CHANNEL === 'teste' || CANAL_ENXUTO);
+/* Modo enxuto (calendário + gravar): na cópia enxuta e no FlowFire de teste. Ao aprovar, vale para o app oficial. */
+const MODO_ENXUTO = CANAL_TESTE;
 const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_ENXUTO ? ':enxuto' : CANAL_TESTE ? ':teste' : '');
 
 /* Indicadores lançados por dia. As chaves são fixas (dados guardados); os nomes podem ser trocados em

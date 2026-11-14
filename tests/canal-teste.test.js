@@ -21,6 +21,9 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   await p.evaluate(() => location.hash = '#config'); await p.waitForTimeout(300);
   check((await p.textContent('#cfg-drive')).includes('site de teste') && await p.locator('[data-act=driveConnect]').count() === 0, 'Google Drive desligado no teste');
   check(await p.locator('#bottom-nav a').count() === 4, 'teste: barra de baixo sem o botão Menu');
+  await p.evaluate(() => location.hash = '#dashboard'); await p.waitForTimeout(300);
+  check(await p.locator('#bottom-nav .bn-rec').count() === 1 && await p.locator('.gv-rec-big').count() === 1, 'teste: versão enxuta (calendário + botão Gravar)');
+  check(await p.evaluate(() => Fire.supported() && !NAV_GROUPS.flat(2).includes('jornada')), 'teste: conta FlowFire disponível e sem o jogo no menu');
   // 3) Volta ao oficial: dados intactos
   await p.goto('http://localhost:8765/dist/gestao-rotina.html'); await p.waitForTimeout(500);
   check(await p.evaluate(() => S.tasks.some(t => t.title === 'Tarefa REAL') && !S.tasks.some(t => t.title === 'Tarefa de TESTE')), 'oficial continua com os dados reais');

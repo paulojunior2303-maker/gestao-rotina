@@ -151,7 +151,7 @@ Views.guia = {
   renderEnxuto() {
     const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${open ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
-    return `<div class="card guide-hero"><div><h2>FlowFire Enxuto</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
+    return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
     ${sec('gravar', 'mic', 'Gravar uma reunião ou feedback', li([
       'Toque em <strong>Gravar</strong> (no meio da barra de baixo, ou no botão grande do Calendário). Começa na hora: não precisa criar a reunião antes.',
       'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
@@ -172,11 +172,11 @@ Views.guia = {
     ${sec('calendario', 'calendar', 'Calendário', li([
       'O mês inteiro na tela inicial. Toque num dia para ver o que tem nele: gravações, reuniões, compromissos e prazos.',
       'O <strong>+</strong> adiciona tarefa, compromisso ou atividade no dia escolhido.',
-      'Esta versão de teste guarda os dados só neste aparelho, separados do FlowFire.',
+      CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para os dados irem para a nuvem. O áudio e a transcrição completa ficam no aparelho.',
     ]))}`;
   },
   render() {
-    if (CANAL_ENXUTO) return this.renderEnxuto();
+    if (MODO_ENXUTO) return this.renderEnxuto();
     const want = App.ui.guideSec;
     const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${(want ? want === id : open) ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;

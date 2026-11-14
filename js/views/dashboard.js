@@ -24,7 +24,7 @@ Views.dashboard = {
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>`;
   },
   render() {
-    if (CANAL_ENXUTO) return this.renderEnxuto();
+    if (MODO_ENXUTO) return this.renderEnxuto();
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
     const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -138,4 +138,4 @@ Views.dashboard = {
     </section>`;
   },
 };
-if (CANAL_ENXUTO) Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });
+if (MODO_ENXUTO) Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });

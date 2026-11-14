@@ -4,7 +4,7 @@
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 /* Cópia enxuta: só calendário, gravações, tarefas e agenda (+ ajustes) */
 const ENXUTO_ROUTES = ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos', 'config', 'guia'];
-const NAV_GROUPS = CANAL_ENXUTO ? [
+const NAV_GROUPS = MODO_ENXUTO ? [
   ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos']],
   ['Ajustes', ['config', 'guia']],
 ] : [
@@ -14,9 +14,9 @@ const NAV_GROUPS = CANAL_ENXUTO ? [
   ['Ajustes', ['config', 'guia']],
 ];
 /* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
-const BOTTOM = CANAL_ENXUTO ? ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'] : ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
+const BOTTOM = MODO_ENXUTO ? ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'] : ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
-  if (CANAL_ENXUTO) return ENXUTO_ROUTES.includes(id);
+  if (MODO_ENXUTO) return ENXUTO_ROUTES.includes(id);
   if (id === 'gravacoes') return false;   // por enquanto só na cópia enxuta
   const st = (S && S.settings) || {};
   return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : id === 'equipe' ? (typeof Fire === 'undefined' || Fire.supported()) : true;
@@ -118,12 +118,12 @@ const App = {
   async init() {
     if (CANAL_TESTE) {   // marca visível: é a versão de teste
       document.body.classList.add('canal-teste');
-      if (CANAL_ENXUTO) document.body.classList.add('canal-enxuto');
+      if (MODO_ENXUTO) document.body.classList.add('canal-enxuto');
       document.querySelector('.topbar').insertAdjacentHTML('afterbegin', `<span class="teste-tag" title="Versão de teste: dados separados do app oficial">${CANAL_ENXUTO ? 'ENXUTO' : 'TESTE'}</span>`);
     }
     if (Native.available()) { await Native.restore(); Native.init(); document.body.classList.add('native'); }
     Store.load();
-    if (CANAL_ENXUTO) { S.settings.jogo = false; S.settings.showIndicadores = false; S.settings.showProjetos = false; S.meta = { ...(S.meta || {}), tutorialSeen: true }; }
+    if (MODO_ENXUTO) { S.settings.jogo = false; S.settings.showIndicadores = false; S.settings.showProjetos = false; S.meta = { ...(S.meta || {}), tutorialSeen: true }; }
     Theme.init();
     if (Cloud.available()) {
       document.getElementById('view').innerHTML = '<div class="loading"><span class="spinner"></span> Carregando seus dados…</div>';
