@@ -1,5 +1,6 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+require('./completo');
 const useRoutine12 = require('./rotina-exemplo');
 const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('ok -', m); };
 (async () => {

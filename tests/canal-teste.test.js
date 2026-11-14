@@ -7,9 +7,11 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   // 1) Oficial com uma tarefa
   await p.goto('http://localhost:8765/dist/gestao-rotina.html'); await p.waitForTimeout(500);
-  await p.locator('[data-tour=skip]').tap(); await p.waitForTimeout(300);
+  if (await p.locator('[data-tour=skip]').count()) { await p.locator('[data-tour=skip]').tap(); await p.waitForTimeout(300); }
   await p.evaluate(() => { S.tasks.push({ id: 'real1', title: 'Tarefa REAL', status: 'pendente', priority: 'media', category: 'administrativo', createdAt: new Date().toISOString() }); commit(); });
   check(await p.locator('.teste-tag').count() === 0, 'oficial: sem a marca TESTE');
+  check(await p.locator('#bottom-nav .bn-rec').count() === 1 && await p.locator('.gv-rec-big').count() === 1, 'oficial: versão enxuta (calendário do mês + botão Gravar)');
+  check(await p.evaluate(() => Fire.supported() && Drive.supported() && !NAV_GROUPS.flat(2).includes('jornada')), 'oficial: conta FlowFire e Google Drive disponíveis, sem o jogo');
   // 2) Teste no mesmo navegador (mesmo endereço do site)
   await p.goto('http://localhost:8765/dist/gestao-rotina-teste.html'); await p.waitForTimeout(500);
   check(await p.locator('.teste-tag').count() === 1 && (await p.title()).includes('TESTE'), 'teste: marca TESTE no topo e no título');

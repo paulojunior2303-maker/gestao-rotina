@@ -1,6 +1,7 @@
 // Tutorial do primeiro acesso + Guia de uso, no Redmi Note 12 simulado (app Android)
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+require('./completo');
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 (async () => {
   const b = await chromium.launch();

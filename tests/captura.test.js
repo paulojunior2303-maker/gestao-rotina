@@ -1,6 +1,7 @@
 // Anotação rápida (botão +): leitura do texto, imprevisto que empurra o dia, tarefa e atividade
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+require('./completo');
 const useRoutine12 = require('./rotina-exemplo');
 const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('ok -', m); };
 (async () => {

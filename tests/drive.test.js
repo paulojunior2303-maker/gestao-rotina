@@ -2,6 +2,7 @@
 // O Google é simulado: um "Drive falso" em memória atende às mesmas chamadas da API real.
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
+require('./completo');
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 
 // ---------- Drive falso ----------

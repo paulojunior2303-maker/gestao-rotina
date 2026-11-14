@@ -30,7 +30,7 @@ e diga o que mudou e como testar no celular.
   A "régua do dia" (`H.dayRail`, em `js/ui.js`) é o elemento de assinatura: Dashboard e Agenda. `tests/theme.test.js` verifica o contraste.
 - **Projetos e Indicadores ficam ocultos** por padrão (`settings.showProjetos` / `settings.showIndicadores`, chaves em Configurações → Aparência; `routeVisible` em `app.js`).
   Projetos oculto também tira os prazos de projeto do calendário e o card do Dashboard. Indicadores oculto esconde Metas e o card de metas.
-- **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Início, Agenda, Tarefas, Imprevistos), **sem** botão Menu.
+- **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, Gravar, Tarefas, Agenda no modo enxuto), **sem** botão Menu.
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Início e Agenda usam `quickAdd`
   (lista: atividade, intervalo, tarefa, reunião, feedback, imprevisto, compromisso, no dia escolhido). Os botões "Novo…" das telas foram trocados pelo +.
 - **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo
@@ -47,9 +47,10 @@ e diga o que mudou e como testar no celular.
   - `js/views/semana.js` (`Semana`, `#semana`): revisão da semana calculada dos dados; convite no último dia útil depois das 14h.
   - `UI.form`: campos com `more: true` ficam em "Mais opções" (`moreOpen`). Menu em grupos Dia a dia / Equipe / Planejamento / Ajustes.
   - Testes: `tests/novidades.test.js` (relógio simulado numa quarta 10:02).
-- **Modo enxuto no FlowFire de teste** (pedido do usuário: "se rodar lisinho, vai para o app principal"): `MODO_ENXUTO` (`js/store.js`) = `CANAL_TESTE`,
-  ou seja, o site de teste e a cópia enxuta usam as telas enxutas e o gravador. No teste a conta FlowFire continua ligada (canal `teste`; gravações em `gv-AAAA-MM`).
-  **Ao aprovar para o oficial**: levar o ramo `teste` para o `main` e trocar para `const MODO_ENXUTO = true;` (e ajustar os testes do app completo que dependem das telas retiradas).
+- **Modo enxuto = app oficial** (aprovado pelo usuário): `MODO_ENXUTO` (`js/store.js`) vale para todo o app. Telas: Calendário do mês (Início), Gravações,
+  Tarefas, Agenda e Imprevistos (+ Configurações e Guia); botão **Gravar** no meio da barra de baixo; sem jogo, indicadores, projetos, equipe, pessoas,
+  checklists e revisão da semana (o código continua no app, só fica escondido). Conta FlowFire e Google Drive continuam no oficial.
+  `window.APP_COMPLETO = true` liga as telas antigas: **só os testes do app completo** usam isso, via `tests/completo.js`.
 - **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`
   (`APP_CHANNEL = 'enxuto'` → `CANAL_ENXUTO`, também `CANAL_TESTE`; LocalStorage `…:enxuto`; sem Drive e sem conta FlowFire por enquanto). Publicar: `bash tools/publicar-enxuto.sh "msg"`
   (grava `enxuto/index.html` no `main`; o `pages.yml` copia a pasta). Só telas `ENXUTO_ROUTES` (`app.js`); Início = calendário do mês (`Views.dashboard.renderEnxuto`);
