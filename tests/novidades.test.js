@@ -160,6 +160,37 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(await p.locator(`${M} [name=repeat]`).count() === 1, 'campo "Repetir" no formulário da tarefa');
   await p.keyboard.press('Escape'); await W();
 
+  console.log('\n[5] Pessoas');
+  await p.evaluate(() => {
+    S.tasks.push({ id: 'tk-c1', title: 'Trocar fonte da câmera 12', status: 'pendente', priority: 'alta', category: 'operacional', responsible: 'Carlos Souza', dueDate: '2026-11-10', createdAt: new Date().toISOString() });
+    S.tasks.push({ id: 'tk-c2', title: 'Etiquetar cabos do rack', status: 'pendente', priority: 'media', category: 'operacional', responsible: 'Carlos Souza', dueDate: '2026-11-14', createdAt: new Date().toISOString() });
+    S.feedbacks = [{ id: 'fb1', pessoa: 'João', date: '2026-11-01', createdAt: new Date().toISOString(), resumo: 'Bom trabalho', tom: 'positivo' }];
+    commit();
+  });
+  await go('pessoas');
+  check(await p.locator('.ps-card').count() === 2, 'uma ficha para cada pessoa da equipe');
+  check((await p.locator('.ps-card').first().textContent()).includes('Carlos Souza'), 'quem tem atraso aparece primeiro');
+  check((await p.locator('.ps-card', { hasText: 'Carlos' }).textContent()).includes('1 atrasada') && (await p.locator('.ps-card', { hasText: 'Carlos' }).textContent()).includes('Nunca teve feedback'), 'mostra pendências, atrasos e feedback');
+  check((await p.locator('.ps-card', { hasText: 'João' }).textContent()).includes('há 10 dias'), 'dias desde o último feedback');
+  check((await p.textContent('.view')).includes('1 pessoa está há mais de 30 dias sem feedback'), 'avisa quem está sem feedback');
+  await shot('5-pessoas'); await fits('Pessoas');
+  await p.locator('.ps-card', { hasText: 'Carlos' }).tap(); await W();
+  check(await p.locator('.ps-head h2', { hasText: 'Carlos Souza' }).count() === 1, 'abre a ficha da pessoa');
+  const msg = await p.textContent('.ps-msg');
+  check(msg.includes('Oi, Carlos!') && msg.includes('Trocar fonte da câmera 12 (prazo 10/11, atrasada)') && msg.includes('Etiquetar cabos do rack (prazo 14/11)'), 'mensagem de cobrança pronta com prazos');
+  check((await p.getAttribute('[data-wa]', 'href')).startsWith('https://wa.me/?text=Oi'), 'botão do WhatsApp com a mensagem');
+  await p.locator('#ps-phone').fill('(11) 98765-4321'); await p.locator('#ps-phone').blur(); await W();
+  check((await p.getAttribute('[data-wa]', 'href')).startsWith('https://wa.me/5511987654321?text='), 'com o número, vai direto para a conversa da pessoa');
+  await shot('5-ficha'); await fits('Ficha');
+  check(await p.getAttribute('#fab', 'data-act') === 'pTask', 'na ficha, o + passa uma tarefa para a pessoa');
+  await tap('#fab');
+  check(await p.inputValue(`${M} [name=responsible]`) === 'Carlos Souza', 'tarefa já com a pessoa como responsável');
+  await p.keyboard.press('Escape'); await W();
+  await p.locator('.hj-li', { hasText: 'Trocar fonte' }).locator('[data-act=tkSet]').tap(); await W();
+  check(await p.locator('.hj-li', { hasText: 'Trocar fonte' }).count() === 0, '✓ na ficha conclui a tarefa');
+  await go('dashboard'); await go('pessoas');
+  check(await p.locator('.ps-card').count() === 2, 'sair e voltar abre a lista (não a última ficha)');
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

@@ -1181,7 +1181,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .hj-li .icon-btn { flex: none; }
 .hj-top { background: color-mix(in srgb, var(--accent) 9%, transparent); border-radius: 10px; padding-left: 8px; }
 .hj-star { color: var(--accent); display: inline-flex; }
-@media (max-width: 600px) { .hj-li { flex-wrap: wrap; } .hj-li .li-side { order: 3; width: 100%; padding-left: 2px; } .hj-li .li-main { flex-basis: calc(100% - 50px); } }
+@media (max-width: 600px) { .hj-li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; row-gap: 3px; } .hj-li .li-main { grid-column: 1; grid-row: 1; } .hj-li .li-side { grid-column: 1; grid-row: 2; justify-content: flex-start; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .hj-li > .icon-btn { grid-column: 2; grid-row: 1 / span 2; align-self: center; } }
 
 /* Reorganizar meu dia (prévia) */
 .rp { display: flex; flex-direction: column; gap: 10px; }
@@ -1233,3 +1233,17 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .rt-stats span { font-size: 12px; color: var(--muted); }
 .tk-rep { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--accent); font-weight: 560; }
 .cap-prev .link { margin-left: auto; flex: none; }
+
+/* Pessoas */
+.ps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.ps-card { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; cursor: pointer; font: inherit; color: var(--text); padding: 12px 14px; }
+.ps-card > .ic { color: var(--muted); flex: none; }
+.ps-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ps-main strong { font-size: 15px; }
+.ps-main small { font-size: 12.5px; }
+.ps-av { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-d); font-weight: 700; font-size: 14px; background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); color: var(--text); }
+.ps-av.lg { width: 52px; height: 52px; font-size: 18px; }
+.ps-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.ps-head h2 { font-size: 21px; }
+.ps-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+.ps-msg { white-space: pre-wrap; font: inherit; font-size: 13.5px; margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }

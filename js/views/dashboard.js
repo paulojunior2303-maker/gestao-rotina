@@ -92,7 +92,7 @@ Views.dashboard = {
 
     <section class="${showProj ? 'grid-2' : 'grid-1'}">
       <div class="card">
-        <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3></div>
+        <div class="card-h"><h3>${U.icon('user')} O que cobrar da equipe</h3><a class="link" href="#pessoas">Pessoas</a></div>
         ${charge.length ? `<ul class="list">${charge.map(c => `<li class="li li-stack"><div class="li-top"><strong>${U.esc(c.who)}</strong><small class="muted">${U.esc(c.kind)}</small>${H.deadline(c.info)}</div><div class="li-txt">${U.esc(c.what)}${H.demo(c)}</div></li>`).join('')}</ul>`
           : H.empty('Nada delegado em aberto. Defina um responsável em tarefas, imprevistos ou projetos para acompanhar aqui.')}
       </div>
