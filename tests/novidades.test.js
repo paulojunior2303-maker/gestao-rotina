@@ -90,6 +90,48 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(ob.end < ob0.end && ob.status === 'concluida', `horário reservado encolhe até agora (${ob0.end} → ${ob.end})`);
   check(await p.locator('.toast .link', { hasText: 'Adiantar a agenda' }).count() === 1, 'oferece adiantar a agenda');
 
+  console.log('\n[3] Abrir e fechar o dia');
+  await p.evaluate(() => {
+    D.ensureDay('2026-11-10').forEach(b => { b.status = b.title === 'Alinhamento da equipe' ? 'pendente' : 'concluida'; });
+    S.tasks.push({ id: 'tk-atras', title: 'Orçamento atrasado', status: 'pendente', priority: 'alta', category: 'administrativo', dueDate: '2026-11-09', createdAt: new Date().toISOString() });
+    S.tasks.push({ id: 'tk-sug', title: 'Revisar escala de plantão', status: 'pendente', priority: 'media', category: 'equipe', dueDate: '', createdAt: new Date().toISOString() });
+    commit();
+  });
+  await go('tarefas'); await go('dashboard');
+  check(await p.locator('.rt-banner[data-act=ritualAbrir]').count() === 1, 'de manhã aparece "Abrir o dia" no Início');
+  await tap('.rt-banner');
+  check(await p.locator(`${M} .rt-li`).count() === 2, 'mostra o que ficou do último dia útil (agenda e tarefa atrasada)');
+  await shot('3-abrir'); await fits('Abrir o dia');
+  await p.locator(`${M} .rt-li`, { hasText: 'Alinhamento da equipe' }).locator('[data-a=hoje]').tap(); await W();
+  await p.locator(`${M} .rt-li`, { hasText: 'Orçamento atrasado' }).locator('input[type=date]').fill('2026-11-13'); await W();
+  s = await st();
+  check(s.days[today].some(x => x.title === 'Alinhamento da equipe' && (x.notes || '').includes('Remanejada')) && !s.days['2026-11-10'].some(x => x.title === 'Alinhamento da equipe'), '"Hoje" traz a atividade de ontem para hoje');
+  check(s.tasks.find(x => x.id === 'tk-atras').dueDate === '2026-11-13', '"Outro dia" muda o prazo da tarefa');
+  await p.locator(`${M} #rt-new`).fill('Ligar para o cliente do bloco C'); await p.keyboard.press('Enter'); await W();
+  await p.locator(`${M} [data-top]`, { hasText: 'Revisar escala de plantão' }).tap(); await W();
+  s = await st();
+  check(s.tasks.filter(x => x.top === today).length === 2, 'duas prioridades marcadas (uma nova e uma escolhida)');
+  await tap(`${M} [data-go]`);
+  s = await st();
+  check(s.diario && s.diario[today] && s.diario[today].abertoEm, 'dia aberto fica registrado');
+  check(await p.locator('.rt-banner').count() === 0, 'o convite some depois de abrir o dia');
+  check((await p.locator('.hj-li').first().textContent()).includes('Prioridade do dia'), 'prioridades no topo de "Para resolver hoje"');
+  // fim do expediente
+  await p.clock.fastForward('07:00:00'); await go('tarefas'); await go('dashboard');
+  check(await p.locator('.rt-banner[data-act=ritualFechar]').count() === 1, 'no fim do expediente aparece "Fechar o dia"');
+  await tap('.rt-banner');
+  check(await p.locator(`${M} .rt-stats`).count() === 1 && await p.locator(`${M} .rt-li`).count() >= 2, 'resumo do dia e o que não deu tempo');
+  await p.locator(`${M} .rt-li`, { hasText: 'Revisar escala de plantão' }).locator('[data-a=feito]').tap(); await W();
+  await p.locator(`${M} #rt-nota`).fill('Dia puxado no cliente X');
+  await shot('3-fechar'); await fits('Fechar o dia');
+  await tap(`${M} [data-all]`);
+  await tap(`${M} [data-go]`);
+  s = await st();
+  check(s.tasks.find(x => x.id === 'tk-sug').status === 'concluida', '"✓ Feito" conclui');
+  check(s.tasks.find(x => x.title === 'Ligar para o cliente do bloco C').dueDate === '2026-11-12', '"Tudo para 12/11" leva as tarefas para o próximo dia útil');
+  check(!s.days[today].some(x => !['concluida', 'cancelada'].includes(x.status) && x.category !== 'intervalo'), 'nada da agenda de hoje fica pendurado');
+  check(s.diario[today].fechadoEm && s.diario[today].nota === 'Dia puxado no cliente X', 'dia fechado com a nota');
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

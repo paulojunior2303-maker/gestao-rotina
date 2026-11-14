@@ -30,7 +30,7 @@ const Fire = {
   /* ---------- Documentos ---------- */
   split(s) {
     const parts = {
-      core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly, missoes: s.missoes || [], equipes: s.equipes || [] },
+      core: { version: s.version, meta: s.meta || {}, settings: s.settings, routine: s.routine, weekly: s.weekly, monthly: s.monthly, missoes: s.missoes || [], equipes: s.equipes || [], diario: s.diario || {} },
       tasks: { items: s.tasks || [] }, projects: { items: s.projects || [] }, occurrences: { items: s.occurrences || [] },
     };
     const mes = (pre, k, put) => { const id = pre + '-' + String(k || '0000-00').slice(0, 7); put(parts[id] = parts[id] || (pre === 'days' ? { days: {} } : { items: [] })); };
@@ -44,7 +44,7 @@ const Fire = {
   },
   join(docs) {
     const core = docs.core || {};
-    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], equipes: core.equipes || [],
+    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], equipes: core.equipes || [], diario: core.diario || {},
       tasks: (docs.tasks || {}).items || [], projects: (docs.projects || {}).items || [], occurrences: (docs.occurrences || {}).items || [],
       days: {}, indicators: [], events: [], feedbacks: [] };
     for (const [id, d] of Object.entries(docs)) {

@@ -97,6 +97,7 @@ const Store = {
       indicators: [],
       feedbacks: [],   // feedbacks individuais da equipe (tela Feedbacks)
       equipes: [],     // equipes de que a pessoa participa ({ id, nome, papel: gestor|membro }) — Conta FlowFire
+      diario: {},      // por dia: { abertoEm, fechadoEm, nota } (Abrir/Fechar o dia)
       missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
       meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };

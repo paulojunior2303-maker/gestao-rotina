@@ -75,6 +75,7 @@ Views.dashboard = {
       </div>
     </section>
 
+    ${Ritual.bannerHtml()}
     ${Agora.card()}
 
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
