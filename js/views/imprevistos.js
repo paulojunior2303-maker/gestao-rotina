@@ -55,20 +55,21 @@ const Occ = {
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime(), ...defaults };
     const fields = [
       { name: 'title', label: 'Título', required: true, value: o.title },
-      { name: 'description', label: 'Descrição', type: 'textarea', value: o.description },
+      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou alguém da equipe', half: true },
       { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: o.priority, half: true },
-      { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: o.status, half: true },
-      { name: 'date', label: 'Data da ocorrência', type: 'date', required: true, value: o.date, half: true },
-      { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
-      { name: 'dueDate', label: 'Prazo', type: 'date', value: o.dueDate, half: true },
-      { name: 'dueTime', label: 'Horário limite', type: 'time', value: o.dueTime, half: true },
-      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou alguém da equipe' },
-      { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: o.notes },
+      { name: 'description', label: 'Descrição', type: 'textarea', value: o.description, more: true },
+      { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: o.status, half: true, more: true },
+      { name: 'date', label: 'Data da ocorrência', type: 'date', required: true, value: o.date, half: true, more: true },
+      { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true, more: true },
+      { name: 'dueDate', label: 'Prazo', type: 'date', value: o.dueDate, half: true, more: true },
+      { name: 'dueTime', label: 'Horário limite', type: 'time', value: o.dueTime, half: true, more: true },
+      { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: o.notes, more: true },
     ];
     if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda após salvar', type: 'checkbox', value: scheduleAfter });
     UI.form({
       title: isNew ? 'Registrar imprevisto' : 'Editar imprevisto',
       fields,
+      moreOpen: !isNew && !!(o.description || o.notes || o.dueDate),
       onSubmit(v) {
         const { schedule, ...data } = v;
         let target = o;

@@ -78,10 +78,14 @@ const UI = (() => {
   }
 
   /* Formulário genérico. onSubmit(values) pode retornar uma string de erro para manter o modal aberto. */
-  function form({ title, fields, submitLabel = 'Salvar', onSubmit, validate, wide, extra = [], onChange, onClose, canClose }) {
+  function form({ title, fields, submitLabel = 'Salvar', onSubmit, validate, wide, extra = [], onChange, onClose, canClose, moreOpen = false }) {
+    // Campos com "more: true" ficam recolhidos em "Mais opções" (formulário curto por padrão)
+    const main = fields.filter(f => !f.more), more = fields.filter(f => f.more);
+    const moreHtml = more.length ? `<div class="field full more-tg-wrap"><button type="button" class="link more-tg" data-more-tg aria-expanded="${moreOpen}">${U.icon(moreOpen ? 'up' : 'down', 14)} ${moreOpen ? 'Menos opções' : 'Mais opções'}</button></div>
+      <div class="form-grid more-box full" ${moreOpen ? '' : 'hidden'}>${more.map(fieldHtml).join('')}</div>` : '';
     const m = modal({
       title, wide, onClose, canClose,
-      body: `<form class="form-grid" novalidate>${fields.map(fieldHtml).join('')}<div class="form-error full" hidden></div><button type="submit" hidden></button></form>`,
+      body: `<form class="form-grid" novalidate>${main.map(fieldHtml).join('')}${moreHtml}<div class="form-error full" hidden></div><button type="submit" hidden></button></form>`,
       footer: `${extra.map((b, i) => `<button type="button" class="btn ${b.cls || 'ghost'}" data-extra="${i}">${b.label}</button>`).join('')}<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-submit>${submitLabel}</button>`,
     });
     const f = m.el.querySelector('form');
@@ -104,6 +108,12 @@ const UI = (() => {
       m.close();
     };
     f.addEventListener('submit', e => { e.preventDefault(); submit(); });
+    const tg = f.querySelector('[data-more-tg]');
+    if (tg) tg.addEventListener('click', () => {
+      const box = f.querySelector('.more-box'), open = box.hidden;
+      box.hidden = !open; tg.setAttribute('aria-expanded', open);
+      tg.innerHTML = `${U.icon(open ? 'up' : 'down', 14)} ${open ? 'Menos opções' : 'Mais opções'}`;
+    });
     m.el.querySelector('[data-submit]').addEventListener('click', submit);
     m.el.querySelector('[data-cancel]').addEventListener('click', () => m.tryClose());
     m.el.querySelectorAll('[data-extra]').forEach(b => b.addEventListener('click', () => extra[Number(b.dataset.extra)].onClick(readForm(f, fields), m)));

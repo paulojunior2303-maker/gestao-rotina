@@ -103,7 +103,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   // ---- Tarefas
   await go('tarefas');
   await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);
-  await fill('title', 'Cobrar relatório do técnico'); await fill('startDate', '2026-11-01'); await fill('dueDate', '2026-11-05');
+  await fill('title', 'Cobrar relatório do técnico'); await p.click('.modal-wrap.open [data-more-tg]'); await fill('startDate', '2026-11-01'); await fill('dueDate', '2026-11-05');
   await p.selectOption('.modal-wrap.open [name=priority]', 'alta'); await submit();
   assert(await p.locator('.task .dl-late').count() === 1, 'tarefa vencida exibe alerta Atrasada');
   await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);

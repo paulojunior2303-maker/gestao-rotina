@@ -250,6 +250,20 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check((await p.textContent('.sm-nav')).includes('02/11 a 08/11'), 'dá para ver a semana anterior');
   check(await p.locator('#nav a[href="#semana"]').count() === 1 && await p.locator('#nav a[href="#pessoas"]').count() === 1 && await p.locator('#nav a[href="#checklists"]').count() === 1, 'menu com Pessoas, Checklists e Revisão da semana');
 
+  console.log('\n[8] Formulários mais curtos');
+  await go('tarefas'); await tap('#fab');
+  const vis = async n => p.locator(`${M} [name=${n}]`).isVisible();
+  check(await vis('title') && await vis('dueDate') && await vis('responsible') && await vis('repeat'), 'tarefa nova: só o essencial à vista');
+  check(!(await vis('description')) && !(await vis('category')) && !(await vis('startDate')), 'descrição, categoria e data de início ficam em "Mais opções"');
+  await shot('8-form-curto'); await fits('Formulário de tarefa');
+  await tap(`${M} [data-more-tg]`);
+  check(await vis('description') && await vis('category'), '"Mais opções" mostra o resto');
+  await p.locator(`${M} [name=title]`).fill('Tarefa com descrição'); await p.locator(`${M} [name=description]`).fill('Detalhe importante');
+  await tap(`${M} [data-submit]`);
+  await p.locator('.task', { hasText: 'Tarefa com descrição' }).locator('.tk-body').tap(); await W();
+  check(await vis('description'), 'ao editar algo com descrição, "Mais opções" já vem aberto');
+  await p.keyboard.press('Escape'); await W();
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

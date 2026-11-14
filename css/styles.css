@@ -1287,3 +1287,7 @@ button.ck-card { cursor: pointer; }
 .sm-n small { font-size: 11.5px; color: var(--muted); }
 .sm-n.warn strong { color: var(--yellow-text); }
 .sm-n.bad strong { color: var(--red-text); }
+.more-tg-wrap { margin: -2px 0 -4px; }
+.more-tg { display: inline-flex; align-items: center; gap: 5px; }
+.more-box[hidden] { display: none; }
+.more-box { margin: 0; grid-column: 1 / -1; }
