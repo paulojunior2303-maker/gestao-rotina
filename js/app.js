@@ -57,7 +57,7 @@ const App = {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''} ${MODO_ENXUTO && BOTTOM.includes(id) ? 'in-bottom' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);

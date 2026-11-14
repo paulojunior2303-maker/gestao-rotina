@@ -139,6 +139,40 @@ ${notes.trim() ? `Anotações da liderança:\n"""\n${notes.trim()}\n"""` : ''}` 
     return { resumo: this.tidy(String(r.resumo || '')), acordos: (r.acordos || []).map(s => String(s).trim()).filter(Boolean) };
   },
 
+  /* Relatório do dia (gravado por voz no fim do dia): texto pronto + itens para a agenda.
+     contexto = o que o app já sabe do dia (agenda, tarefas concluídas, imprevistos), só para completar o relatório. */
+  RELATORIO_TIPOS: ['tarefa', 'imprevisto', 'compromisso', 'agenda'],
+  async relatorio({ date, transcript, notes = '', contexto = '', equipe = [] }) {
+    const amanha = D.nextWorkday(date);
+    const system = this.system(`Tarefa: /relatorio. Escreva o RELATÓRIO DIÁRIO de atividades da liderança a partir do relato falado (transcrição) do fim do dia.
+Data do relatório: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
+Use só o que foi dito e o que estiver no contexto do app. Não invente atividades, números, nomes ou horários.
+Responda em JSON com:
+- "relatorio": o relatório pronto para enviar, com quebras de linha (\n): cabeçalho (Relatório diário, data, responsável se dito), "Atividades realizadas" (um tópico "• " por atividade, com o resultado quando dito), "Imprevistos e ocorrências" (se houver), "Pendências" (se houver) e "Planejamento para o próximo dia" (se houver). Seções sem conteúdo ficam de fora.
+- "itens": cada coisa concreta citada que deve ir para o app, um por item, com:
+  - "tipo": "tarefa" (algo a fazer, com ou sem prazo), "imprevisto" (problema ou ocorrência inesperada), "compromisso" (horário marcado com alguém: visita, reunião, entrega, consulta) ou "agenda" (bloco de trabalho próprio com horário definido no dia);
+  - "titulo": curto e claro, no infinitivo para o que vai ser feito (ex.: "Trocar a fonte da câmera 12");
+  - "data": AAAA-MM-DD resolvendo "hoje", "amanhã", dias da semana etc. a partir da data do relatório; vazio se não foi dita;
+  - "hora": HH:MM se foi dita; senão vazio;
+  - "duracao": minutos, se foi dita; senão 0;
+  - "responsavel": nome da pessoa da equipe que vai fazer, se foi dito (equipe: ${equipe.join(', ') || 'não cadastrada'}); senão vazio;
+  - "situacao": "feito" (já aconteceu/foi concluído hoje), "pendente" (ficou por fazer) ou "futuro" (planejado para depois).`);
+    const r = await this.call({ system, timeout: 120000, parts: [{ text: `${contexto ? `Contexto do app (o que já está registrado hoje):\n${contexto}\n\n` : ''}Relato falado (transcrição automática, pode ter erros):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações:\n"""\n${notes.trim()}\n"""` : ''}` }],
+      schema: { type: 'OBJECT', required: ['relatorio', 'itens'], properties: {
+        relatorio: { type: 'STRING' },
+        itens: { type: 'ARRAY', items: { type: 'OBJECT', required: ['tipo', 'titulo', 'situacao'], properties: {
+          tipo: { type: 'STRING', enum: this.RELATORIO_TIPOS }, titulo: { type: 'STRING' }, data: { type: 'STRING' }, hora: { type: 'STRING' },
+          duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
+      } } });
+    const ok = (re, v) => re.test(String(v || '')) ? String(v) : '';
+    const itens = (r.itens || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
+      id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
+      data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
+      responsavel: String(i.responsavel || '').trim(), situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
+    }));
+    return { relatorio: this.tidy(String(r.relatorio || '')), itens };
+  },
+
   /* Comandos rápidos do agente sobre um texto pronto */
   REWRITE: { natural: '/natural — Deixe o texto mais natural, fluido e menos formal, mantendo o profissionalismo.', compact: '/compact — Reduza o conteúdo ao essencial, preservando as informações importantes.', detalhado: '/detalhado — Aprofunde o conteúdo, mantendo todos os pontos relevantes da fonte.' },
   async rewrite(text, mode, source = '') {

@@ -6,11 +6,19 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
 (async () => {
   const b = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const ctx = await b.newContext({ viewport: { width: 393, height: 873 }, isMobile: true, hasTouch: true, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', permissions: ['microphone'] });
-  let tr = 0; const ia = { ata: 0, fb: 0 };
+  let tr = 0; const ia = { ata: 0, fb: 0 }; let amanha = '';
   await ctx.route('https://generativelanguage.googleapis.com/**', r => {
     const txt = JSON.stringify(r.request().postDataJSON());
     const ok = text => r.fulfill({ json: { candidates: [{ content: { parts: [{ text }] } }] } });
     if (txt.includes('Transcreva fielmente')) { tr++; return ok(`— Trecho ${tr}: falamos da escala do sábado e da compra de luvas.`); }
+    if (txt.includes('Tarefa: /relatorio')) { ia.rel = (ia.rel || 0) + 1; ia.relCtx = txt.includes('Contexto do app'); return ok(JSON.stringify({ relatorio: `RELATÓRIO DIÁRIO\nData: hoje\n\nAtividades realizadas:\n• Ajustei o NVR do cliente X.\n\nPlanejamento para o próximo dia:\n• Visita ao cliente Jardins às 9h.`, itens: [
+      { tipo: 'imprevisto', titulo: 'Câmera 4 do bloco B parou', situacao: 'feito' },
+      { tipo: 'tarefa', titulo: 'Ajustar o NVR do cliente X', situacao: 'feito' },
+      { tipo: 'tarefa', titulo: 'Trocar a fonte da câmera 12', data: amanha, responsavel: 'Carlos Souza', situacao: 'futuro' },
+      { tipo: 'compromisso', titulo: 'Visita ao cliente Jardins', data: amanha, hora: '09:00', situacao: 'futuro' },
+      { tipo: 'agenda', titulo: 'Revisar o orçamento', data: amanha, hora: '14:00', duracao: 60, situacao: 'futuro' },
+      { tipo: 'agenda', titulo: 'Organizar o almoxarifado', situacao: 'pendente' },
+    ] })); }
     if (txt.includes('Tarefa: /feedback')) { ia.fb++; return ok(JSON.stringify({ resumo: 'Carlos teve boa evolução nas entregas.\n\nAcordos:\n• Carlos revisa os conectores.', acordos: ['Carlos revisa os conectores do bloco B'] })); }
     if (txt.includes('Tarefa: /ata')) { ia.ata++; return ok(JSON.stringify({ tratados: [], combinados: ['Carlos monta a escala do sábado', 'Comprar luvas até quarta'], ata: 'ATA DE REUNIÃO\nData: 11/11/2026\n\n1. Escala do sábado\n• Carlos fica no dia 14.' })); }
     return ok('ok');
@@ -36,11 +44,13 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   console.log('\n[1] Telas enxutas');
   check(await p.locator('.teste-tag', { hasText: 'ENXUTO' }).count() === 1, 'marca ENXUTO no topo (dados separados)');
   check(await p.locator('.cal-home .calx-month').count() === 1 || await p.locator('.cal-home .calx-grid .calx-d').count() >= 28, 'Início é o calendário do mês inteiro');
-  check(await p.locator('.gv-rec-big').count() === 1, 'botão grande "Gravar reunião ou feedback"');
+  check(!(await p.locator('.gv-rec-big').isVisible()), 'no celular não há o botão grande repetido (o Gravar fica na barra de baixo)');
+  const lado = await p.$$eval('#nav a', as => as.filter(a => getComputedStyle(a).display !== 'none').map(a => a.getAttribute('href')));
+  check(lado.join(' ') === '#imprevistos #config #guia', `menu lateral sem repetir a barra de baixo: ${lado.join(' ')}`);
   check(await p.locator('#bottom-nav > *').count() === 5 && await p.locator('#bottom-nav .bn-rec').count() === 1, 'barra de baixo: Calendário, Gravações, Gravar, Tarefas, Agenda');
   const menu = await p.$$eval('#nav a', as => as.map(a => a.getAttribute('href')));
   check(!menu.some(h => /jornada|indicadores|projetos|equipe|checklists|pessoas|semana|reunioes/.test(h)) && menu.length === 7, `menu enxuto (${menu.length} telas): ${menu.join(' ')}`);
-  await go('jornada'); check(await p.locator('.gv-rec-big').count() === 1, 'telas retiradas voltam para o calendário');
+  await go('jornada'); check(await p.locator('.cal-home').count() === 1, 'telas retiradas voltam para o calendário');
   check(await p.locator('.jg-card').count() === 0, 'sem cartão do jogo');
   await p.screenshot({ path: OUT + '/enxuto-1-calendario.png' }); await fits('Calendário');
 
@@ -95,7 +105,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   console.log('\n[4] Sem internet: o áudio espera e transcreve quando volta');
   const tr0 = tr;
   await ctx.setOffline(true);
-  await go('dashboard'); await tap('.gv-rec-big');
+  await go('dashboard'); await tap('#bottom-nav .bn-rec');
   await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 2, 10000, 'gravando sem internet');
   await tap(`${M} [data-stop]`); await W(800);
   await p.locator(`${M} .btn`, { hasText: 'Descrever depois' }).tap(); await W(600);
@@ -110,7 +120,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(true, 'internet voltou: transcreveu e resumiu sozinho');
 
   console.log('\n[5] App fechou no meio da gravação');
-  await go('dashboard'); await tap('.gv-rec-big');
+  await go('dashboard'); await tap('#bottom-nav .bn-rec');
   await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 2, 10000, 'segunda parte começando');
   await W(1600);   // pedaços da parte em andamento já salvos
   const gid = await p.evaluate(() => Gravador.cur.g.id);
@@ -126,6 +136,40 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await tap('[data-act=gvDelAudio]'); await tap(`${M} [data-yes]`); await W(400);
   const g6 = await p.evaluate(() => S.gravacoes.find(x => x.id === App.ui.gvId));
   check(!g6.audio && await p.evaluate(id => AudioDB.all('partes', [id]).then(l => l.length), g6.id) === 0 && (await p.textContent('.view')).includes('O áudio foi apagado'), '"Apagar o áudio" tira só o áudio; transcrição e resumo ficam');
+
+  console.log('\n[7] Relatório do dia por voz');
+  amanha = await p.evaluate(() => D.nextWorkday(U.today()));
+  await p.evaluate(() => { App.ui.gvId = null; location.hash = '#gravacoes'; App.render(); }); await W(300);
+  await tap('.gv-rel-btn');
+  check(await p.locator(`${M} h2`, { hasText: 'relatório do dia' }).count() === 1 && await p.locator(`${M} .gv-guia`).count() === 1, 'botão "Gravar o relatório do dia" já grava, com a dica do que falar');
+  await p.screenshot({ path: OUT + '/enxuto-5-relatorio-gravando.png' });
+  await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 2, 10000, 'gravando o relatório');
+  await tap(`${M} [data-stop]`); await W(800);
+  check(await p.locator(`${M} h2`, { hasText: 'O que foi' }).count() === 0, 'relatório não pergunta o tipo no fim');
+  await espera(() => { const g = S.gravacoes.find(x => x.tipo === 'relatorio'); return g && g.status === 'pronta'; }, 20000, 'relatório pronto');
+  check(ia.rel === 1 && ia.relCtx, 'a IA recebe o relato e o que o app já sabe do dia');
+  await p.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
+  await tap('#bottom-nav a[href="#gravacoes"]');
+  await p.locator('.gv-card', { hasText: 'Relatório do dia' }).tap(); await W(400);
+  check((await p.textContent('.ata.pre')).includes('RELATÓRIO DIÁRIO') && await p.locator('a[href^="https://wa.me/?text=REL"]').count() === 1, 'relatório pronto para enviar pelo WhatsApp ou copiar');
+  check(await p.locator('.rl-it').count() === 6 && await p.locator('.rl-it input:checked').count() === 5, '6 itens identificados; o que já foi feito (menos imprevisto) fica desmarcado');
+  const alm = await p.locator('.rl-it', { hasText: 'Organizar o almoxarifado' }).textContent();
+  check(alm.includes('sem horário, vira tarefa') && alm.includes(amanha.slice(8, 10) + '/' + amanha.slice(5, 7)), 'item sem horário avisa que vira tarefa e mostra o dia para onde vai');
+  await p.screenshot({ path: OUT + '/enxuto-6-relatorio.png', fullPage: true }); await fits('Relatório');
+  await p.locator('.rl-it', { hasText: 'Visita ao cliente Jardins' }).locator('select').selectOption('compromisso'); await W(200);
+  await tap('[data-act=gvItApply]');
+  s = await st();
+  const tf = s.tasks.find(x => x.title === 'Trocar a fonte da câmera 12');
+  check(tf && tf.dueDate === amanha && tf.responsible === 'Carlos Souza' && tf.status === 'pendente', 'tarefa criada para amanhã, com o responsável');
+  check(s.events.some(e => e.title === 'Visita ao cliente Jardins' && e.date === amanha && e.time === '09:00'), 'compromisso no calendário de amanhã às 09:00');
+  check((s.days[amanha] || []).some(b => b.title === 'Revisar o orçamento' && b.start === '14:00' && b.end === '15:00'), 'bloco na agenda de amanhã (14:00–15:00)');
+  check(s.occurrences.some(o => o.title === 'Câmera 4 do bloco B parou' && o.status === 'concluida'), 'imprevisto do dia registrado como resolvido');
+  check(s.tasks.some(x => x.title === 'Organizar o almoxarifado' && x.dueDate === amanha), 'pendência sem horário vira tarefa para o próximo dia útil');
+  check(!s.tasks.some(x => x.title === 'Ajustar o NVR do cliente X'), 'o que já foi feito (desmarcado) fica só no relatório');
+  check(await p.locator('.rl-it.done').count() === 5 && await p.locator('[data-act=gvItApply]').count() === 0, 'itens marcados como anotados (não duplica)');
+  await go('dashboard');
+  await p.evaluate(() => { const s = Cal.st('home'); s.sel = U.today(); App.render(); });
+  check(await p.locator('.calx-day .calx-it', { hasText: 'Relatório do dia' }).count() === 1, 'o relatório aparece no calendário do dia');
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();

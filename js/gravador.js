@@ -59,11 +59,11 @@ const Gravador = {
   supported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) && !(typeof Cloud !== 'undefined' && Cloud.available()); },
   elapsed() { return this.cur ? Math.floor((Date.now() - this.cur.t0) / 1000) : 0; },
   fmt(s) { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h}:${U.pad(m)}:${U.pad(s % 60)}` : `${m}:${U.pad(s % 60)}`; },
-  nome(g) { return g.titulo || (g.tipo === 'feedback' ? `Feedback${g.pessoa ? ' com ' + g.pessoa : ''}` : g.tipo === 'reuniao' ? 'Reunião' : 'Gravação sem nome'); },
+  nome(g) { return g.tipo === 'relatorio' ? `Relatório do dia ${U.fmtShort(g.date)}` : g.titulo || (g.tipo === 'feedback' ? `Feedback${g.pessoa ? ' com ' + g.pessoa : ''}` : g.tipo === 'reuniao' ? 'Reunião' : 'Gravação sem nome'); },
   salvar() { Store.save(); if (typeof App !== 'undefined' && ['gravacoes', 'dashboard'].includes(App.route) && !document.querySelector('.modal-wrap input:focus, .modal-wrap textarea:focus')) App.render(); Gravador.paintBar(); },
 
   /* ---------- Gravar ---------- */
-  async start() {
+  async start({ tipo = '' } = {}) {
     if (this.cur) return this.tela();
     if (!this.supported()) return UI.toast('Este aparelho ou navegador não permite gravar áudio aqui.', 'error');
     let stream;
@@ -71,7 +71,7 @@ const Gravador = {
     catch (e) { return UI.toast('Sem acesso ao microfone. Permita o microfone para o app e tente de novo.', 'error'); }
     await AudioDB.open();
     const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-    const g = { id: U.uid(), at: new Date().toISOString(), date: U.today(), time: U.nowTime(), dur: 0, status: 'gravando', motivo: '', partes: [], tipo: '', titulo: '', pessoa: '', notas: '', resumo: '', combinados: [], ref: null, audio: true };
+    const g = { id: U.uid(), at: new Date().toISOString(), date: U.today(), time: U.nowTime(), dur: 0, status: 'gravando', motivo: '', partes: [], tipo, titulo: '', pessoa: '', notas: '', resumo: '', combinados: [], ref: null, audio: true };
     this.list().push(g);
     this.cur = { g, stream, mime, t0: Date.now(), rec: null, chain: Promise.resolve() };
     this.segmento();
@@ -202,7 +202,13 @@ const Gravador = {
     if (!tx.trim()) { g.status = 'pronta'; g.vazia = true; g.resumo = ''; g.combinados = []; this.vincular(g, ''); this.salvar(); return; }
     if (!navigator.onLine) return this.espera(g, 'Sem internet para fazer o resumo. Ele sai sozinho quando a conexão voltar.');
     try {
-      if (g.tipo === 'feedback' && g.pessoa) {
+      if (g.tipo === 'relatorio') {
+        const r = await IA.relatorio({ date: g.date, transcript: tx, notes: g.notas || '', contexto: this.contextoDia(g.date), equipe: D.techNames() });
+        g.resumo = r.relatorio; g.combinados = [];
+        const feitos = (g.itens || []).filter(i => i.aplicado);
+        r.itens.forEach(i => { i.sel = !(i.situacao === 'feito' && i.tipo !== 'imprevisto'); });
+        g.itens = [...feitos, ...r.itens.filter(i => !feitos.some(f => f.titulo.toLowerCase() === i.titulo.toLowerCase()))];
+      } else if (g.tipo === 'feedback' && g.pessoa) {
         const r = await IA.feedback({ nome: g.pessoa, date: g.date, notes: g.notas || '', transcript: tx });
         g.resumo = r.resumo; g.combinados = r.acordos;
       } else {
@@ -212,13 +218,17 @@ const Gravador = {
       g.status = 'pronta'; g.motivo = ''; g.resumidaEm = new Date().toISOString();
       this.vincular(g, tx);
       this.salvar();
-      UI.toast(`Resumo pronto: ${this.nome(g)}.`, 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
+      UI.toast(g.tipo === 'relatorio' ? `Relatório pronto${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'item identificado', 'itens identificados')}` : ''}.` : `Resumo pronto: ${this.nome(g)}.`, 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
     } catch (e) { this.espera(g, 'Resumo: ' + e.message); }
   },
   /* Cria/atualiza a reunião ou o feedback ligado à gravação (aparecem no calendário e no resto do app) */
   vincular(g, tx) {
     const comb = (g.combinados || []).join('\n');
     const old = g.ref;
+    if (g.tipo === 'relatorio') {   // o relatório fica na própria gravação (aparece no calendário por ela)
+      if (old) { if (old.kind === 'ev') S.events = S.events.filter(e => e.id !== old.id); else S.feedbacks = FB.list().filter(f => f.id !== old.id); }
+      g.ref = null; return;
+    }
     const isFb = g.tipo === 'feedback' && g.pessoa;
     if (old && ((old.kind === 'fb') !== !!isFb)) {   // mudou de tipo: tira o registro antigo
       if (old.kind === 'ev') S.events = S.events.filter(e => e.id !== old.id); else S.feedbacks = FB.list().filter(f => f.id !== old.id);
@@ -236,6 +246,47 @@ const Gravador = {
     }
   },
 
+  /* O que o app já sabe do dia (para o relatório ficar completo, sem inventar) */
+  contextoDia(k) {
+    const linhas = [];
+    const bl = D.dayBlocks(k).filter(b => !D.isBreak(b) && b.status !== 'cancelada');
+    if (bl.length) linhas.push('Agenda do dia:', ...bl.map(b => `- ${b.start}–${b.end} ${b.title} (${D.status(b.status).label.toLowerCase()})`));
+    const tk = S.tasks.filter(x => x.completedAt && x.completedAt.slice(0, 10) === k);
+    if (tk.length) linhas.push('Tarefas concluídas no dia:', ...tk.map(x => `- ${x.title}${x.responsible ? ' (' + x.responsible + ')' : ''}`));
+    const oc = S.occurrences.filter(o => o.date === k);
+    if (oc.length) linhas.push('Imprevistos registrados no dia:', ...oc.map(o => `- ${o.title} (${OPEN(o.status) ? 'em aberto' : 'resolvido'})`));
+    const ev = S.events.filter(e => e.date === k);
+    if (ev.length) linhas.push('Reuniões e compromissos do dia:', ...ev.map(e => `- ${e.time || ''} ${e.title}`));
+    return linhas.join('\n');
+  },
+  /* Põe no app os itens marcados do relatório */
+  aplicar(g) {
+    const t = U.today(), now = new Date().toISOString();
+    let n = 0;
+    (g.itens || []).filter(i => i.sel && !i.aplicado).forEach(i => {
+      const feito = i.situacao === 'feito';
+      const d = i.data || (feito ? g.date : D.nextWorkday(g.date));
+      const nota = `Do relatório do dia ${U.fmtShort(g.date)}.`;
+      let kind = i.tipo, id = U.uid();
+      if (i.tipo === 'agenda' && !i.hora) kind = 'tarefa';   // sem horário não dá para pôr na agenda: vira tarefa com prazo
+      if (kind === 'tarefa') S.tasks.push({ id, title: i.titulo, description: nota, category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', responsible: i.responsavel || '', createdAt: now, completedAt: feito ? now : null, startDate: t, dueDate: d, dueTime: i.hora || '', notes: '' });
+      else if (kind === 'imprevisto') S.occurrences.push({ id, createdAt: now, scheduled: null, title: i.titulo, description: nota, priority: 'alta', status: feito ? 'concluida' : 'pendente', ...(feito ? { resolvedAt: now } : {}), date: feito ? (i.data || g.date) : g.date, time: i.hora || '', dueDate: feito ? '' : (i.data || ''), dueTime: '', responsible: i.responsavel || '', notes: '' });
+      else if (kind === 'compromisso') S.events.push({ id, title: i.titulo, date: d, time: i.hora || '', pautas: [], notes: nota, ...(i.responsavel ? { participantes: i.responsavel } : {}) });
+      else {
+        const s = U.toMin(i.hora), e = Math.min(1439, s + (i.duracao || 30));
+        D.ensureDay(d).push({ id, title: i.titulo, start: i.hora, end: U.fromMin(e), category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', fixed: false, notes: nota });
+      }
+      i.aplicado = { kind, id, date: d }; n++;
+    });
+    return n;
+  },
+  ITEM_TIPOS: { tarefa: 'Tarefa', imprevisto: 'Imprevisto', compromisso: 'Compromisso', agenda: 'Na agenda' },
+  quando(i, g) {
+    const d = i.data || (i.situacao === 'feito' ? g.date : D.nextWorkday(g.date));
+    const dia = !d ? '' : d === g.date ? 'hoje' : d === U.addDays(g.date, 1) ? 'amanhã' : `${U.WD_SHORT[U.weekday(d)]} ${U.fmtShort(d)}`;
+    return [dia, i.hora].filter(Boolean).join(' ');
+  },
+
   /* ---------- Telas ---------- */
   barHtml() {
     if (!this.cur) return '';
@@ -247,7 +298,7 @@ const Gravador = {
   },
   tela() {
     if (this.telaM) return;
-    const m = this.telaM = UI.modal({ title: 'Gravando', body: '<div class="gv-tela"></div>', onClose: () => { this.telaM = null; } });
+    const m = this.telaM = UI.modal({ title: this.cur && this.cur.g.tipo === 'relatorio' ? 'Gravando o relatório do dia' : 'Gravando', body: '<div class="gv-tela"></div>', onClose: () => { this.telaM = null; } });
     m.setFooter('');
     m.el.classList.add('gv-modal');
     this.paintTela(true);
@@ -257,7 +308,8 @@ const Gravador = {
         b.disabled = true; b.textContent = 'Encerrando…';
         const g = await this.stop();
         m.close();
-        setTimeout(() => this.descrever(g, true), 150);
+        if (g.tipo === 'relatorio') UI.toast('Relatório gravado. Ele fica pronto em instantes, em Gravações.', 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
+        else setTimeout(() => this.descrever(g, true), 150);
       }
       if (b.hasAttribute('data-min')) m.close();
     });
@@ -278,6 +330,7 @@ const Gravador = {
     box.innerHTML = `
       <div class="gv-big"><span class="gv-dot lg"></span><span class="gv-clock">${this.fmt(s)}</span></div>
       <p class="gv-st">${this.stHtml(g, feitas, salvas, nextIn)}</p>
+      ${g.tipo === 'relatorio' ? `<div class="gv-guia">${U.icon('spark', 15)}<span>Conte, do seu jeito: <strong>o que você fez hoje</strong>, os <strong>imprevistos</strong>, o que <strong>ficou pendente</strong> e o que vai fazer <strong>amanhã</strong> (com horário, se tiver). O app escreve o relatório e separa o que é tarefa, imprevisto, compromisso ou agenda.</span></div>` : ''}
       <p class="muted small gv-tip">${U.icon('info', 13)} Pode deixar o celular na mesa com a tela acesa. O áudio é salvo no aparelho a cada 5 segundos: se o app fechar, nada se perde.${AudioDB.persistente() ? '' : ' <strong>Atenção: este navegador não deixa guardar o áudio; não feche o app.</strong>'}</p>
       <button class="btn danger gv-stop" data-stop>${U.icon('stop', 18)} Encerrar gravação</button>
       <button class="btn ghost" data-min>Continuar gravando e usar o app</button>`;
@@ -294,7 +347,7 @@ const Gravador = {
       submitLabel: 'Salvar',
       fields: [
         ...(fresh ? [{ type: 'html', html: `<p class="muted small">${this.fmt(g.dur)} gravados. A transcrição e o resumo saem sozinhos${IA.ready() ? '' : ' assim que você cadastrar a chave da IA'}. Se preferir, descreva depois.</p>` }] : []),
-        { name: 'tipo', label: 'Tipo', type: 'radio', value: g.tipo || 'reuniao', options: [['reuniao', 'Reunião'], ['feedback', 'Feedback com alguém da equipe']] },
+        { name: 'tipo', label: 'Tipo', type: 'radio', value: g.tipo || 'reuniao', options: [['reuniao', 'Reunião'], ['feedback', 'Feedback com alguém da equipe'], ['relatorio', 'Relatório do dia (o que fiz e o que vem)']] },
         { name: 'pessoa', label: 'Com quem?', value: g.pessoa, list: D.techNames(), placeholder: 'Nome do colaborador', showIf: 'tipo=feedback' },
         { name: 'titulo', label: 'Assunto (opcional)', value: g.titulo, placeholder: 'Ex.: Alinhamento da equipe', showIf: 'tipo=reuniao' },
         { name: 'notas', label: 'Anotações (opcional)', type: 'textarea', rows: 2, value: g.notas, placeholder: 'Algo que a gravação não pegou' },
@@ -345,19 +398,24 @@ Views.gravacoes = {
     const pend = all.filter(x => x.status === 'pendente');
     const semDesc = all.filter(x => !x.tipo && x.status !== 'gravando');
     const card = x => `<button class="card gv-card" data-act="gvOpen" data-id="${x.id}">
-      <span class="gv-ic ${x.status === 'gravando' ? 'rec' : ''}">${U.icon(x.tipo === 'feedback' ? 'chat' : 'mic', 17)}</span>
+      <span class="gv-ic ${x.status === 'gravando' ? 'rec' : ''}">${U.icon(x.tipo === 'feedback' ? 'chat' : x.tipo === 'relatorio' ? 'list' : 'mic', 17)}</span>
       <span class="gv-main"><strong>${U.esc(Gravador.nome(x))}</strong><small>${U.fmtShort(x.date)} ${x.time} · ${Gravador.fmt(x.dur)}</small>${Views.gravacoes.chip(x)}</span>${U.icon('right', 16)}</button>`;
     return `
       ${Gravador.supported() ? '' : `<div class="alert a-yellow">${U.icon('info')} <span>Gravar não funciona aqui. Use o app ou o site num navegador comum.</span></div>`}
       ${!IA.ready() && IA.supported() ? `<div class="alert a-yellow">${U.icon('spark')} <span>Para transcrever e resumir, cadastre a chave da IA. As gravações ficam guardadas até lá.</span> <a class="link" href="#config" data-act="cfgJump" data-id="ia">Configurar</a></div>` : ''}
       ${pend.length ? `<div class="alert a-yellow">${U.icon('clock')} <span>${U.plural(pend.length, 'gravação esperando', 'gravações esperando')} para transcrever: ${U.esc(pend[0].motivo || '')}</span> <button class="link" data-act="gvRetry">Tentar agora</button></div>` : ''}
-      ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião ou feedback.</p>` : ''}
+      ${Gravador.recording() ? '' : `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fale o que fez hoje e o que vem amanhã: o app escreve o relatório e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
+      ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
       ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : H.empty('Nenhuma gravação ainda. Toque em <strong>Gravar</strong>, na barra de baixo, para começar. Não precisa criar a reunião antes.')}`;
   },
   chip(x) {
     const ok = x.partes.filter(p => p.st === 'ok').length, tot = x.partes.length;
     if (x.status === 'gravando') return '<span class="badge b-red">● Gravando</span>';
-    if (x.status === 'pronta') return x.vazia ? '<span class="badge">Sem fala reconhecida</span>' : `<span class="badge b-green">Resumo pronto${x.tipo ? '' : ' · descrever'}</span>`;
+    if (x.status === 'pronta') {
+      if (x.vazia) return '<span class="badge">Sem fala reconhecida</span>';
+      if (x.tipo === 'relatorio') { const f = (x.itens || []).filter(i => !i.aplicado && i.sel).length; return `<span class="badge b-green">Relatório pronto${f ? ` · ${f} para anotar` : ''}</span>`; }
+      return `<span class="badge b-green">Resumo pronto${x.tipo ? '' : ' · descrever'}</span>`;
+    }
     if (x.status === 'pendente') return `<span class="badge b-yellow">Esperando · ${ok} de ${tot} partes</span>`;
     return `<span class="badge b-blue">${ok < tot ? `Transcrevendo ${ok} de ${tot}` : 'Fazendo o resumo'}</span>`;
   },
@@ -370,15 +428,15 @@ Views.gravacoes = {
         <div class="grow"><h2>${U.esc(Gravador.nome(g))}</h2><small class="muted">${U.fmtDate(g.date)} às ${g.time} · ${Gravador.fmt(g.dur)}${g.recuperada ? ' · recuperada' : ''}</small></div></div>
       <div class="gv-acts">
         ${g.status === 'gravando' ? `<button class="btn primary" data-act="gvTela">${U.icon('mic', 15)} Abrir gravação</button>` : `<button class="btn ${g.tipo ? 'ghost' : 'primary'}" data-act="gvDesc" data-id="${g.id}">${U.icon('edit', 15)} ${g.tipo ? 'Editar descrição' : 'Descrever'}</button>`}
-        ${done && g.resumo ? `<button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar resumo</button>` : ''}
+        ${done && g.resumo && g.tipo !== 'relatorio' ? `<button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar resumo</button>` : ''}
       </div>
       <div class="card gv-status">${Views.gravacoes.chip(g)}
         <p class="small">${done ? 'Transcrição e resumo prontos.' : g.status === 'gravando' ? 'Gravando agora.' : `Transcrição: ${ok} de ${g.partes.length} partes${ok === g.partes.length ? ', fazendo o resumo' : ''}.`}${g.motivo && g.status === 'pendente' ? `<br><span class="c-yellow">${U.esc(g.motivo)}</span>` : ''}</p>
         ${g.status === 'pendente' ? `<button class="btn sm" data-act="gvRetry">Tentar agora</button>` : ''}
         ${done && g.tipo ? `<button class="link" data-act="gvRedo" data-id="${g.id}">Refazer resumo</button>` : ''}
       </div>
-      ${g.resumo ? `<div class="card"><div class="card-h"><h3>${U.icon('spark')} Resumo</h3></div><div class="ata pre">${U.esc(g.resumo)}</div></div>` : ''}
-      ${comb.length ? `<div class="card"><div class="card-h"><h3>${U.icon('tasks')} ${g.tipo === 'feedback' ? 'Acordos' : 'Combinados'}</h3></div>
+      ${g.tipo === 'relatorio' ? this.relatorioHtml(g) : g.resumo ? `<div class="card"><div class="card-h"><h3>${U.icon('spark')} Resumo</h3></div><div class="ata pre">${U.esc(g.resumo)}</div></div>` : ''}
+      ${comb.length && g.tipo !== 'relatorio' ? `<div class="card"><div class="card-h"><h3>${U.icon('tasks')} ${g.tipo === 'feedback' ? 'Acordos' : 'Combinados'}</h3></div>
         <ul class="gv-comb">${comb.map(c => `<li>${U.esc(c)}</li>`).join('')}</ul>
         ${g.tarefas ? `<p class="muted small">${U.plural(g.tarefas, 'tarefa criada', 'tarefas criadas')}.</p>` : `<button class="btn sm" data-act="gvTasks" data-id="${g.id}">${U.icon('plus', 14)} Virar tarefas</button>`}</div>` : ''}
       <details class="card gv-tx" data-gv-tx="${g.id}"><summary>${U.icon('list', 16)} Transcrição completa</summary><div class="gv-tx-body muted small">Carregando…</div></details>
@@ -388,6 +446,29 @@ Views.gravacoes = {
           : '<p class="muted small">O áudio foi apagado. A transcrição e o resumo continuam aqui.</p>'}
       </div>
       <div class="row-actions"><button class="btn ghost danger-text" data-act="gvDel" data-id="${g.id}">${U.icon('trash', 15)} Excluir gravação</button></div>`;
+  },
+  /* Relatório do dia: texto pronto para enviar + itens identificados para pôr no app */
+  relatorioHtml(g) {
+    if (!g.resumo) return '';
+    const itens = g.itens || [];
+    const pend = itens.filter(i => i.sel && !i.aplicado).length;
+    const row = i => {
+      const quando = Gravador.quando(i, g);
+      if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind]}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
+      return `<li class="rl-it ${i.sel ? '' : 'off'}"><label class="rl-ck"><input type="checkbox" ${i.sel ? 'checked' : ''} data-change="gvItSel" data-id="${g.id}" data-it="${i.id}" aria-label="Anotar ${U.esc(i.titulo)}"></label>
+        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
+        <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${i.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
+    };
+    return `<div class="card"><div class="card-h"><h3>${U.icon('list')} Relatório do dia</h3></div>
+        <div class="ata pre">${U.esc(g.resumo)}</div>
+        <div class="gv-acts"><a class="btn primary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(g.resumo)}">${U.icon('chat', 15)} Enviar pelo WhatsApp</a><button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar</button></div>
+      </div>
+      <div class="card"><div class="card-h"><h3>${U.icon('calendar')} O que o app identificou</h3></div>
+        ${itens.length ? `<p class="muted small">Confira o tipo de cada item e desmarque o que não quer anotar. O que já foi feito hoje fica só no relatório, a não ser que você marque.</p>
+          <ul class="rl-list">${itens.map(row).join('')}</ul>
+          ${pend ? `<button class="btn primary rl-go" data-act="gvItApply" data-id="${g.id}">${U.icon('plus', 15)} Anotar no app (${pend})</button>` : itens.every(i => i.aplicado || !i.sel) ? '<p class="muted small">Tudo o que estava marcado já foi anotado.</p>' : ''}`
+        : '<p class="muted small">Nenhuma tarefa, imprevisto ou compromisso citado no relato.</p>'}
+      </div>`;
   },
   mount(root) {
     const g = App.ui.gvId && Gravador.find(App.ui.gvId); if (!g) return;
@@ -405,7 +486,14 @@ Views.gravacoes = {
 };
 
 Object.assign(Actions, {
-  gvRec() { Gravador.start(); },
+  gvRec({ tipo } = {}) { Gravador.start({ tipo: tipo || '' }); },
+  gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
+  gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
+  gvItApply({ id }) {
+    const g = Gravador.find(id); if (!g) return;
+    const n = Gravador.aplicar(g); commit();
+    UI.toast(`${U.plural(n, 'item anotado', 'itens anotados')} no app.`, 'ok', { label: 'Ver agenda', onClick: () => { App.ui.agendaDate = D.nextWorkday(g.date); App.go('agenda'); } });
+  },
   gvTela() { Gravador.tela(); },
   gvOpen({ id }) { App.ui.gvId = id; if (App.route !== 'gravacoes') App.go('gravacoes'); else { App.render(); window.scrollTo(0, 0); } },
   gvBack() { App.ui.gvId = null; App.render(); },

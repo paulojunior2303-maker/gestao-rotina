@@ -1350,3 +1350,30 @@ button.ck-card { cursor: pointer; }
 }
 .bn-rec { display: none; }
 @media (max-width: 900px) { .bottom-nav .bn-rec { display: flex; } }
+
+/* Celular: o menu lateral não repete o que já está na barra de baixo; o botão grande de gravar fica só no computador */
+@media (max-width: 900px) {
+  .nav a.in-bottom { display: none; }
+  .nav-group:not(:has(a:not(.in-bottom))) { display: none; }
+  .gv-rec-big { display: none; }
+}
+
+/* Relatório do dia */
+.gv-rel-btn { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 13px 15px; margin-bottom: 10px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border)); background: linear-gradient(120deg, color-mix(in srgb, var(--primary) 22%, var(--surface)), var(--surface)); color: var(--text); font: inherit; cursor: pointer; }
+.gv-rel-btn > .ic:first-child { color: var(--accent); flex: none; width: 22px; height: 22px; }
+.gv-rel-btn span { flex: 1; display: flex; flex-direction: column; }
+.gv-rel-btn strong { font-family: var(--font-d); font-size: 15.5px; }
+.gv-rel-btn small { color: var(--muted); font-size: 12.5px; }
+.gv-guia { display: flex; gap: 8px; text-align: left; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.gv-guia .ic { flex: none; margin-top: 2px; color: var(--accent); }
+.rl-list { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rl-it { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.rl-it.off { opacity: .55; }
+.rl-it.done { grid-template-columns: auto minmax(0, 1fr); background: color-mix(in srgb, var(--green) 7%, transparent); }
+.rl-ck input { width: 20px; height: 20px; accent-color: var(--accent); margin-top: 2px; }
+.rl-ok { color: var(--green); margin-top: 2px; }
+.rl-main { display: flex; flex-direction: column; min-width: 0; }
+.rl-main strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.rl-main small { color: var(--muted); font-size: 12px; }
+.rl-tipo { grid-column: 2; justify-self: start; min-height: 32px; padding: 3px 8px; border-radius: 9px; border: 1px solid var(--input-border); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; }
+.rl-go { width: 100%; justify-content: center; }
