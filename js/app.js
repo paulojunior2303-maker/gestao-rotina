@@ -3,7 +3,7 @@
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos', 'pessoas', 'reunioes', 'jornada', 'equipe']],
+  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos', 'pessoas', 'checklists', 'reunioes', 'jornada', 'equipe']],
   ['Planejamento', ['projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
@@ -39,6 +39,7 @@ const App = {
     if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     if (this.route !== 'pessoas') this.ui.pWho = null;
+    if (this.route !== 'checklists') this.ui.ckRun = null;
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
 

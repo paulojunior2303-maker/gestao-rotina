@@ -1247,3 +1247,30 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .ps-head h2 { font-size: 21px; }
 .ps-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
 .ps-msg { white-space: pre-wrap; font: inherit; font-size: 13.5px; margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+
+/* Checklists */
+.ck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; }
+.ck-card { display: flex; align-items: center; gap: 10px; padding: 12px 14px; text-align: left; font: inherit; color: var(--text); width: 100%; }
+button.ck-card { cursor: pointer; }
+.ck-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)); color: var(--accent); }
+.ck-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ck-main strong { font-size: 14.5px; }
+.ck-main small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-open { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.ck-pronto { border-style: dashed; }
+.ck-prog { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 4px; font-size: 13px; color: var(--muted); }
+.ck-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ck-it { border: 1px solid var(--line); border-radius: 13px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+.ck-it.ck-ok { border-color: color-mix(in srgb, var(--green) 45%, var(--line)); }
+.ck-it.ck-prob { border-color: color-mix(in srgb, var(--red) 55%, var(--line)); background: color-mix(in srgb, var(--red) 6%, var(--surface)); }
+.ck-it.ck-na { opacity: .7; }
+.ck-it-t { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; }
+.ck-n { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
+.ck-btns { display: grid; grid-template-columns: 1fr 1.3fr .8fr; gap: 6px; }
+.ck-b { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 38px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ck-b.ok.on { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
+.ck-b.prob.on { background: var(--red-bg); color: var(--red-text); border-color: var(--red); }
+.ck-b.na.on { background: var(--track); color: var(--text); border-color: var(--border-strong); }
+.ck-res { font-size: 13px; color: var(--muted); }
+.ck-foot { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 10px 0; background: linear-gradient(transparent, var(--bg) 30%); }
+@media (min-width: 900px) { .ck-foot { bottom: 0; } }

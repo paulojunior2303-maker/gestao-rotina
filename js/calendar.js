@@ -139,6 +139,7 @@ Object.assign(Actions, {
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
     ];
     items.push(activity);
+    items.push({ label: 'Checklist', hint: 'Abertura de turno, manutenção preventiva…', icon: 'list', onClick: () => App.go('checklists') });
     if (breakOk) items.unshift({ label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
     Capture.open({ k, type: k > t ? 'tarefa' : 'imprevisto', others: items });
   },

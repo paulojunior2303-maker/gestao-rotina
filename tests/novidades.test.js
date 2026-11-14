@@ -191,6 +191,41 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await go('dashboard'); await go('pessoas');
   check(await p.locator('.ps-card').count() === 2, 'sair e voltar abre a lista (não a última ficha)');
 
+  console.log('\n[6] Checklists');
+  await go('checklists');
+  check(await p.locator('.ck-pronto').count() === 4, 'quatro modelos prontos para usar');
+  await p.locator('.ck-pronto', { hasText: 'Manutenção preventiva' }).locator('[data-act=ckAddPronto]').tap(); await W();
+  check(await p.locator('.ck-card:not(.ck-pronto)', { hasText: 'Manutenção preventiva' }).count() === 1 && await p.locator('.ck-pronto').count() === 3, 'modelo vira um checklist seu');
+  await shot('6-checklists'); await fits('Checklists');
+  await p.locator('[data-act=ckStart]').first().tap(); await W();
+  check(await p.locator('.ck-it').count() === 10, 'checklist iniciado com os 10 itens');
+  await p.locator('input[data-change=ckLocal]').fill('Condomínio Jardins'); await p.locator('input[data-change=ckLocal]').blur(); await W(150);
+  const its = p.locator('.ck-it');
+  for (let i = 0; i < 10; i++) { if (i === 2 || i === 9) continue; await its.nth(i).locator('[data-v=ok]').tap(); await W(80); }
+  await its.nth(2).locator('[data-v=prob]').tap(); await W();
+  await p.locator('.ck-obs').fill('Lente da câmera 4 embaçada'); await p.locator('.ck-obs').blur(); await W(150);
+  await its.nth(9).locator('[data-v=na]').tap(); await W();
+  check((await p.textContent('.ck-prog')).includes('10 de 10') && (await p.textContent('.ck-prog')).includes('1 problema'), 'progresso: 10 de 10, 1 problema');
+  await shot('6-execucao'); await fits('Checklist em andamento');
+  // sair e voltar: continua em andamento
+  await go('dashboard'); await go('checklists');
+  check(await p.locator('.ck-open').count() === 1, 'checklist pela metade fica "Em andamento"');
+  await tap('.ck-open');
+  await tap('[data-act=ckFinish]');
+  check(await p.locator(`${M} [name=occ]:checked`).count() === 1, 'oferece criar imprevisto com os problemas');
+  await tap(`${M} [data-submit]`);
+  s = await st();
+  const run = s.checks[0];
+  check(run.fim && run.local === 'Condomínio Jardins' && run.itens.filter(i => i.r === 'ok').length === 8, 'checklist concluído e guardado');
+  const co = s.occurrences.find(o => o.title === 'Lente da câmera 4 embaçada');
+  check(co && co.description.includes('Manutenção preventiva') && co.description.includes('Condomínio Jardins') && run.occIds.includes(co.id), 'problema virou imprevisto com a origem');
+  await tap('[data-act=ckBack]');
+  check((await p.textContent('.view')).includes('Feitos recentemente') && (await p.locator('.badge', { hasText: '1 problema' }).count()) === 1, 'histórico com o resultado');
+  const sp = await p.evaluate(() => { const d = Fire.split(S); const j = Fire.join(Fire.parse(d)); return { ids: Object.keys(d).filter(k => k.startsWith('ck-')), n: j.checks.length, m: j.checklists.length, di: !!j.diario['2026-11-11'] }; });
+  check(sp.ids.includes('ck-2026-11') && sp.n === 1 && sp.m === 1 && sp.di, 'checklists e diário vão e voltam da nuvem (documento por mês)');
+  const sc = await p.evaluate(() => { const j = Cloud.join(Cloud.split(S)); return [j.checks.length, j.checklists.length, !!j.diario['2026-11-11']]; });
+  check(sc[0] === 1 && sc[1] === 1 && sc[2], 'e também no link do Claude');
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
