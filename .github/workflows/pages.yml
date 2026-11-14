@@ -1,4 +1,4 @@
-# Publica o site (GitHub Pages) a cada mudança no main: app oficial na raiz e o site de teste em /teste/.
+# Publica o site (GitHub Pages) a cada mudança no main: app oficial na raiz, site de teste em /teste/ e cópia enxuta em /enxuto/.
 # Requer Settings → Pages → Source = "GitHub Actions".
 name: Site (GitHub Pages)
 
@@ -29,6 +29,7 @@ jobs:
           mkdir -p _site
           cp -r index.html css js fonts icon.svg manifest.webmanifest sw.js _site/
           if [ -d teste ]; then cp -r teste _site/; fi
+          if [ -d enxuto ]; then cp -r enxuto _site/; fi
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v5
         with:
