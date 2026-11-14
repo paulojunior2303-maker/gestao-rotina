@@ -163,13 +163,13 @@ Object.assign(Actions, {
     if (s === 'andamento') D.ensureDay(k).forEach(x => { if (x !== b && x.status === 'andamento' && !D.isBreak(x)) x.status = 'pendente'; });
     commit();
   },
-  agNew() {
+  agNew(d = {}) {
     const k = Agenda.day();
     const bl = D.dayBlocks(k);
     const start = k === U.today() ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
     UI.form({
       title: `Nova atividade — ${U.fmtDate(k)}`,
-      fields: Agenda.blockFields({ start, end: U.fromMin(U.toMin(start) + 30), category: 'administrativo' }, true),
+      fields: Agenda.blockFields({ title: d.title || '', start, end: U.fromMin(U.toMin(start) + 30), category: 'administrativo' }, true),
       validate: Agenda.validateTimes,
       onSubmit(v) {
         const b = { id: U.uid(), title: v.title, start: v.start, end: v.end, category: v.category, priority: v.priority, status: v.status, fixed: v.fixed, notes: v.notes };

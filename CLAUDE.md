@@ -33,6 +33,10 @@ e diga o que mudou e como testar no celular.
 - **Navegação**: menu lateral (☰ ou arrastar da borda) + **barra inferior** no celular (`BOTTOM` em `app.js`: Início, Agenda, Tarefas, Imprevistos), **sem** botão Menu.
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Início e Agenda usam `quickAdd`
   (lista: atividade, intervalo, tarefa, reunião, feedback, imprevisto, compromisso, no dia escolhido). Os botões "Novo…" das telas foram trocados pelo +.
+- **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo
+  (Imprevisto · Tarefa · Na agenda). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
+  (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer".
+  As demais opções do antigo menu do "+" ficam embaixo ("Ou escolha"). Testes: `tests/captura.test.js`.
 - **Agenda numa tela só** (`js/views/agenda.js`): calendário compacto em cima (`Cal.render('agenda')`, semana; "Ver o mês inteiro" expande) e, embaixo,
   o dia escolhido numa lista única por horário: blocos da rotina + reuniões/compromissos/prazos (`.blk-it`). O dia da agenda é `App.ui.agendaDate`, sincronizado com `Cal.sync`.
   O planejamento semanal/mensal (foco, checklist, metas das 4 semanas) foi retirado da interface a pedido do usuário; `S.weekly`/`S.monthly` continuam guardados.

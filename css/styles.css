@@ -1134,3 +1134,28 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .eq-m-miss { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); }
 .eq-more summary { cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .eq-more[open] summary { margin-bottom: 14px; }
+
+/* Anotação rápida (botão +) */
+.cap { display: flex; flex-direction: column; gap: 10px; }
+.cap-text, .cap-in { width: 100%; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; outline: none; transition: border-color .15s, box-shadow .15s; }
+.cap-text { font-size: 16px; min-height: 64px; resize: vertical; }
+.cap-in { min-height: 40px; font-size: 15px; }
+.cap-text:focus, .cap-in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cap-tip { display: flex; align-items: center; gap: 6px; margin: -4px 0 0; }
+.cap-types { display: flex; width: 100%; flex-wrap: nowrap; }
+.cap-types .tab { flex: 1; justify-content: center; padding: 8px 6px; font-size: 13.5px; }
+.cap-types .tab.active { background: var(--primary); color: #fff; }
+.cap-opts { display: flex; flex-direction: column; gap: 8px; }
+.cap-l { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.cap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cap-chip { position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 6px 13px; border-radius: 99px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 560; cursor: pointer; }
+.cap-chip.on { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); border-color: var(--accent); color: var(--text); }
+.cap-date input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.cap-row { display: grid; grid-template-columns: 1fr 130px; align-items: center; gap: 8px; }
+.cap-prev { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 9px 11px; border-radius: 11px; font-size: 13px; background: color-mix(in srgb, var(--lilac) 14%, transparent); }
+.cap-prev .ic { flex: none; margin-top: 2px; }
+.cap-more { align-self: flex-start; }
+.cap-others { border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.cap-others .sheet { margin: 0 -10px; }
+.occ-today { display: flex; align-items: center; gap: 10px; padding: 11px 14px; margin-bottom: 8px; font-size: 14px; border-left: 3px solid var(--red); }
+.occ-today .ic { color: var(--red); flex: none; }

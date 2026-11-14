@@ -131,19 +131,16 @@ Object.assign(Actions, {
   quickAdd({ k, from }) {
     const t = U.today(); k = k || t;
     const onAgenda = from === 'agenda';
-    const dated = onAgenda || k !== t;   // prazo da tarefa: só se o dia foi escolhido
     const breakOk = onAgenda && (S.settings.breakMode || 'fixo') === 'flexivel' && !D.dayBlocks(k).some(b => D.isBreak(b) && b.status !== 'cancelada');
-    const activity = { label: 'Atividade na agenda', hint: 'Um horário no cronograma do dia', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
+    const activity = { label: 'Atividade na agenda', hint: 'Formulário completo, com categoria e prioridade', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
     const items = [
-      { label: dated ? 'Tarefa com prazo neste dia' : 'Tarefa', icon: 'tasks', onClick: () => Tasks.form(null, dated ? { dueDate: k } : {}) },
       { label: 'Reunião', hint: 'Com pauta, gravação e ata', icon: 'users', onClick: () => Events.form(null, k, { reuniao: true }) },
       { label: 'Feedback', hint: 'Conversa individual com o colaborador', icon: 'chat', onClick: () => FB.form(null) },
-      { label: 'Imprevisto', hint: onAgenda ? 'E já encaixa na agenda' : 'Demanda urgente', icon: 'alert', onClick: () => onAgenda ? Actions.agImprevisto() : Occ.form(null) },
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
     ];
-    if (onAgenda) items.unshift(activity); else items.push(activity);
-    if (breakOk) items.splice(1, 0, { label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
-    UI.sheet(k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`, items);
+    items.push(activity);
+    if (breakOk) items.unshift({ label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
+    Capture.open({ k, type: k > t ? 'tarefa' : 'imprevisto', others: items });
   },
 });
 

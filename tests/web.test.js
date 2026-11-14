@@ -86,7 +86,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
 
   // ---- Imprevisto com encaixe
   await go('imprevistos');
-  await p.click('[data-act=occNew]'); await p.waitForTimeout(200);
+  await p.click('#fab'); await p.waitForTimeout(200); await p.fill('.modal-wrap.open #cap-t', 'x'); await p.click('.modal-wrap.open [data-more]'); await p.waitForTimeout(400);
   await fill('title', 'NVR sem gravação no cliente Y'); await fill('responsible', 'João');
   await p.check('.modal-wrap.open [name=schedule]'); await submit(); await p.waitForTimeout(300);
   assert(await p.locator('.modal-wrap.open h2', { hasText: 'Encaixar imprevisto' }).count() === 1, 'diálogo de encaixe aberto');
