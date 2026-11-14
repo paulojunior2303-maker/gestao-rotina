@@ -165,11 +165,23 @@ Views.guia = {
       <li><strong>Tarefas</strong>: cadastre as pendências pelo botão <strong>+</strong>.</li>
       <li>Opcional: <strong>Configurações → Dados → Carregar dados de demonstração</strong> para ver o app preenchido. Remova depois com um toque.</li></ol>`, true)}
 
+    ${sec('novo', 'spark', 'Novidades: o dia a dia mais prático', li([
+      '<strong>Anotação rápida</strong>: toque no <strong>+</strong>, escreva ou fale (microfone do teclado) e escolha Imprevisto, Tarefa ou Na agenda. O app entende “amanhã às 15h”, “sexta”, “30 min”, “toda segunda” e o nome de quem é da equipe.',
+      '<strong>Imprevisto que empurra o dia</strong>: diga quanto tempo ele vai tomar; ele entra na agenda agora e o resto do dia anda para frente (o que você fazia continua depois). Tem <strong>Desfazer</strong>.',
+      '<strong>Agora</strong> (no Início): o que fazer neste momento, quanto falta e o que vem a seguir, com <strong>Concluir</strong>, <strong>+15 min</strong> e <strong>Imprevisto</strong>. Terminou antes? O app oferece adiantar o resto.',
+      '<strong>Reorganizar meu dia</strong>: quando algo fica para trás, refaz os horários a partir de agora, mostra a prévia e manda para o próximo dia útil o que não couber.',
+      '<strong>Abrir o dia</strong> (de manhã) e <strong>Fechar o dia</strong> (no fim do expediente): 1 minuto para decidir o que ficou de ontem, escolher as 3 prioridades e não deixar nada pendurado.',
+      '<strong>Tarefas que se repetem</strong>: no campo Repetir (ou escrevendo “toda segunda”). Ao concluir, a próxima nasce sozinha.',
+      '<strong>Pessoas</strong>: tudo o que está com cada um da equipe, o último feedback e o botão <strong>Cobrar no WhatsApp</strong> com a lista pronta.',
+      '<strong>Checklists</strong>: modelos prontos (abertura de turno, manutenção preventiva, entrega de obra, passagem de turno). O que der problema vira imprevisto.',
+      '<strong>Revisão da semana</strong>: na sexta à tarde, 5 minutos com o que foi feito, o que atrasou e o que vem aí.',
+    ]))}
+
     ${sec('nav', 'menu', 'Navegação', li([
       'No celular, a <strong>barra de baixo</strong> tem os atalhos do dia a dia: Início, Agenda, Tarefas e Imprevistos.',
       'Toque em <strong>☰</strong> (canto superior esquerdo) para abrir o menu com todas as telas. No celular, também dá para <strong>arrastar o dedo a partir da borda esquerda</strong>; para fechar, arraste para a esquerda ou toque fora.',
-      'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início e na Agenda ele mostra a lista do que dá para criar: atividade, intervalo, tarefa, reunião, feedback, imprevisto ou compromisso.',
-      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Reuniões e feedbacks, Imprevistos) e <strong>Ajustes</strong>. As telas <strong>Projetos</strong> e <strong>Indicadores</strong> ficam ocultas até você ligar em Configurações → Aparência (aí aparecem em Planejamento).',
+      'O botão redondo <strong>+</strong> (canto de baixo) cria o item da tela atual. No Início, na Agenda e nos Imprevistos ele abre a <strong>anotação rápida</strong>; embaixo dela ficam as outras opções (reunião, feedback, compromisso, intervalo, checklist).',
+      'O menu é dividido em <strong>Dia a dia</strong> (Início, Agenda, Tarefas, Imprevistos, Checklists), <strong>Equipe</strong> (Pessoas, Reuniões e feedbacks, Equipe na nuvem, Jornada), <strong>Planejamento</strong> (Revisão da semana; Projetos e Indicadores aparecem se você ligar em Configurações → Aparência) e <strong>Ajustes</strong>.',
       'Um <strong>ponto vermelho</strong> no ☰ e os <strong>números</strong> no menu indicam imprevistos abertos e tarefas atrasadas.',
       'Formulários abrem por baixo da tela; <strong>Salvar</strong> fica no rodapé. Toque fora ou no X para fechar sem salvar.',
       'Botão <strong>voltar do Android</strong>: fecha a janela aberta → volta ao Início → sai do app.',
@@ -188,9 +200,9 @@ Views.guia = {
     ${sec('dash', 'dashboard', 'Início (Dashboard)', li([
       '<strong>Progresso do dia</strong>: atividades da agenda concluídas (o intervalo e as canceladas não contam).',
       '<strong>Tarefas concluídas / pendentes / atrasadas</strong>: toque no cartão para abrir a lista filtrada.',
-      '<strong>O que fazer hoje</strong>: a atividade atual (marcada “Agora”) e as próximas.',
-      '<strong>O que resolver</strong>: imprevistos abertos, tarefas urgentes, de alta prioridade ou atrasadas.',
-      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido.',
+      '<strong>Agora</strong>: a atividade do momento, quanto falta e a próxima, com botões de um toque.',
+      '<strong>Para resolver hoje</strong>: suas 3 prioridades, imprevistos abertos, tarefas atrasadas, de hoje ou urgentes e reuniões para registrar, com ✓ na linha.',
+      '<strong>O que cobrar da equipe</strong>: tarefas e imprevistos com responsável definido (detalhes em <strong>Pessoas</strong>).',
       'A <strong>linha do tempo</strong> abaixo da data mostra o dia inteiro: blocos roxos estão concluídos, o claro é o que acontece agora e os vermelhos estão atrasados. Toque nela para abrir a agenda.',
       'Logo abaixo, o <strong>calendário</strong> (veja o tema Calendário).',
       `<strong>Resumo da semana</strong>${S.settings.showIndicadores ? ' e <strong>Metas</strong>' : ''}.`,

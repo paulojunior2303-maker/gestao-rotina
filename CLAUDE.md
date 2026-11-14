@@ -37,6 +37,16 @@ e diga o que mudou e como testar no celular.
   (Imprevisto · Tarefa · Na agenda). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
   (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer".
   As demais opções do antigo menu do "+" ficam embaixo ("Ou escolha"). Testes: `tests/captura.test.js`.
+- **Versão "turbinada" (só no ramo `teste` até o usuário aprovar)**, cada uma num commit:
+  - `js/agora.js` (`Agora`): cartão "Agora" no Início (atividade do momento, +15 min, Concluir, Imprevisto) e "Para resolver hoje" (`Agora.hoje`).
+  - `js/replan.js` (`Replan`): "Reorganizar meu dia" com prévia; `Replan.fromNow` adianta a agenda quando algo termina antes.
+  - `js/ritual.js` (`Ritual`): Abrir/Fechar o dia; `S.diario[data] = { abertoEm, fechadoEm, nota, revisaoEm }` (últimos 120 dias); prioridades do dia = `task.top = data`.
+  - Tarefas que se repetem: `task.repeat` (diaria|semanal|quinzenal|mensal, `repeatDay`), `Tasks.setStatus` cria a próxima (`nextId`) e a apaga ao reabrir.
+  - `js/views/pessoas.js` (`Pessoas`, `#pessoas`): ficha por pessoa, cobrança pelo WhatsApp (`technicians[].phone`), aviso de 30 dias sem feedback.
+  - `js/views/checklists.js` (`CK`, `#checklists`): `S.checklists` (modelos) e `S.checks` (feitos; nuvem em documentos `ck-AAAA-MM`). Problema → imprevisto.
+  - `js/views/semana.js` (`Semana`, `#semana`): revisão da semana calculada dos dados; convite no último dia útil depois das 14h.
+  - `UI.form`: campos com `more: true` ficam em "Mais opções" (`moreOpen`). Menu em grupos Dia a dia / Equipe / Planejamento / Ajustes.
+  - Testes: `tests/novidades.test.js` (relógio simulado numa quarta 10:02).
 - **Agenda numa tela só** (`js/views/agenda.js`): calendário compacto em cima (`Cal.render('agenda')`, semana; "Ver o mês inteiro" expande) e, embaixo,
   o dia escolhido numa lista única por horário: blocos da rotina + reuniões/compromissos/prazos (`.blk-it`). O dia da agenda é `App.ui.agendaDate`, sincronizado com `Cal.sync`.
   O planejamento semanal/mensal (foco, checklist, metas das 4 semanas) foi retirado da interface a pedido do usuário; `S.weekly`/`S.monthly` continuam guardados.
