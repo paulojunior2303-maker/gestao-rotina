@@ -21,7 +21,7 @@ const Fire = {
   user: null, api: null, last: {}, timer: null, unsub: null, msg: '',
   dev: (() => { try { let d = localStorage.getItem('ff-dev'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('ff-dev', d); } return d; } catch (e) { return 'x'; } })(),
 
-  supported() { return typeof Cloud === 'undefined' || !Cloud.available(); },
+  supported() { return (typeof CANAL_ENXUTO === 'undefined' || !CANAL_ENXUTO) && (typeof Cloud === 'undefined' || !Cloud.available()); },
   canal() { return typeof CANAL_TESTE !== 'undefined' && CANAL_TESTE ? 'teste' : 'oficial'; },
   wanted() { try { return localStorage.getItem(this.KEY) === '1'; } catch (e) { return false; } },
   setWanted(v) { try { v ? localStorage.setItem(this.KEY, '1') : localStorage.removeItem(this.KEY); } catch (e) { /* sem armazenamento */ } },
@@ -39,6 +39,7 @@ const Fire = {
     (s.events || []).forEach(e => mes('ev', e.date, p => p.items.push(e)));
     (s.feedbacks || []).forEach(f => mes('fb', f.date, p => p.items.push(f)));
     (s.checks || []).forEach(c => mes('ck', c.date, p => p.items.push(c)));
+    (s.gravacoes || []).forEach(g => mes('gv', g.date, p => p.items.push(g)));
     const out = {};
     for (const [id, p] of Object.entries(parts)) out[id] = JSON.stringify(p);
     return out;
@@ -47,13 +48,14 @@ const Fire = {
     const core = docs.core || {};
     const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], equipes: core.equipes || [], diario: core.diario || {}, checklists: core.checklists || [],
       tasks: (docs.tasks || {}).items || [], projects: (docs.projects || {}).items || [], occurrences: (docs.occurrences || {}).items || [],
-      days: {}, indicators: [], events: [], feedbacks: [], checks: [] };
+      days: {}, indicators: [], events: [], feedbacks: [], checks: [], gravacoes: [] };
     for (const [id, d] of Object.entries(docs)) {
       if (id.startsWith('days-')) Object.assign(s.days, d.days || {});
       else if (id.startsWith('ind-')) s.indicators.push(...(d.items || []));
       else if (id.startsWith('ev-')) s.events.push(...(d.items || []));
       else if (id.startsWith('fb-')) s.feedbacks.push(...(d.items || []));
       else if (id.startsWith('ck-')) s.checks.push(...(d.items || []));
+      else if (id.startsWith('gv-')) s.gravacoes.push(...(d.items || []));
     }
     for (const k of Object.keys(s)) if (s[k] === undefined) delete s[k];
     return s;

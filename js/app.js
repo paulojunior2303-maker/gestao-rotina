@@ -2,15 +2,22 @@
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
    Feedbacks fica dentro de Reuniões (aba Feedbacks). */
-const NAV_GROUPS = [
+/* Cópia enxuta: só calendário, gravações, tarefas e agenda (+ ajustes) */
+const ENXUTO_ROUTES = ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos', 'config', 'guia'];
+const NAV_GROUPS = CANAL_ENXUTO ? [
+  ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos']],
+  ['Ajustes', ['config', 'guia']],
+] : [
   ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos', 'checklists']],
   ['Equipe', ['pessoas', 'reunioes', 'equipe', 'jornada']],
   ['Planejamento', ['semana', 'projetos', 'indicadores']],
   ['Ajustes', ['config', 'guia']],
 ];
 /* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
-const BOTTOM = ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
+const BOTTOM = CANAL_ENXUTO ? ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'] : ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
 const routeVisible = id => {
+  if (CANAL_ENXUTO) return ENXUTO_ROUTES.includes(id);
+  if (id === 'gravacoes') return false;   // por enquanto só na cópia enxuta
   const st = (S && S.settings) || {};
   return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : id === 'equipe' ? (typeof Fire === 'undefined' || Fire.supported()) : true;
 };
@@ -39,6 +46,7 @@ const App = {
     if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
     if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
+    if (this.route !== 'gravacoes') this.ui.gvId = null;
     if (this.route !== 'pessoas') this.ui.pWho = null;
     else if (this.ui.pWhoNext) { this.ui.pWho = this.ui.pWhoNext; this.ui.pWhoNext = null; }
     if (this.route !== 'checklists') this.ui.ckRun = null;
@@ -53,7 +61,7 @@ const App = {
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => id === 'REC' ? `<button class="bn-rec ${Gravador.recording() ? 'on' : ''}" data-act="${Gravador.recording() ? 'gvTela' : 'gvRec'}" aria-label="${Gravador.recording() ? 'Abrir a gravação' : 'Gravar reunião ou feedback'}"><span class="bn-rec-c">${U.icon(Gravador.recording() ? 'stop' : 'mic', 24)}</span><span class="bn-rec-t">${Gravador.recording() ? Gravador.fmt(Gravador.elapsed()) : 'Gravar'}</span></button>` : `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
     const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae!';
     document.getElementById('storage-status').innerHTML =
@@ -85,12 +93,12 @@ const App = {
     if (view.hero) h1.innerHTML = view.hero(); else h1.textContent = view.title;
     this.tick && this.tick();
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
-    document.title = `${view.title} · FlowFire${CANAL_TESTE ? ' (TESTE)' : ''}`;
+    document.title = `${view.title} · FlowFire${CANAL_ENXUTO ? ' Enxuto' : ''}${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
     const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
       : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
     try {
-      root.innerHTML = warn + Drive.banner() + demo + view.render(this.params);
+      root.innerHTML = warn + Drive.banner() + demo + Gravador.barHtml() + view.render(this.params);
       if (view.mount) view.mount(root);
     } catch (e) {
       console.error(e);
@@ -110,10 +118,12 @@ const App = {
   async init() {
     if (CANAL_TESTE) {   // marca visível: é a versão de teste
       document.body.classList.add('canal-teste');
-      document.querySelector('.topbar').insertAdjacentHTML('afterbegin', '<span class="teste-tag" title="Versão de teste: dados separados do app oficial">TESTE</span>');
+      if (CANAL_ENXUTO) document.body.classList.add('canal-enxuto');
+      document.querySelector('.topbar').insertAdjacentHTML('afterbegin', `<span class="teste-tag" title="Versão de teste: dados separados do app oficial">${CANAL_ENXUTO ? 'ENXUTO' : 'TESTE'}</span>`);
     }
     if (Native.available()) { await Native.restore(); Native.init(); document.body.classList.add('native'); }
     Store.load();
+    if (CANAL_ENXUTO) { S.settings.jogo = false; S.settings.showIndicadores = false; S.settings.showProjetos = false; S.meta = { ...(S.meta || {}), tutorialSeen: true }; }
     Theme.init();
     if (Cloud.available()) {
       document.getElementById('view').innerHTML = '<div class="loading"><span class="spinner"></span> Carregando seus dados…</div>';
@@ -123,6 +133,12 @@ const App = {
     }
     this.parseHash();
     window.addEventListener('hashchange', () => { this.parseHash(); this.closeMenu(); this.render({ resetScroll: true }); });
+    // Tocar de novo na tela atual (menu ou barra de baixo) volta para a lista dela
+    document.addEventListener('click', e => {
+      const l = e.target.closest && e.target.closest('#nav a, #bottom-nav a');
+      if (!l || l.getAttribute('href') !== '#' + this.route) return;
+      this.ui.gvId = null; this.ui.pWho = null; this.ui.ckRun = null; this.closeMenu(); this.render({ resetScroll: true });
+    });
 
     // Delegação de eventos: data-act (clique), data-change, data-input, data-submit
     document.addEventListener('click', e => {
@@ -188,6 +204,7 @@ const App = {
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
     Drive.auto();
     Fire.init();
+    Gravador.init();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
     if (!CANAL_TESTE && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },

@@ -1,7 +1,9 @@
 """Gera dist/gestao-rotina.html: um único arquivo com CSS e JS embutidos (abre com duplo clique).
-   python3 build.py --teste  → dist/gestao-rotina-teste.html (canal de teste: dados separados, sem Google Drive)."""
+   python3 build.py --teste  → dist/gestao-rotina-teste.html (canal de teste: dados separados, sem Google Drive).
+   python3 build.py --enxuto → dist/gestao-rotina-enxuto.html (cópia enxuta: calendário + gravar; dados separados)."""
 import re, base64, pathlib, sys
-TESTE = '--teste' in sys.argv
+ENXUTO = '--enxuto' in sys.argv
+TESTE = '--teste' in sys.argv and not ENXUTO
 root = pathlib.Path(__file__).parent
 html = (root / 'index.html').read_text(encoding='utf-8')
 css = (root / 'css/styles.css').read_text(encoding='utf-8')
@@ -18,7 +20,10 @@ html = re.sub(r'<script src="([^"]+)"></script>', inline, html)
 if TESTE:
     html = html.replace('<title>FlowFire</title>', '<title>FlowFire (TESTE)</title>')
     html = html.replace('<script>/* js/utils.js */', "<script>window.APP_CHANNEL = 'teste';</script>\n<script>/* js/utils.js */", 1)
+if ENXUTO:
+    html = html.replace('<title>FlowFire</title>', '<title>FlowFire Enxuto (TESTE)</title>')
+    html = html.replace('<script>/* js/utils.js */', "<script>window.APP_CHANNEL = 'enxuto';</script>\n<script>/* js/utils.js */", 1)
 (root / 'dist').mkdir(exist_ok=True)
-out = 'dist/gestao-rotina-teste.html' if TESTE else 'dist/gestao-rotina.html'
+out = 'dist/gestao-rotina-enxuto.html' if ENXUTO else 'dist/gestao-rotina-teste.html' if TESTE else 'dist/gestao-rotina.html'
 (root / out).write_text(html, encoding='utf-8')
 print(out, len(html) // 1024, 'KB')

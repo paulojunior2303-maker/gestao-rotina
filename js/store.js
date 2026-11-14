@@ -1,8 +1,9 @@
 'use strict';
 /* Estado, persistência (LocalStorage) e regras de domínio */
 /* Canal de teste (site …/teste/): dados guardados à parte, para nunca misturar com os reais */
-const CANAL_TESTE = typeof window !== 'undefined' && window.APP_CHANNEL === 'teste';
-const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_TESTE ? ':teste' : '');
+const CANAL_ENXUTO = typeof window !== 'undefined' && window.APP_CHANNEL === 'enxuto';   // cópia enxuta (calendário + gravar)
+const CANAL_TESTE = typeof window !== 'undefined' && (window.APP_CHANNEL === 'teste' || CANAL_ENXUTO);
+const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_ENXUTO ? ':enxuto' : CANAL_TESTE ? ':teste' : '');
 
 /* Indicadores lançados por dia. As chaves são fixas (dados guardados); os nomes podem ser trocados em
    Configurações → Metas (settings.metricNames). Os nomes padrão são genéricos, para qualquer equipe. */
@@ -99,6 +100,7 @@ const Store = {
       equipes: [],     // equipes de que a pessoa participa ({ id, nome, papel: gestor|membro }) — Conta FlowFire
       checklists: [],  // modelos de checklist ({ id, nome, itens: [{ id, texto }] })
       checks: [],      // checklists feitos ({ id, modeloId, nome, date, local, itens: [{ id, texto, r: ok|prob|na, obs }], fim })
+      gravacoes: [],   // gravações de reuniões/feedbacks (js/gravador.js); o áudio e a transcrição ficam no aparelho
       diario: {},      // por dia: { abertoEm, fechadoEm, nota } (Abrir/Fechar o dia)
       missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
       meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual

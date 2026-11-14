@@ -4,13 +4,15 @@
    e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje".
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
-  TYPES: { reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Imprevisto', missao: 'Missão' },
+  TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', projeto: 'Prazo de projeto', imprevisto: 'Imprevisto', missao: 'Missão' },
   WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
 
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
   itemsOn(k) {
     const out = [];
-    S.events.filter(e => e.date === k).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
+    // Gravações (reunião/feedback gravado): a reunião ligada a ela não aparece de novo
+    (S.gravacoes || []).filter(g => g.date === k).forEach(g => out.push({ type: 'gravacao', label: Gravador.nome(g), time: g.time, id: g.id, done: g.status === 'pronta', act: 'gvOpen', sub: g.status === 'pronta' ? (g.tipo === 'feedback' ? 'Feedback · resumo pronto' : 'Reunião · resumo pronto') : g.status === 'gravando' ? 'Gravando agora' : 'Gravação · transcrevendo' }));
+    S.events.filter(e => e.date === k && !e.gravacaoId).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
     if (S.settings.showProjetos) S.projects.filter(p => p.dueDate === k && p.status !== 'cancelado').forEach(p => out.push({ type: 'projeto', label: p.name, done: p.status === 'concluido', late: D.projectLate(p), id: p.id, demo: p.demo, act: 'pjOpen' }));
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
@@ -72,7 +74,7 @@ const Cal = {
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
-      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto', ...((S.missoes || []).length ? { missao: 'Missão' } : {}) }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
+      ${id === 'agenda' && s.mode === 'week' ? '' : `<div class="legend calx-legend">${Object.entries({ ...(CANAL_ENXUTO ? { gravacao: 'Gravação' } : {}), reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', ...(S.settings.showProjetos ? { projeto: 'Projeto' } : {}), imprevisto: 'Imprevisto', ...((S.missoes || []).length ? { missao: 'Missão' } : {}) }).map(([k, l]) => `<span><i class="t-${k}"></i>${l}</span>`).join('')}</div>`}
       ${id === 'agenda' ? `<button class="calx-exp" data-act="calMode" data-cal="${id}" data-v="${s.mode === 'week' ? 'month' : 'week'}" aria-expanded="${s.mode === 'month'}">${s.mode === 'week' ? `${U.icon('down', 16)} Ver o mês inteiro` : `${U.icon('up', 16)} Mostrar só a semana`}</button>` : ''}
     </div>`;
   },
@@ -90,7 +92,7 @@ const Cal = {
       </div>
       ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}</span>
-          <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></span>
+          <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${i.sub ? i.sub : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}`}</small></span>
           ${U.icon('right', 15)}</div>`).join('')}</div>`
         : `<p class="calx-empty muted small">Nada marcado para este dia.</p>`}
       <button class="calx-agenda" data-act="goAgenda" data-d="${k}">
@@ -139,7 +141,7 @@ Object.assign(Actions, {
       { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
     ];
     items.push(activity);
-    items.push({ label: 'Checklist', hint: 'Abertura de turno, manutenção preventiva…', icon: 'list', onClick: () => App.go('checklists') });
+    if (!CANAL_ENXUTO) items.push({ label: 'Checklist', hint: 'Abertura de turno, manutenção preventiva…', icon: 'list', onClick: () => App.go('checklists') });
     if (breakOk) items.unshift({ label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
     Capture.open({ k, type: k > t ? 'tarefa' : 'imprevisto', others: items });
   },

@@ -17,18 +17,20 @@ const Cloud = {
       tasks: { items: s.tasks }, projects: { items: s.projects }, occurrences: { items: s.occurrences }, events: { items: s.events }, feedbacks: { items: s.feedbacks || [] },
     };
     for (const [k, blocks] of Object.entries(s.days)) { const id = 'days-' + k.slice(0, 7); (parts[id] = parts[id] || { days: {} }).days[k] = blocks; }
+    for (const g of s.gravacoes || []) { const id = 'gv-' + String(g.date || '0000-00').slice(0, 7); (parts[id] = parts[id] || { items: [] }).items.push(g); }
     for (const c of s.checks || []) { const id = 'ck-' + String(c.date || '0000-00').slice(0, 7); (parts[id] = parts[id] || { items: [] }).items.push(c); }
     for (const r of s.indicators) { const id = 'ind-' + r.date.slice(0, 7); (parts[id] = parts[id] || { items: [] }).items.push(r); }
     return parts;
   },
   join(docs) {
     const core = docs.core || {};
-    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], diario: core.diario || {}, checklists: core.checklists || [], checks: [], days: {}, indicators: [],
+    const s = { version: core.version || 1, meta: core.meta || {}, settings: core.settings, routine: core.routine, weekly: core.weekly, monthly: core.monthly, missoes: core.missoes || [], diario: core.diario || {}, checklists: core.checklists || [], checks: [], gravacoes: [], days: {}, indicators: [],
       tasks: docs.tasks?.items || [], projects: docs.projects?.items || [], occurrences: docs.occurrences?.items || [], events: docs.events?.items || [], feedbacks: docs.feedbacks?.items || [] };
     for (const [id, d] of Object.entries(docs)) {
       if (id.startsWith('days-')) Object.assign(s.days, d.days || {});
       if (id.startsWith('ind-')) s.indicators.push(...(d.items || []));
       if (id.startsWith('ck-')) s.checks.push(...(d.items || []));
+      if (id.startsWith('gv-')) s.gravacoes.push(...(d.items || []));
     }
     for (const k of Object.keys(s)) if (s[k] === undefined) delete s[k];
     return s;

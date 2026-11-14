@@ -47,6 +47,14 @@ e diga o que mudou e como testar no celular.
   - `js/views/semana.js` (`Semana`, `#semana`): revisão da semana calculada dos dados; convite no último dia útil depois das 14h.
   - `UI.form`: campos com `more: true` ficam em "Mais opções" (`moreOpen`). Menu em grupos Dia a dia / Equipe / Planejamento / Ajustes.
   - Testes: `tests/novidades.test.js` (relógio simulado numa quarta 10:02).
+- **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`
+  (`APP_CHANNEL = 'enxuto'` → `CANAL_ENXUTO`, também `CANAL_TESTE`; LocalStorage `…:enxuto`; sem Drive e sem conta FlowFire por enquanto). Publicar: `bash tools/publicar-enxuto.sh "msg"`
+  (grava `enxuto/index.html` no `main`; o `pages.yml` copia a pasta). Só telas `ENXUTO_ROUTES` (`app.js`); Início = calendário do mês (`Views.dashboard.renderEnxuto`);
+  barra de baixo com o botão **Gravar** no meio (`BOTTOM` com `REC`); sem jogo, indicadores e projetos; guia curto (`Guide.renderEnxuto`).
+  **Gravador** (`js/gravador.js`, `Gravador` + `AudioDB` + `Views.gravacoes`): um toque grava; pedaços a cada 5 s no IndexedDB (`pedacos`), parte de 10 min (`partes`)
+  transcrita assim que fecha (`IA.transcribe`, texto em `textos`); sem internet/chave fica `pendente` e tenta de novo (evento `online`, abrir o app, a cada 10 s/1 min);
+  app fechado no meio → `Gravador.recuperar()`; no fim `IA.ata`/`IA.feedback` e `Gravador.vincular` cria a reunião (`S.events`, `gravacaoId`) ou o feedback.
+  `S.gravacoes` (nuvem em `gv-AAAA-MM`); áudio e transcrição completa ficam só no aparelho até a pessoa apagar. Testes: `tests/enxuto.test.js` (microfone falso, partes de 3 s).
 - **Agenda numa tela só** (`js/views/agenda.js`): calendário compacto em cima (`Cal.render('agenda')`, semana; "Ver o mês inteiro" expande) e, embaixo,
   o dia escolhido numa lista única por horário: blocos da rotina + reuniões/compromissos/prazos (`.blk-it`). O dia da agenda é `App.ui.agendaDate`, sincronizado com `Cal.sync`.
   O planejamento semanal/mensal (foco, checklist, metas das 4 semanas) foi retirado da interface a pedido do usuário; `S.weekly`/`S.monthly` continuam guardados.

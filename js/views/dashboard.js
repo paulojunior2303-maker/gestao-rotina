@@ -9,7 +9,22 @@ Views.dashboard = {
     const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     return `<span class="th-greet">${greet}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
   },
+  /* Cópia enxuta: o Início é o calendário do mês, com o botão de gravar */
+  renderEnxuto() {
+    const rec = Gravador.recording();
+    const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
+    return `
+    ${Updater.banner()}
+    <button class="gv-rec-big ${rec ? 'on' : ''}" data-act="${rec ? 'gvTela' : 'gvRec'}">
+      <span class="gv-rec-ic">${U.icon(rec ? 'stop' : 'mic', 26)}</span>
+      <span><strong>${rec ? 'Gravando… toque para abrir' : 'Gravar reunião ou feedback'}</strong><small>${rec ? 'A gravação continua enquanto você usa o app' : 'Um toque para começar. Você descreve depois.'}</small></span>
+    </button>
+    ${atencao.length ? `<div class="card gv-att"><div class="card-h"><h3>${U.icon('mic')} Gravações para ver</h3><a class="link" href="#gravacoes">Todas</a></div>
+      ${atencao.map(g => `<button class="gv-att-it" data-act="gvOpen" data-id="${g.id}"><span><strong>${U.esc(Gravador.nome(g))}</strong><small>${U.fmtShort(g.date)} ${g.time} · ${Gravador.fmt(g.dur)}</small></span>${!g.tipo ? '<span class="badge b-blue">Descrever</span>' : Views.gravacoes.chip(g)}</button>`).join('')}</div>` : ''}
+    <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>`;
+  },
   render() {
+    if (CANAL_ENXUTO) return this.renderEnxuto();
     const t = U.today(), nowM = U.nowMin();
     const hour = new Date().getHours();
     const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -123,3 +138,4 @@ Views.dashboard = {
     </section>`;
   },
 };
+if (CANAL_ENXUTO) Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });
