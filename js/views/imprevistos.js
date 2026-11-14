@@ -99,8 +99,17 @@ Object.assign(Actions, {
   occStatus({ id, s }) {
     const o = S.occurrences.find(x => x.id === id); if (!o) return;
     o.status = s; if (s === 'concluida') o.resolvedAt = new Date().toISOString();
+    let gap = 0;
+    const t = U.today(), b = s === 'concluida' && o.scheduled && o.scheduled.date === t ? D.findBlock(t, o.scheduled.blockId) : null;
+    if (b) {
+      const nowR = Math.ceil(U.nowMin() / 5) * 5;
+      if (U.toMin(b.start) < nowR && U.toMin(b.end) > nowR) { gap = U.toMin(b.end) - nowR; b.end = U.fromMin(nowR); }
+    }
     Occ.syncBlock(o); commit();
-    if (s === 'concluida') UI.toast('Imprevisto resolvido.');
+    if (s === 'concluida') {
+      if (gap >= 10) UI.toast(`Imprevisto resolvido ${U.fmtDur(gap)} antes do previsto.`, 'ok', { label: 'Adiantar a agenda', onClick: () => Replan.fromNow({ quiet: false }) });
+      else UI.toast('Imprevisto resolvido.');
+    }
   },
   occDelete({ id }) {
     const o = S.occurrences.find(x => x.id === id);

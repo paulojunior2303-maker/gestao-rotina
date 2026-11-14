@@ -242,6 +242,7 @@ Object.assign(Actions, {
     const k = Agenda.day();
     const late = D.dayBlocks(k).filter(b => D.blockLate(b, k));
     UI.sheet('Reorganizar o dia', [
+      { label: 'Reorganizar meu dia', hint: 'Refaz os horários do que falta, em sequência (com prévia)', icon: 'timeline', onClick: () => Replan.open(k) },
       { label: `Mover atrasadas para o próximo dia útil (${late.length})`, hint: 'Mantém o horário original no novo dia', icon: 'arrow', onClick: () => { if (!late.length) return UI.toast('Não há atividades atrasadas.', 'warn'); const to = D.nextWorkday(k); late.forEach(b => D.moveBlock(k, b.id, to)); commit(); UI.toast(`${U.plural(late.length, 'atividade movida', 'atividades movidas')} para ${U.fmtShort(to)}.`); } },
       { label: 'Encaixar um imprevisto', icon: 'alert', onClick: () => Actions.agImprevisto() },
       { sep: true },

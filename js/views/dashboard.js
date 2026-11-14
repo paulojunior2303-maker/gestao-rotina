@@ -26,18 +26,6 @@ Views.dashboard = {
     const doneTotal = S.tasks.filter(x => x.status === 'concluida').length;
     const openOcc = S.occurrences.filter(o => OPEN(o.status));
 
-    // Próximas atividades da agenda
-    const next = blocks.filter(b => !D.blockDone(b) && U.toMin(b.end) > nowM).slice(0, 5);
-
-    // Pendências prioritárias (o que resolver)
-    const prioItems = [
-      ...openOcc.map(o => ({ kind: 'Imprevisto', title: o.title, prio: o.priority, info: D.deadline(o.dueDate, o.dueTime, false), link: '#imprevistos', demo: o.demo })),
-      ...open.filter(x => ['urgente', 'alta'].includes(x.priority) || D.taskLate(x)).map(x => ({ kind: 'Tarefa', title: x.title, prio: x.priority, info: D.deadline(x.dueDate, x.dueTime, false), link: '#tarefas', demo: x.demo })),
-      // Reuniões com pauta que já aconteceram (últimos 7 dias) e ainda não foram registradas
-      ...Meetings.toRegister().filter(e => e.date >= U.addDays(t, -7))
-        .map(e => ({ kind: 'Registrar reunião', title: e.title, prio: 'media', info: null, link: '#reunioes', demo: e.demo, ev: e.id })),
-    ].sort((a, b) => ((b.info?.level === 'late') - (a.info?.level === 'late')) || PRIORITY_RANK[a.prio] - PRIORITY_RANK[b.prio]).slice(0, 7);
-
     // O que cobrar da equipe
     const charge = [
       ...open.filter(x => x.responsible).map(x => ({ who: x.responsible, what: x.title, kind: 'Tarefa', info: D.deadline(x.dueDate, x.dueTime, false), demo: x.demo })),
@@ -87,6 +75,8 @@ Views.dashboard = {
       </div>
     </section>
 
+    ${Agora.card()}
+
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>
 
     <section class="kpis">
@@ -97,19 +87,7 @@ Views.dashboard = {
       ${kpi('Imprevistos abertos', openOcc.length, openOcc.filter(D.occLate).length ? `${openOcc.filter(D.occLate).length} com prazo vencido` : 'Nenhum vencido', openOcc.length ? 'k-yellow' : 'k-gray', '#imprevistos')}
     </section>
 
-    <section class="grid-2">
-      <div class="card">
-        <div class="card-h"><h3>${U.icon('clock')} O que fazer hoje</h3><a class="link" href="#agenda">Agenda</a></div>
-        ${next.length ? `<ul class="list">${next.map(b => `<li class="li ${D.blockNow(b, t) ? 'li-now' : ''}"><span class="li-time">${b.start}–${b.end}</span><span class="li-main" style="--c:${D.cat(b.category).color}"><span class="cat-dot"></span>${U.esc(b.title)}</span>${D.blockNow(b, t) ? '<span class="badge b-blue">Agora</span>' : b.status === 'andamento' ? H.status('andamento') : ''}</li>`).join('')}</ul>`
-          : H.empty(workday ? (prog.total ? 'Todas as atividades de hoje foram encerradas.' : 'Nenhuma atividade na agenda de hoje.') : 'Sem agenda para hoje.')}
-        ${lateBlocks.length ? `<div class="alert a-red">${U.icon('alert')} ${U.plural(lateBlocks.length, 'atividade')} da agenda ${lateBlocks.length > 1 ? 'passaram' : 'passou'} do horário sem conclusão. <a class="link" href="#agenda">Reorganizar</a></div>` : ''}
-      </div>
-      <div class="card">
-        <div class="card-h"><h3>${U.icon('alert')} O que resolver</h3><a class="link" href="#tarefas">Tarefas</a></div>
-        ${prioItems.length ? `<ul class="list">${prioItems.map(i => `<li class="li"><a href="${i.link}" class="li-main" ${i.ev ? `data-act="evView" data-id="${i.ev}"` : ''}>${i.ev ? H.chip('Reunião', '#9461f5') : H.prio(i.prio)} <span>${U.esc(i.title)}</span>${H.demo(i)}</a><span class="li-side"><small class="muted">${i.kind}</small>${H.deadline(i.info)}</span></li>`).join('')}</ul>`
-          : H.empty('Nenhuma pendência urgente, de alta prioridade ou atrasada.')}
-      </div>
-    </section>
+    <section class="grid-1">${Agora.hoje()}</section>
 
     <section class="${showProj ? 'grid-2' : 'grid-1'}">
       <div class="card">
