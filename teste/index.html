@@ -1121,6 +1121,17 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .eu-row input { flex: 1; min-width: 0; min-height: 42px; padding: 8px 12px; border: 1px solid var(--input-border); border-radius: 11px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 15px; outline: none; }
 .eu-row input:focus { border-color: var(--accent); }
 
+/* Pedido recebido (áudios e/ou texto) */
+.pd { display: flex; flex-direction: column; gap: 8px; }
+.pd p { margin: 0; }
+.pd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pd-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
+.pd-list li > .ic { color: var(--accent); flex: none; }
+.pd-list li span { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13.5px; overflow-wrap: anywhere; }
+.pd-list li small { color: var(--muted); font-size: 12px; }
+.pd-add { align-self: flex-start; }
+.pd-colar { align-self: flex-start; }
+
 </style>
 </head>
 <body>
@@ -2606,9 +2617,10 @@ Responda em JSON com:
     duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
 
   /* Áudio recebido (ex.: WhatsApp do chefe pedindo algo): resumo do recado + itens para a agenda de quem usa o app */
-  async recado({ date, transcript, de = '', notes = '', equipe = [], escrito = false }) {
+  async recado({ date, transcript, de = '', notes = '', equipe = [], escrito = false, fontes = '' }) {
+    fontes = fontes || (escrito ? 'uma MENSAGEM ESCRITA RECEBIDA' : 'um ÁUDIO RECEBIDO (transcrito)');
     const eu = this.usuario(), amanha = D.nextWorkday(date);
-    const system = this.system(`Tarefa: /recado. ${escrito ? 'O texto abaixo é uma MENSAGEM ESCRITA RECEBIDA' : 'A transcrição abaixo é de um ÁUDIO RECEBIDO'} ${de ? `de ${de}` : '(de outra pessoa)'} por ${eu || 'quem usa o aplicativo'} (não foi gravado por quem usa o app).
+    const system = this.system(`Tarefa: /recado. Abaixo está o conteúdo de ${fontes} ${de ? `de ${de}` : '(de outra pessoa)'} por ${eu || 'quem usa o aplicativo'} (não foi gravado nem escrito por quem usa o app). Se houver mais de um áudio ou áudio e texto, junte tudo num pedido só, sem repetir itens.
 Data em que foi recebido: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
 Use só o que foi dito. Não invente prazos, horários, nomes nem tarefas.
 Responda em JSON com:
@@ -2621,7 +2633,7 @@ Responda em JSON com:
   - "duracao": minutos, se foi dita; senão 0;
   - "responsavel": vazio quando o pedido é para quem recebeu o áudio (${eu || 'a pessoa que usa o app'}); o nome de outra pessoa da equipe se o pedido for para ela (equipe: ${equipe.join(', ') || 'não cadastrada'});
   - "situacao": "futuro" (a fazer) ou "feito" (se o áudio só informa algo que já aconteceu).`);
-    const r = await this.call({ system, timeout: 120000, parts: [{ text: `${escrito ? 'Mensagem recebida (texto colado):' : 'Transcrição do áudio (automática, pode ter erros):'}\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações de quem recebeu:\n"""\n${notes.trim()}\n"""` : ''}` }],
+    const r = await this.call({ system, timeout: 120000, parts: [{ text: `Conteúdo recebido (transcrição automática dos áudios, pode ter erros; mensagem escrita como veio):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações de quem recebeu:\n"""\n${notes.trim()}\n"""` : ''}` }],
       schema: { type: 'OBJECT', required: ['resumo', 'itens'], properties: { resumo: { type: 'STRING' }, itens: this.ITENS_SCHEMA } } });
     return { resumo: this.tidy(String(r.resumo || '')), itens: this.itensNorm(r.itens, eu) };
   },
@@ -4386,7 +4398,12 @@ const Gravador = {
   supported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) && !(typeof Cloud !== 'undefined' && Cloud.available()); },
   elapsed() { return this.cur ? Math.floor((Date.now() - this.cur.t0) / 1000) : 0; },
   fmt(s) { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h}:${U.pad(m)}:${U.pad(s % 60)}` : `${m}:${U.pad(s % 60)}`; },
-  nome(g) { return g.tipo === 'audio' ? `${g.origem === 'texto' ? 'Mensagem' : 'Áudio'} ${g.de ? 'de ' + g.de : 'recebid' + (g.origem === 'texto' ? 'a' : 'o')}` : g.tipo === 'relatorio' ? `Relatório do dia ${U.fmtShort(g.date)}` : g.titulo || (g.tipo === 'feedback' ? `Feedback${g.pessoa ? ' com ' + g.pessoa : ''}` : g.tipo === 'reuniao' ? 'Reunião' : 'Gravação sem nome'); },
+  nome(g) { return g.tipo === 'audio' ? this.nomePedido(g) : g.tipo === 'relatorio' ? `Relatório do dia ${U.fmtShort(g.date)}` : g.titulo || (g.tipo === 'feedback' ? `Feedback${g.pessoa ? ' com ' + g.pessoa : ''}` : g.tipo === 'reuniao' ? 'Reunião' : 'Gravação sem nome'); },
+  nomePedido(g) {
+    const nA = g.origem === 'texto' ? 0 : g.partes.filter(p => !p.texto).length, txt = g.origem === 'texto' || g.partes.some(p => p.texto);
+    const base = nA > 1 ? `${nA} áudios` : nA === 1 ? 'Áudio' : 'Mensagem';
+    return `${base}${nA && txt ? ' e mensagem' : ''} ${g.de ? 'de ' + g.de : (nA ? (nA > 1 ? 'recebidos' : 'recebido') : 'recebida')}`;
+  },
   salvar() { Store.save(); if (typeof App !== 'undefined' && ['gravacoes', 'dashboard'].includes(App.route) && !document.querySelector('.modal-wrap input:focus, .modal-wrap textarea:focus')) App.render(); Gravador.paintBar(); },
 
   /* ---------- Gravar ---------- */
@@ -4428,87 +4445,131 @@ const Gravador = {
     rec.start(this.SLICE_MS);
     c.segTimer = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, this.SEG_MS);
   },
-  /* ---------- Áudio recebido (WhatsApp etc.) ---------- */
+  /* ---------- Pedido recebido: um ou vários áudios e/ou uma mensagem escrita ---------- */
   MAX_ARQ: 19 * 1024 * 1024,   // limite da IA para um arquivo de áudio enviado de uma vez
+  EXT_AUDIO: ['opus', 'ogg', 'oga', 'm4a', 'mp4', 'aac', 'mp3', 'wav', 'webm', 'flac', 'amr', '3gp'],
+  ext: f => ((f.name || '').split('.').pop() || '').toLowerCase(),
+  ehAudio(f) { const t = (f.type || '').toLowerCase(); return t.startsWith('audio/') || this.EXT_AUDIO.includes(this.ext(f)) || t === 'application/ogg'; },
   mimeDe(file) {
-    const t = (file.type || '').split(';')[0], ext = (file.name.split('.').pop() || '').toLowerCase();
-    if (t && t !== 'application/octet-stream' && t !== 'audio/x-m4a') return t === 'audio/opus' ? 'audio/ogg' : t;
-    return ({ opus: 'audio/ogg', ogg: 'audio/ogg', oga: 'audio/ogg', m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', mp3: 'audio/mpeg', wav: 'audio/wav', webm: 'audio/webm', flac: 'audio/flac' })[ext] || 'audio/ogg';
+    const t = (file.type || '').split(';')[0], ext = this.ext(file);
+    if (t && t.startsWith('audio/') && t !== 'audio/x-m4a') return t === 'audio/opus' ? 'audio/ogg' : t;
+    return ({ opus: 'audio/ogg', ogg: 'audio/ogg', oga: 'audio/ogg', m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', mp3: 'audio/mpeg', wav: 'audio/wav', webm: 'audio/webm', flac: 'audio/flac', amr: 'audio/amr', '3gp': 'audio/3gpp' })[ext] || (t === 'application/ogg' ? 'audio/ogg' : 'audio/ogg');
   },
-  escolherArquivo() {
-    const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.webm';
-    inp.style.display = 'none'; document.body.appendChild(inp);
-    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.remove(); if (f) this.perguntarDe(f); });
-    inp.click();
-  },
-  perguntarDe(file) {
-    if (file.size > this.MAX_ARQ) return UI.toast('Esse áudio é grande demais para enviar de uma vez (máximo ~19 MB, cerca de 1 hora).', 'error');
-    if (file.size < 500) return UI.toast('Esse arquivo parece vazio.', 'error');
-    UI.form({
-      title: 'Áudio recebido', submitLabel: 'Transcrever',
-      fields: [
-        { type: 'html', html: `<p class="muted small">${U.icon('mic', 13)} ${U.esc(file.name)} (${Math.max(1, Math.round(file.size / 1024))} KB). O app transcreve, resume o que foi pedido e mostra o que dá para pôr na agenda.</p>` },
-        { name: 'de', label: 'De quem é o áudio? (opcional)', placeholder: 'Ex.: meu chefe, Carlos, cliente X', list: D.techNames() },
-        { name: 'notas', label: 'Anotações (opcional)', type: 'textarea', rows: 2, placeholder: 'Algo que ajude a entender o pedido' },
-      ],
-      onSubmit(v) { Gravador.importar(file, v).catch(e => UI.toast('Não foi possível guardar o áudio: ' + e.message, 'error')); },
+  /* Tela única: adiciona áudios (vários) e/ou cola o texto; a IA analisa tudo junto */
+  pedido({ arquivos = [], texto = '', de = '' } = {}) {
+    const st = { arquivos: [], texto, de };
+    const avisos = [];
+    const add = list => {
+      [...list].forEach(f => {
+        if (!this.ehAudio(f)) return avisos.push(`"${f.name}" não é um áudio`);
+        if (f.size > this.MAX_ARQ) return avisos.push(`"${f.name}" é grande demais (máx. ~19 MB)`);
+        if (f.size < 300) return avisos.push(`"${f.name}" está vazio`);
+        if (!st.arquivos.some(x => x.name === f.name && x.size === f.size)) st.arquivos.push(f);
+      });
+      if (avisos.length) { UI.toast(avisos.join('; ') + '.', 'warn'); avisos.length = 0; }
+    };
+    add(arquivos);
+    const m = UI.modal({ title: 'Pedido recebido', body: '<div class="pd"></div>',
+      footer: '<span class="grow"></span><button class="btn ghost" data-no>Cancelar</button><button class="btn primary" data-go>Analisar</button>' });
+    const box = m.el.querySelector('.pd');
+    const ler = () => { const t = box.querySelector('[name=pdTexto]'), d = box.querySelector('[name=pdDe]'); if (t) st.texto = t.value; if (d) st.de = d.value; };
+    const paint = () => {
+      ler();
+      const kb = n => n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+      box.innerHTML = `
+        <p class="muted small">Áudios do WhatsApp e/ou a mensagem escrita: a IA junta tudo, resume o que foi pedido e mostra o que dá para pôr na agenda.</p>
+        <span class="cap-l">Áudios ${st.arquivos.length ? `(${st.arquivos.length})` : ''}</span>
+        ${st.arquivos.length ? `<ul class="pd-list">${st.arquivos.map((f, i) => `<li>${U.icon('mic', 15)}<span>${U.esc(f.name)}<small>${kb(f.size)}</small></span><button type="button" class="icon-btn" data-rm="${i}" aria-label="Tirar ${U.esc(f.name)}">${U.icon('x', 15)}</button></li>`).join('')}</ul>` : ''}
+        <button type="button" class="btn ghost pd-add" data-add>${U.icon('plus', 15)} ${st.arquivos.length ? 'Adicionar mais áudios' : 'Escolher áudio(s)'}</button>
+        <small class="hint">Dica: no WhatsApp, selecione os áudios → Compartilhar → FlowFire (no app instalado). Ou salve e escolha aqui.</small>
+        <label class="cap-l" for="pd-texto">Mensagem escrita (opcional)</label>
+        <textarea id="pd-texto" name="pdTexto" class="cap-in" rows="4" placeholder="Cole aqui o texto que você recebeu">${U.esc(st.texto)}</textarea>
+        <button type="button" class="btn sm ghost pd-colar" data-colar>${U.icon('download', 14)} Colar do celular</button>
+        <label class="cap-l" for="pd-de">De quem é? (opcional)</label>
+        <input id="pd-de" name="pdDe" class="cap-in" value="${U.esc(st.de)}" placeholder="Ex.: meu chefe, Carlos, cliente X" list="pd-dl" autocomplete="off"><datalist id="pd-dl">${D.techNames().map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>
+        <div class="form-error" hidden></div>`;
+    };
+    paint();
+    m.el.addEventListener('click', async e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.rm !== undefined) { ler(); st.arquivos.splice(+b.dataset.rm, 1); paint(); return; }
+      if (b.hasAttribute('data-add')) {
+        ler();
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.multiple = true; inp.style.display = 'none';   // sem "accept": o Android abre o gerenciador de arquivos (não só câmera/gravador)
+        document.body.appendChild(inp);
+        inp.addEventListener('change', () => { add(inp.files || []); inp.remove(); paint(); });
+        inp.click(); return;
+      }
+      if (b.hasAttribute('data-colar')) {
+        try { const t = await navigator.clipboard.readText(); if (t) { box.querySelector('[name=pdTexto]').value = t; } else UI.toast('A área de transferência está vazia.', 'warn'); }
+        catch (err) { UI.toast('Não deu para colar sozinho. Segure o dedo no campo e escolha Colar.', 'warn'); }
+        return;
+      }
+      if (b.hasAttribute('data-no')) { m.close(); return; }
+      if (b.hasAttribute('data-go')) {
+        ler();
+        const texto = st.texto.trim();
+        if (!st.arquivos.length && texto.length < 3) { const er = box.querySelector('.form-error'); er.textContent = 'Escolha pelo menos um áudio ou cole a mensagem.'; er.hidden = false; return; }
+        b.disabled = true;
+        try { await Gravador.importarPedido({ arquivos: st.arquivos, texto, de: st.de }); m.close(); }
+        catch (err) { b.disabled = false; UI.toast('Não foi possível guardar: ' + err.message, 'error'); }
+      }
     });
+    return m;
   },
-  /* Mensagem escrita recebida (WhatsApp, e-mail…): colar o texto */
-  colarTexto() {
-    const m = UI.form({
-      title: 'Mensagem recebida', submitLabel: 'Analisar',
-      fields: [
-        { type: 'html', html: `<p class="muted small">Copie a mensagem (no WhatsApp: segure o dedo na mensagem → Copiar) e cole aqui. O app resume o que foi pedido e mostra o que dá para pôr na agenda.</p>` },
-        { name: 'texto', label: 'Texto da mensagem', type: 'textarea', rows: 7, required: true, placeholder: 'Cole aqui o texto que você recebeu' },
-        { type: 'html', html: `<button type="button" class="btn sm ghost" data-colar>${U.icon('download', 14)} Colar do celular</button>` },
-        { name: 'de', label: 'De quem é a mensagem? (opcional)', placeholder: 'Ex.: meu chefe, Carlos, cliente X', list: D.techNames() },
-      ],
-      validate: v => v.texto.trim().length < 3 ? 'Cole o texto da mensagem.' : null,
-      onSubmit(v) { Gravador.importarTexto(v).catch(e => UI.toast('Não foi possível guardar a mensagem: ' + e.message, 'error')); },
-    });
-    const b = m.el.querySelector('[data-colar]');
-    if (b) b.addEventListener('click', async () => {
-      try { const t = await navigator.clipboard.readText(); if (t) { m.el.querySelector('[name=texto]').value = t; } else UI.toast('A área de transferência está vazia.', 'warn'); }
-      catch (e) { UI.toast('Não deu para colar sozinho. Segure o dedo no campo e escolha Colar.', 'warn'); }
-    });
-  },
-  async importarTexto({ texto = '', de = '' } = {}) {
+  async importarPedido({ arquivos = [], texto = '', de = '' } = {}) {
     await AudioDB.open();
-    const t = String(texto).trim().slice(0, 60000);
-    const g = { id: U.uid(), at: new Date().toISOString(), date: U.today(), time: U.nowTime(), dur: 0, status: 'processando', motivo: '', tipo: 'audio', origem: 'texto', de: de.trim(), notas: '', titulo: '', pessoa: '', resumo: '', combinados: [], ref: null, audio: false,
-      partes: [{ n: 0, ini: 0, dur: 0, st: 'ok', chars: t.length }] };
-    await AudioDB.put('textos', { g: g.id, n: 0, text: t });
+    const t = String(texto || '').trim().slice(0, 60000);
+    const g = { id: U.uid(), at: new Date().toISOString(), date: U.today(), time: U.nowTime(), dur: 0, status: 'processando', motivo: '', tipo: 'audio',
+      origem: arquivos.length ? (t ? 'misto' : 'audio') : 'texto', de: String(de || '').trim(), notas: '', titulo: '', pessoa: '', resumo: '', combinados: [], ref: null, audio: arquivos.length > 0, partes: [] };
+    for (const [i, f] of arquivos.entries()) {
+      g.partes.push({ n: i, ini: 0, dur: 0, st: 'pend', chars: 0, bytes: f.size, rotulo: arquivos.length > 1 ? `Áudio ${i + 1}` : 'Áudio', arquivo: f.name });
+      await AudioDB.put('partes', { g: g.id, n: i, blob: f, mime: this.mimeDe(f) });
+    }
+    if (t) {
+      const n = g.partes.length;
+      g.partes.push({ n, ini: 0, dur: 0, st: 'ok', chars: t.length, rotulo: 'Mensagem escrita', texto: true });
+      await AudioDB.put('textos', { g: g.id, n, text: t });
+    }
     this.list().push(g);
     this.salvar();
-    UI.toast('Mensagem guardada. Analisando…', 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
+    // duração de cada áudio (só para mostrar)
+    arquivos.forEach((f, i) => {
+      try {
+        const a = new Audio(), u = URL.createObjectURL(f);
+        a.preload = 'metadata';
+        a.onloadedmetadata = () => { if (isFinite(a.duration)) { g.partes[i].dur = Math.round(a.duration); g.dur = g.partes.reduce((x, p) => x + (p.dur || 0), 0); this.salvar(); } URL.revokeObjectURL(u); };
+        a.onerror = () => URL.revokeObjectURL(u); a.src = u;
+      } catch (e) { /* sem duração */ }
+    });
+    UI.toast(arquivos.length ? `${U.plural(arquivos.length, 'áudio guardado', 'áudios guardados')}. Transcrevendo…` : 'Mensagem guardada. Analisando…', 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
     this.processar();
     return g;
   },
-  /* Áudio recebido: escolher o tipo de envio (arquivo de áudio ou texto colado) */
-  receber() {
-    UI.sheet('O que você recebeu?', [
-      { label: 'Um áudio', hint: 'Arquivo de áudio (ex.: áudio do WhatsApp)', icon: 'mic', onClick: () => Gravador.escolherArquivo() },
-      { label: 'Uma mensagem escrita', hint: 'Cole o texto (WhatsApp, e-mail…)', icon: 'chat', onClick: () => Gravador.colarTexto() },
-    ]);
+  /* Chegou pelo "Compartilhar" do Android (WhatsApp → FlowFire): abre a tela do pedido já com os áudios/texto */
+  compartilhado(d) {
+    if (!d || (d.id && d.id === this.ultimoCompart)) return;
+    this.ultimoCompart = d.id;
+    const arquivos = [], ruins = [];
+    (d.arquivos || []).forEach(a => {
+      if (a.erro || !a.dados) return ruins.push(a.nome || 'arquivo');
+      const bin = atob(a.dados), bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      arquivos.push(new File([bytes], a.nome || 'audio.opus', { type: a.tipo || '' }));
+    });
+    if (ruins.length) UI.toast(`Não deu para ler: ${ruins.join(', ')}.`, 'warn');
+    const texto = [d.assunto, d.texto].filter(Boolean).join('\n').trim();
+    if (!arquivos.length && !texto) return;
+    if (App.route !== 'gravacoes') { App.ui.gvId = null; location.hash = '#gravacoes'; }
+    setTimeout(() => this.pedido({ arquivos, texto }), 250);
+    try { const P = Native.P().Compartilhar; if (P && P.limpar) P.limpar().catch(() => {}); } catch (e) { /* ok */ }
   },
-  async importar(file, { de = '', notas = '' } = {}) {
-    await AudioDB.open();
-    const g = { id: U.uid(), at: new Date().toISOString(), date: U.today(), time: U.nowTime(), dur: 0, status: 'processando', motivo: '', tipo: 'audio', de: de.trim(), notas, titulo: '', pessoa: '', resumo: '', combinados: [], ref: null, audio: true, arquivo: file.name,
-      partes: [{ n: 0, ini: 0, dur: 0, st: 'pend', chars: 0, bytes: file.size }] };
-    await AudioDB.put('partes', { g: g.id, n: 0, blob: file, mime: this.mimeDe(file) });
-    this.list().push(g);
-    this.salvar();
-    // duração (só para mostrar)
-    try {
-      const a = new Audio(), u = URL.createObjectURL(file);
-      a.preload = 'metadata'; a.onloadedmetadata = () => { if (isFinite(a.duration)) { g.dur = g.partes[0].dur = Math.round(a.duration); this.salvar(); } URL.revokeObjectURL(u); };
-      a.onerror = () => URL.revokeObjectURL(u); a.src = u;
-    } catch (e) { /* sem duração */ }
-    UI.toast('Áudio guardado. Transcrevendo…', 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
-    this.processar();
-    return g;
+  ouvirCompartilhar() {
+    let P; try { P = typeof Native !== 'undefined' && Native.available() && Native.P().Compartilhar; } catch (e) { P = null; }
+    if (!P) return;
+    try { P.addListener('recebido', d => this.compartilhado(d)); } catch (e) { /* versão antiga do app */ }
+    setTimeout(() => { if (P.pendentes) P.pendentes().then(d => { if (d && (d.arquivos || d.texto)) this.compartilhado(d); }).catch(() => {}); }, 1500);
   },
 
   /* Junta os pedaços de uma parte num arquivo só e manda para a transcrição */
@@ -4605,6 +4666,7 @@ const Gravador = {
   async transcricao(g) {
     const ts = await AudioDB.all('textos', [g.id]);
     const by = new Map(ts.map(x => [x.n, x.text]));
+    if (g.partes.some(p => p.rotulo)) return g.partes.filter(p => by.get(p.n)).map(p => `${p.rotulo}${p.arquivo ? ` (${p.arquivo})` : ''}:\n${by.get(p.n)}`).join('\n\n');
     if (g.origem === 'texto') return by.get(0) || '';
     return g.partes.filter(p => by.get(p.n)).map(p => `[${this.fmt(p.ini)}]\n${by.get(p.n)}`).join('\n\n');
   },
@@ -4614,7 +4676,9 @@ const Gravador = {
     if (!navigator.onLine) return this.espera(g, 'Sem internet para fazer o resumo. Ele sai sozinho quando a conexão voltar.');
     try {
       if (g.tipo === 'audio') {
-        const r = await IA.recado({ date: g.date, transcript: tx, de: g.de || '', notes: g.notas || '', equipe: D.techNames(), escrito: g.origem === 'texto' });
+        const nA = g.origem === 'texto' ? 0 : g.partes.filter(p => !p.texto).length, temTxt = g.origem === 'texto' || g.partes.some(p => p.texto);
+        const fontes = [nA ? (nA > 1 ? `${nA} ÁUDIOS RECEBIDOS (transcritos)` : 'um ÁUDIO RECEBIDO (transcrito)') : '', temTxt ? 'uma MENSAGEM ESCRITA RECEBIDA' : ''].filter(Boolean).join(' e ');
+        const r = await IA.recado({ date: g.date, transcript: tx, de: g.de || '', notes: g.notas || '', equipe: D.techNames(), fontes });
         g.resumo = r.resumo; g.combinados = [];
         const feitos = (g.itens || []).filter(i => i.aplicado);
         r.itens.forEach(i => { i.sel = i.situacao !== 'feito'; });
@@ -4635,7 +4699,7 @@ const Gravador = {
       g.status = 'pronta'; g.motivo = ''; g.resumidaEm = new Date().toISOString();
       this.vincular(g, tx);
       this.salvar();
-      UI.toast(g.tipo === 'audio' ? `${g.origem === 'texto' ? 'Mensagem analisada' : 'Áudio transcrito'}${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'pedido identificado', 'pedidos identificados')}` : ''}.` : g.tipo === 'relatorio' ? `Relatório pronto${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'item identificado', 'itens identificados')}` : ''}.` : `Resumo pronto: ${this.nome(g)}.`, 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
+      UI.toast(g.tipo === 'audio' ? `${this.nome(g)}: ${(g.itens || []).length ? U.plural(g.itens.length, 'pedido identificado', 'pedidos identificados') : 'analisado'}.` : g.tipo === 'relatorio' ? `Relatório pronto${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'item identificado', 'itens identificados')}` : ''}.` : `Resumo pronto: ${this.nome(g)}.`, 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
     } catch (e) { this.espera(g, 'Resumo: ' + e.message); }
   },
   /* Cria/atualiza a reunião ou o feedback ligado à gravação (aparecem no calendário e no resto do app) */
@@ -4806,6 +4870,7 @@ const Gravador = {
     }, 10000);
     window.addEventListener('beforeunload', e => { if (this.cur) { e.preventDefault(); e.returnValue = ''; } });
     this.recuperar().then(() => this.processar());
+    this.ouvirCompartilhar();
   },
 };
 
@@ -4827,7 +4892,7 @@ Views.gravacoes = {
       ${!IA.ready() && IA.supported() ? `<div class="alert a-yellow">${U.icon('spark')} <span>Para transcrever e resumir, cadastre a chave da IA. As gravações ficam guardadas até lá.</span> <a class="link" href="#config" data-act="cfgJump" data-id="ia">Configurar</a></div>` : ''}
       ${pend.length ? `<div class="alert a-yellow">${U.icon('clock')} <span>${U.plural(pend.length, 'gravação esperando', 'gravações esperando')} para transcrever: ${U.esc(pend[0].motivo || '')}</span> <button class="link" data-act="gvRetry">Tentar agora</button></div>` : ''}
       ${Gravador.recording() ? '' : `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fale o que fez hoje e o que vem amanhã: o app escreve o relatório e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
-      ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Enviar áudio ou texto</strong><small>Recebeu um pedido por áudio ou por escrito? O app entende e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
+      ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Recebi um pedido (áudio ou texto)</strong><small>Um ou vários áudios e/ou a mensagem escrita: a IA entende e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
       ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : H.empty('Nenhuma gravação ainda. Toque em <strong>Gravar</strong>, na barra de baixo, para começar. Não precisa criar a reunião antes.')}`;
   },
@@ -4862,7 +4927,7 @@ Views.gravacoes = {
       ${comb.length && g.tipo !== 'relatorio' ? `<div class="card"><div class="card-h"><h3>${U.icon('tasks')} ${g.tipo === 'feedback' ? 'Acordos' : 'Combinados'}</h3></div>
         <ul class="gv-comb">${comb.map(c => `<li>${U.esc(c)}</li>`).join('')}</ul>
         ${g.tarefas ? `<p class="muted small">${U.plural(g.tarefas, 'tarefa criada', 'tarefas criadas')}.</p>` : `<button class="btn sm" data-act="gvTasks" data-id="${g.id}">${U.icon('plus', 14)} Virar tarefas</button>`}</div>` : ''}
-      <details class="card gv-tx" data-gv-tx="${g.id}"><summary>${U.icon('list', 16)} ${g.origem === 'texto' ? 'Mensagem recebida' : 'Transcrição completa'}</summary><div class="gv-tx-body muted small">Carregando…</div></details>
+      <details class="card gv-tx" data-gv-tx="${g.id}"><summary>${U.icon('list', 16)} ${g.origem === 'texto' ? 'Mensagem recebida' : g.origem === 'misto' ? 'Transcrição e mensagem' : 'Transcrição completa'}</summary><div class="gv-tx-body muted small">Carregando…</div></details>
       ${g.origem === 'texto' ? '' : `<div class="card"><div class="card-h"><h3>${U.icon('mic')} Áudio</h3></div>
         ${g.audio ? `<div class="gv-audio" data-gv-audio="${g.id}"><p class="muted small">Carregando…</p></div>
           ${g.status === 'pronta' ? `<button class="btn sm ghost danger-text" data-act="gvDelAudio" data-id="${g.id}">${U.icon('trash', 14)} Apagar o áudio (fica a transcrição)</button>` : ''}`
@@ -4918,11 +4983,10 @@ Object.assign(Actions, {
       { label: 'Feedback', hint: 'Conversa individual com alguém da equipe', icon: 'chat', onClick: () => Gravador.start({ tipo: 'feedback' }) },
       { label: 'Relatório do dia', hint: 'O que você fez hoje e o que vem amanhã', icon: 'list', onClick: () => Gravador.start({ tipo: 'relatorio' }) },
       { sep: true },
-      { label: 'Enviar um áudio', hint: 'Áudio do WhatsApp ou outro: o app transcreve e anota na agenda', icon: 'upload', onClick: () => Gravador.escolherArquivo() },
-      { label: 'Colar uma mensagem (texto)', hint: 'Pedido por escrito: o app entende e anota na agenda', icon: 'chat', onClick: () => Gravador.colarTexto() },
+      { label: 'Recebi um pedido (áudio ou texto)', hint: 'Um ou vários áudios do WhatsApp e/ou a mensagem escrita: a IA entende e anota na agenda', icon: 'upload', onClick: () => Gravador.pedido() },
     ]);
   },
-  gvArq() { Gravador.receber(); },
+  gvArq() { Gravador.pedido(); },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {
