@@ -137,7 +137,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav a.active { background: var(--side-active); color: #fff; font-weight: 550; }
 .nav a.active .ic { color: var(--side-hi); }
 .nav a.active::before { content: ""; position: absolute; left: -12px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: #b28eff; }
-.nav-badge { margin-left: auto; background: #f0566a; color: #fff; font-size: 11px; font-weight: 650; border-radius: 99px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.nav-badge { margin-left: auto; background: #c42d45; color: #fff; font-size: 11px; font-weight: 650; border-radius: 99px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .sidebar-foot { padding: 14px 22px calc(16px + env(safe-area-inset-bottom)); font-size: 11.5px; color: var(--side-muted); border-top: 1px solid var(--side-line); }
 .dot-ok, .dot-err, .dot-wait { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3dbe8b; margin-right: 6px; }
 .dot-err { background: #f0566a; }
@@ -152,9 +152,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .icon-btn.menu-btn { display: none; position: relative; }
 .bottom-nav { display: none; }
 /* Botão flutuante "+" (cria o item da tela atual) */
-.fab { position: fixed; right: 32px; bottom: 32px; z-index: 31; width: 58px; height: 58px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: linear-gradient(145deg, var(--accent), var(--primary)); box-shadow: 0 10px 26px rgba(91, 40, 200, .45), inset 0 1px 0 rgba(255, 255, 255, .2); transition: transform .18s var(--ease), box-shadow .2s; }
+/* O "+" é a ação secundária (o Gravar, no meio da barra, é a principal): superfície com ícone roxo, sem brilho colorido */
+.fab { position: fixed; right: 32px; bottom: 32px; z-index: 31; width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--border-strong); display: grid; place-items: center; cursor: pointer; color: var(--accent); background: var(--surface-3); box-shadow: 0 8px 18px rgba(0, 0, 0, .28); transition: transform .22s var(--ease), opacity .22s, box-shadow .2s; }
 .fab[hidden] { display: none; }
-.fab:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(91, 40, 200, .5), inset 0 1px 0 rgba(255, 255, 255, .2); }
+.fab:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0, 0, 0, .3); }
+body.fab-off .fab { transform: translateY(24px) scale(.7); opacity: 0; pointer-events: none; }
 .fab:active { transform: scale(.92); }
 .fab:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 3px; }
 body.menu-open .fab { display: none; }
@@ -201,7 +203,7 @@ body.canal-teste .topbar { box-shadow: inset 0 3px 0 #e3a043; }
 .chip.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
 .badge { display: inline-block; padding: 1px 8px; border-radius: 7px; font-size: 11px; font-weight: 600; background: var(--track); color: var(--text-2); white-space: nowrap; line-height: 18px; }
 .b-blue { background: var(--blue-bg); color: var(--blue-text); } .b-red { background: var(--red-bg); color: var(--red-text); } .b-green { background: var(--green-bg); color: var(--green-text); } .b-yellow { background: var(--yellow-bg); color: var(--yellow-text); }
-.demo-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .04em; color: #3b2508; background: #f2c77d; vertical-align: 1px; line-height: 16px; }
+.demo-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #3b2508; background: #f2c77d; vertical-align: 1px; line-height: 16px; }
 .bar { height: 6px; background: var(--track); border-radius: 99px; overflow: hidden; flex: 1; }
 .bar span { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .5s var(--ease); }
 .alert { display: flex; align-items: center; gap: 9px; padding: 11px 14px; border-radius: 12px; font-size: 13.5px; flex-wrap: wrap; }
@@ -844,7 +846,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-d:hover { border-color: var(--border-strong); }
 .calx-d:active { transform: scale(.97); }
 .calx-d.off { background: transparent; border-color: var(--line); }
-.calx-d.out { opacity: .32; }
+.calx-d.out { opacity: .45; }
 .calx-d.sel { border-color: var(--accent); background: var(--blue-bg); }
 .calx-n { font-family: var(--font-d); font-weight: 600; font-size: 13.5px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .calx-d.today .calx-n { background: var(--primary); color: #fff; }
@@ -959,7 +961,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .calx-week .calx-d { min-height: 64px; }
   .calx-chips, .calx-ag { display: none; }
   .calx-dots { display: flex; }
-  .calx-legend { font-size: 11px; gap: 4px 10px; }
+  .calx-legend { font-size: 12px; gap: 4px 10px; }
   .calx-day-h h3 { font-size: 19px; }
   .mt-tabs { align-self: stretch; display: flex; }
   .mt-tabs .tab { flex: 1; justify-content: center; }
@@ -1005,7 +1007,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 /* Gravador */
 .ps-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .ps-head h2 { font-size: 21px; }
-:root { --t-gravacao: #f0566a; }
+:root { --t-gravacao: #2a8f84; }
+:root[data-theme="dark"] { --t-gravacao: #3fb5a8; }
 .calx-dots i.t-gravacao, i.t-gravacao, .legend i.t-gravacao { background: var(--t-gravacao); }
 .calx-chip.t-gravacao { border-color: var(--t-gravacao) !important; border-left-style: solid; }
 .calx-it.t-gravacao::before { background: var(--t-gravacao); }
@@ -1120,3 +1123,10 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .pd-list li small { color: var(--muted); font-size: 12px; }
 .pd-add { align-self: flex-start; }
 .pd-colar { align-self: flex-start; }
+
+/* Revisão de design (skill impeccable): no celular, tudo que se toca tem pelo menos 44 px (uso com uma mão, na rua) */
+@media (max-width: 900px) {
+  .icon-btn { width: 44px; height: 44px; }
+  .btn.sm { min-height: 40px; padding: 7px 13px; font-size: 13px; }
+  .calx-legend i { width: 9px; height: 9px; }
+}

@@ -62,6 +62,7 @@ const App = {
 
   render(opts = {}) {
     Theme.apply();
+    if (opts.resetScroll) document.body.classList.remove('fab-off');
     const view = Views[this.route];
     const root = document.getElementById('view');
     let focus = null;
@@ -106,6 +107,15 @@ const App = {
     }
     this.parseHash();
     window.addEventListener('hashchange', () => { this.parseHash(); this.closeMenu(); this.render({ resetScroll: true }); });
+    // O "+" sai da frente enquanto a pessoa rola para baixo (não cobre os botões da lista);
+    // volta ao rolar para cima, no fim da página ou ao trocar de tela
+    let lastY = 0;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY, fim = y + innerHeight >= document.documentElement.scrollHeight - 40;
+      if (y > lastY + 4 && y > 60 && !fim) document.body.classList.add('fab-off');
+      else if (y < lastY - 4 || fim || y <= 60) document.body.classList.remove('fab-off');
+      lastY = y;
+    }, { passive: true });
     // Tocar de novo na tela atual (menu ou barra de baixo) volta para a lista dela
     document.addEventListener('click', e => {
       const l = e.target.closest && e.target.closest('#nav a, #bottom-nav a');

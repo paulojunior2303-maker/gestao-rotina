@@ -5,6 +5,8 @@
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
   TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', imprevisto: 'Imprevisto' },
+  /* Gravação pronta e reunião registrada deram certo: não aparecem riscadas (riscado = concluído/cancelado) */
+  feito(i) { return i.done ? (i.type === 'gravacao' || i.type === 'reuniao' ? 'ok' : 'done') : ''; },
   WD: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
 
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
@@ -53,7 +55,7 @@ const Cal = {
       const max = s.mode === 'week' ? 5 : 3;
       return `<button class="${cls}" data-act="calSel" data-cal="${id}" data-k="${k}" aria-label="${U.fmtLong(k)}${items.length ? `, ${U.plural(items.length, 'item', 'itens')}` : ''}" ${k === s.sel ? 'aria-pressed="true"' : ''}>
         <span class="calx-n">${U.parse(k).getDate()}</span>
-        ${inMonth && items.length ? `<span class="calx-chips">${items.slice(0, max).map(i => `<span class="calx-chip t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}">${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span>`).join('')}${items.length > max ? `<span class="calx-more">+${items.length - max}</span>` : ''}</span>
+        ${inMonth && items.length ? `<span class="calx-chips">${items.slice(0, max).map(i => `<span class="calx-chip t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}">${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span>`).join('')}${items.length > max ? `<span class="calx-more">+${items.length - max}</span>` : ''}</span>
         <span class="calx-dots">${items.slice(0, 4).map(i => `<i class="t-${i.type} ${i.late ? 'late' : ''}"></i>`).join('')}${items.length > 4 ? '<i class="more"></i>' : ''}</span>` : ''}
         ${inMonth && ag && ag.total && s.mode === 'week' ? `<span class="calx-ag" title="Agenda do dia">${ag.pct}%</span>` : ''}
       </button>`;
@@ -87,7 +89,7 @@ const Cal = {
       <div class="calx-day-h">
         <div><small class="muted">${when}</small><h3>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h3></div>
       </div>
-      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}</span>
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${i.sub ? i.sub : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}`}</small></span>
           ${U.icon('right', 15)}</div>`).join('')}</div>`
