@@ -104,6 +104,14 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   for (const c of cores) { const r = (1.05) / (lum2(c) + 0.05); check(r >= 4.5, `tema claro: ${c} legível sobre branco (${r.toFixed(2)})`); }
   await p.evaluate(() => { S.settings.theme = 'escuro'; commit(); }); await W();
 
+  console.log('\n[6] Saudação conforme a hora');
+  const sd = await p.evaluate(() => [0, 3, 4, 5, 11, 12, 17, 18, 23].map(h => Views.dashboard.saudacao(h)));
+  check(JSON.stringify(sd) === JSON.stringify(['Boa noite', 'Boa noite', 'Boa noite', 'Bom dia', 'Bom dia', 'Boa tarde', 'Boa tarde', 'Boa noite', 'Boa noite']), 'meia-noite e madrugada: boa noite; 5h–11h: bom dia; 12h–17h: boa tarde; 18h em diante: boa noite');
+  await p.clock.setSystemTime(new Date('2026-11-12T00:05:00-03:00')); await go('agenda'); await go('dashboard');
+  check((await p.textContent('.th-greet')).startsWith('Boa noite'), 'à meia-noite e cinco o Início diz "Boa noite"');
+  await p.clock.setSystemTime(new Date('2026-11-12T14:30:00-03:00')); await go('agenda'); await go('dashboard');
+  check((await p.textContent('.th-greet')).startsWith('Boa tarde'), 'às 14:30 diz "Boa tarde"');
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

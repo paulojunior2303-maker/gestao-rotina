@@ -4,9 +4,11 @@ Views.dashboard = {
   title: 'Início', icon: 'dashboard', nav: 'Início',
   fab: () => ({ act: 'quickAdd', label: 'Adicionar', data: { k: Cal.st('home').sel, from: 'home' } }),
   /* Topo da tela inicial: saudação e data no lugar do título (o relógio fica à direita) */
+  /* Bom dia das 5h às 11h59, boa tarde do meio-dia às 17h59 e boa noite das 18h às 4h59 (madrugada é noite) */
+  saudacao(h = new Date().getHours()) { return h >= 5 && h < 12 ? 'Bom dia' : h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite'; },
   hero() {
-    const h = new Date().getHours(), t = U.today(), d = U.parse(t);
-    const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    const t = U.today(), d = U.parse(t);
+    const greet = this.saudacao();
     const eu = (S.settings.usuario || '').trim().split(' ')[0];
     return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
   },
