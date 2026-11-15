@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PrinterPlugin.class);
         registerPlugin(SistemaPlugin.class);
         registerPlugin(GooglePlugin.class);
+        registerPlugin(CompartilharPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

@@ -2,7 +2,6 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
-require('./completo');
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
 (async () => {
   const b = await chromium.launch();
@@ -12,7 +11,6 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   const theme = () => p.evaluate(() => document.documentElement.dataset.theme);
   const bg = () => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
   await p.goto('http://localhost:8765/index.html'); await W(600);
-  await p.locator('[data-tour=skip]').tap(); await W(300);
   check(await theme() === 'dark' && await bg() === 'rgb(14, 12, 19)', 'padrão do novo visual: modo escuro (grafite)');
   const font = await p.evaluate(async () => { await document.fonts.ready; return [document.fonts.check('16px Geist'), document.fonts.check('16px "Bricolage Grotesque"')]; });
   check(font[0] && font[1], 'fontes da identidade (Geist e Bricolage Grotesque) carregadas sem internet');
@@ -29,8 +27,8 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   // Contraste: texto principal sobre fundo dos cartões (WCAG AA ≥ 4.5)
   const lum = c => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
   const ratio = (a, c) => { const [x, y] = [lum(a), lum(c)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
-  const screens = ['dashboard', 'agenda', 'jornada', 'imprevistos', 'tarefas', 'reunioes', 'feedbacks', 'projetos', 'indicadores', 'config', 'guia'];
-  await p.evaluate(() => { Store.loadDemo(); S.settings.showIndicadores = true; S.settings.showProjetos = true; commit(); });
+  const screens = ['dashboard', 'gravacoes', 'agenda', 'imprevistos', 'tarefas', 'config', 'guia'];
+  await p.evaluate(() => { Store.loadDemo(); S.gravacoes.push({ id: 'g1', at: new Date().toISOString(), date: U.today(), time: '09:00', dur: 1800, status: 'pronta', partes: [{ n: 0, ini: 0, st: 'ok' }], tipo: 'reuniao', titulo: 'Alinhamento', resumo: 'ATA', combinados: ['Comprar luvas'], audio: false }); commit(); });
   await useRoutine12(p);
   for (const r of screens) {
     await p.evaluate(r => location.hash = '#' + r, r); await W(300);

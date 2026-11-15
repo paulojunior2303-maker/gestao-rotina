@@ -67,11 +67,14 @@ const IA = {
 Escreva em português do Brasil, de forma profissional, natural e objetiva, direto ao ponto, sem burocracia e sem repetir informações.
 Não invente fatos, participantes, decisões ou responsabilidades. Não transforme sugestões em decisões; o que ficou sem definição é pendência.
 Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere que transcrições automáticas podem ter erros e não complete trechos incompreensíveis com suposições.`,
+  /* Nome de quem usa o app (Configurações → Você) */
+  usuario() { return ((S.settings && S.settings.usuario) || '').trim(); },
   system(task) {
+    const eu = this.usuario();
     return `${this.agent() || this.DEFAULT_AGENT}
 
 === Instruções do aplicativo FlowFire (seguir sempre, junto com as de cima) ===
-${task}
+${eu ? `Quem usa o aplicativo e grava as reuniões, feedbacks e relatórios é ${eu}, a liderança. Quando a fala estiver na primeira pessoa ("eu fiz", "vou fazer", "eu passei para o Carlos"), quem fala é ${eu}: use esse nome onde o documento pedir o responsável, o líder ou quem registrou.\n` : ''}${task}
 Entregue texto simples, pronto para copiar: sem markdown (não use #, ** ou _). Numere os assuntos ("1. ", "2. ") e use "• " para os tópicos.`;
   },
 
@@ -137,6 +140,69 @@ ${transcript.trim() ? `Transcrição da conversa (automática, pode ter erros; [
 ${notes.trim() ? `Anotações da liderança:\n"""\n${notes.trim()}\n"""` : ''}` }],
       schema: { type: 'OBJECT', required: ['resumo', 'acordos'], properties: { resumo: { type: 'STRING' }, acordos: { type: 'ARRAY', items: { type: 'STRING' } } } } });
     return { resumo: this.tidy(String(r.resumo || '')), acordos: (r.acordos || []).map(s => String(s).trim()).filter(Boolean) };
+  },
+
+  /* Relatório do dia (gravado por voz no fim do dia): texto pronto + itens para a agenda.
+     contexto = o que o app já sabe do dia (agenda, tarefas concluídas, imprevistos), só para completar o relatório. */
+  RELATORIO_TIPOS: ['tarefa', 'imprevisto', 'compromisso', 'agenda'],
+  async relatorio({ date, transcript, notes = '', contexto = '', equipe = [] }) {
+    const amanha = D.nextWorkday(date), eu = this.usuario();
+    const system = this.system(`Tarefa: /relatorio. Escreva o RELATÓRIO DIÁRIO de atividades da liderança a partir do relato falado (transcrição) do fim do dia.
+Data do relatório: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.${eu ? `\nResponsável pelo relatório (quem está falando): ${eu}. Ponha esse nome no cabeçalho.` : ''}
+Use só o que foi dito e o que estiver no contexto do app. Não invente atividades, números, nomes ou horários.
+Responda em JSON com:
+- "relatorio": o relatório pronto para enviar, com quebras de linha (\n): cabeçalho (Relatório diário, data, responsável se dito), "Atividades realizadas" (um tópico "• " por atividade, com o resultado quando dito), "Imprevistos e ocorrências" (se houver), "Pendências" (se houver) e "Planejamento para o próximo dia" (se houver). Seções sem conteúdo ficam de fora.
+- "itens": cada coisa concreta citada que deve ir para o app, um por item, com:
+  - "tipo": "tarefa" (algo a fazer, com ou sem prazo), "imprevisto" (problema ou ocorrência inesperada), "compromisso" (horário marcado com alguém: visita, reunião, entrega, consulta) ou "agenda" (bloco de trabalho próprio com horário definido no dia);
+  - "titulo": curto e claro, no infinitivo para o que vai ser feito (ex.: "Trocar a fonte da câmera 12");
+  - "data": AAAA-MM-DD resolvendo "hoje", "amanhã", dias da semana etc. a partir da data do relatório; vazio se não foi dita;
+  - "hora": HH:MM se foi dita; senão vazio;
+  - "duracao": minutos, se foi dita; senão 0;
+  - "responsavel": nome da pessoa da equipe que vai fazer, se foi dito (equipe: ${equipe.join(', ') || 'não cadastrada'}); vazio se for ${eu || 'quem está falando'} (a própria pessoa: vai para a agenda dela) ou se não foi dito;
+  - "situacao": "feito" (já aconteceu/foi concluído hoje), "pendente" (ficou por fazer) ou "futuro" (planejado para depois).`);
+    const r = await this.call({ system, timeout: 120000, parts: [{ text: `${contexto ? `Contexto do app (o que já está registrado hoje):\n${contexto}\n\n` : ''}Relato falado (transcrição automática, pode ter erros):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações:\n"""\n${notes.trim()}\n"""` : ''}` }],
+      schema: { type: 'OBJECT', required: ['relatorio', 'itens'], properties: {
+        relatorio: { type: 'STRING' },
+        itens: { type: 'ARRAY', items: { type: 'OBJECT', required: ['tipo', 'titulo', 'situacao'], properties: {
+          tipo: { type: 'STRING', enum: this.RELATORIO_TIPOS }, titulo: { type: 'STRING' }, data: { type: 'STRING' }, hora: { type: 'STRING' },
+          duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
+      } } });
+    return { relatorio: this.tidy(String(r.relatorio || '')), itens: this.itensNorm(r.itens, eu) };
+  },
+  /* Itens para a agenda devolvidos pela IA (relatório do dia e áudio recebido): limpa e valida */
+  itensNorm(lista, eu = this.usuario()) {
+    const ok = (re, v) => re.test(String(v || '')) ? String(v) : '';
+    return (lista || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
+      id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
+      data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
+      responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma|voce|você)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(),
+      situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
+    }));
+  },
+  ITENS_SCHEMA: { type: 'ARRAY', items: { type: 'OBJECT', required: ['tipo', 'titulo', 'situacao'], properties: {
+    tipo: { type: 'STRING', enum: ['tarefa', 'imprevisto', 'compromisso', 'agenda'] }, titulo: { type: 'STRING' }, data: { type: 'STRING' }, hora: { type: 'STRING' },
+    duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
+
+  /* Áudio recebido (ex.: WhatsApp do chefe pedindo algo): resumo do recado + itens para a agenda de quem usa o app */
+  async recado({ date, transcript, de = '', notes = '', equipe = [], escrito = false, fontes = '' }) {
+    fontes = fontes || (escrito ? 'uma MENSAGEM ESCRITA RECEBIDA' : 'um ÁUDIO RECEBIDO (transcrito)');
+    const eu = this.usuario(), amanha = D.nextWorkday(date);
+    const system = this.system(`Tarefa: /recado. Abaixo está o conteúdo de ${fontes} ${de ? `de ${de}` : '(de outra pessoa)'} por ${eu || 'quem usa o aplicativo'} (não foi gravado nem escrito por quem usa o app). Se houver mais de um áudio ou áudio e texto, junte tudo num pedido só, sem repetir itens.
+Data em que foi recebido: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
+Use só o que foi dito. Não invente prazos, horários, nomes nem tarefas.
+Responda em JSON com:
+- "resumo": em poucas linhas, o que ${de || 'a pessoa'} pediu ou informou, com prazos quando ditos (texto simples, um tópico "• " por pedido).
+- "itens": cada pedido ou combinado concreto, um por item, com:
+  - "tipo": "tarefa" (algo a fazer), "compromisso" (horário marcado: visita, reunião, entrega), "agenda" (bloco de trabalho com horário definido) ou "imprevisto" (problema relatado que precisa de atenção);
+  - "titulo": curto, no infinitivo (ex.: "Enviar o orçamento ao cliente X");
+  - "data": AAAA-MM-DD resolvendo "hoje", "amanhã", dias da semana etc. a partir da data em que foi recebido; vazio se não foi dita;
+  - "hora": HH:MM se foi dita; senão vazio;
+  - "duracao": minutos, se foi dita; senão 0;
+  - "responsavel": vazio quando o pedido é para quem recebeu o áudio (${eu || 'a pessoa que usa o app'}); o nome de outra pessoa da equipe se o pedido for para ela (equipe: ${equipe.join(', ') || 'não cadastrada'});
+  - "situacao": "futuro" (a fazer) ou "feito" (se o áudio só informa algo que já aconteceu).`);
+    const r = await this.call({ system, timeout: 120000, parts: [{ text: `Conteúdo recebido (transcrição automática dos áudios, pode ter erros; mensagem escrita como veio):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações de quem recebeu:\n"""\n${notes.trim()}\n"""` : ''}` }],
+      schema: { type: 'OBJECT', required: ['resumo', 'itens'], properties: { resumo: { type: 'STRING' }, itens: this.ITENS_SCHEMA } } });
+    return { resumo: this.tidy(String(r.resumo || '')), itens: this.itensNorm(r.itens, eu) };
   },
 
   /* Comandos rápidos do agente sobre um texto pronto */

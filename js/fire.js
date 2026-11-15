@@ -158,7 +158,6 @@ const Fire = {
     }
     this.listen();
     this.setState('on');
-    if (typeof Equipes !== 'undefined') Equipes.start();
     if (['config', 'equipe'].includes(App.route)) App.render();
   },
   ask(remoteAt) {
@@ -176,7 +175,7 @@ const Fire = {
       m.el.querySelector('[data-nuvem]').onclick = () => { m.close(); res('nuvem'); };
     });
   },
-  detach() { if (typeof Equipes !== 'undefined') Equipes.stop(); if (this.unsub) { try { this.unsub(); } catch (e) { /* ok */ } } this.unsub = null; clearTimeout(this.timer); this.last = {}; },
+  detach() { if (this.unsub) { try { this.unsub(); } catch (e) { /* ok */ } } this.unsub = null; clearTimeout(this.timer); this.last = {}; },
 
   /* ---------- Sincronização ---------- */
   schedule() {
@@ -208,9 +207,7 @@ const Fire = {
         else if (id in local) next[id] = local[id];
       }
       if (!changed) return;
-      const eqAntes = JSON.stringify(S.equipes || []);
       Store.replace(this.join(this.parse(next)), { fromCloud: true });
-      if (typeof Equipes !== 'undefined' && JSON.stringify(S.equipes || []) !== eqAntes) Equipes.start();
       const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
       if (busy) this.pendingRender = true; else App.render();
       this.schedule();   // se algo deste aparelho ainda não subiu, envia agora

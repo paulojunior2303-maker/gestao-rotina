@@ -22,6 +22,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- WhatsApp e outros apps → Compartilhar → FlowFire: um ou vários áudios e/ou texto.
+                 "*/*" porque o WhatsApp manda o áudio .opus com tipo desconhecido; o app avisa se não for áudio nem texto. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
         </activity>
 
         <provider

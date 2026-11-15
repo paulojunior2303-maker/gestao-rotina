@@ -1,26 +1,12 @@
 'use strict';
 /* Inicialização, navegação e delegação de eventos */
-/* Menu lateral em grupos. "Projetos" e "Indicadores" só aparecem se ativados em Configurações → Aparência.
-   Feedbacks fica dentro de Reuniões (aba Feedbacks). */
-/* Cópia enxuta: só calendário, gravações, tarefas e agenda (+ ajustes) */
-const ENXUTO_ROUTES = ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos', 'config', 'guia'];
-const NAV_GROUPS = MODO_ENXUTO ? [
+/* Menu lateral (no celular só o que não está na barra de baixo) e barra de baixo com o botão Gravar no meio */
+const NAV_GROUPS = [
   ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos']],
   ['Ajustes', ['config', 'guia']],
-] : [
-  ['Dia a dia', ['dashboard', 'agenda', 'tarefas', 'imprevistos', 'checklists']],
-  ['Equipe', ['pessoas', 'reunioes', 'equipe', 'jornada']],
-  ['Planejamento', ['semana', 'projetos', 'indicadores']],
-  ['Ajustes', ['config', 'guia']],
 ];
-/* Barra inferior (celular): atalhos do dia a dia. O menu completo fica no ☰ (sem botão Menu na barra). */
-const BOTTOM = MODO_ENXUTO ? ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'] : ['dashboard', 'agenda', 'tarefas', 'imprevistos'];
-const routeVisible = id => {
-  if (MODO_ENXUTO) return ENXUTO_ROUTES.includes(id);
-  if (id === 'gravacoes') return false;   // por enquanto só na cópia enxuta
-  const st = (S && S.settings) || {};
-  return id === 'indicadores' ? !!st.showIndicadores : id === 'projetos' ? !!st.showProjetos : id === 'jornada' ? st.jogo !== false : id === 'equipe' ? (typeof Fire === 'undefined' || Fire.supported()) : true;
-};
+const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'];
+const routeVisible = id => NAV_GROUPS.some(([, ids]) => ids.includes(id));
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
   act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
@@ -40,16 +26,11 @@ const App = {
   parseHash() {
     const h = location.hash.replace(/^#\/?/, '');
     const [path, qs] = h.split('?');
-    // Planejamento semanal e mensal agora ficam dentro da Agenda (links antigos continuam funcionando)
+    // Endereços antigos (agenda semanal/mensal, reuniões, feedbacks…) caem na tela mais próxima
     if (path === 'semanal' || path === 'mensal') { this.route = 'agenda'; this.params = {}; return; }
-    if (path === 'equipe' && /(^|&)e=/.test(qs || '')) { this.ui.eqPend = qs; this.route = 'equipe'; this.params = {}; return; }   // link de convite
-    if (path === 'missoes') { this.ui.msPend = qs || ''; this.route = 'jornada'; this.params = {}; return; }   // link de missões
-    if (path === 'feedbacks') { this.ui.mtTab = 'feedbacks'; this.route = 'reunioes'; this.params = {}; return; }
+    if (path === 'reunioes' || path === 'feedbacks') { this.route = 'gravacoes'; this.params = {}; return; }
     this.route = Views[path] && routeVisible(path) ? path : 'dashboard';
     if (this.route !== 'gravacoes') this.ui.gvId = null;
-    if (this.route !== 'pessoas') this.ui.pWho = null;
-    else if (this.ui.pWhoNext) { this.ui.pWho = this.ui.pWhoNext; this.ui.pWhoNext = null; }
-    if (this.route !== 'checklists') this.ui.ckRun = null;
     this.params = Object.fromEntries(new URLSearchParams(qs || ''));
   },
 
@@ -57,7 +38,7 @@ const App = {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
     const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
@@ -106,24 +87,16 @@ const App = {
     }
     this.renderNav();
     if (opts.resetScroll) window.scrollTo(0, 0); else window.scrollTo(0, scroll);
-    if (this.ui.eqPend) { const q = this.ui.eqPend; this.ui.eqPend = null; history.replaceState(null, '', '#equipe'); setTimeout(() => Equipes.aceitarConvite(q), 300); }
-    if (this.ui.msPend !== undefined && this.ui.msPend !== null) {   // abriu um link de missões
-      const q = this.ui.msPend; this.ui.msPend = null;
-      history.replaceState(null, '', '#jornada');
-      setTimeout(() => Missoes.receber('?' + q), 300);
-    }
     if (focus) { const el = root.querySelector(focus.sel); if (el) { el.focus(); try { el.setSelectionRange(focus.pos, focus.pos); } catch (e) { /* tipo sem seleção */ } } }
   },
 
   async init() {
     if (CANAL_TESTE) {   // marca visível: é a versão de teste
       document.body.classList.add('canal-teste');
-      if (MODO_ENXUTO) document.body.classList.add('canal-enxuto');
       document.querySelector('.topbar').insertAdjacentHTML('afterbegin', `<span class="teste-tag" title="Versão de teste: dados separados do app oficial">${CANAL_ENXUTO ? 'ENXUTO' : 'TESTE'}</span>`);
     }
     if (Native.available()) { await Native.restore(); Native.init(); document.body.classList.add('native'); }
     Store.load();
-    if (MODO_ENXUTO) { S.settings.jogo = false; S.settings.showIndicadores = false; S.settings.showProjetos = false; S.meta = { ...(S.meta || {}), tutorialSeen: true }; }
     Theme.init();
     if (Cloud.available()) {
       document.getElementById('view').innerHTML = '<div class="loading"><span class="spinner"></span> Carregando seus dados…</div>';
@@ -137,7 +110,7 @@ const App = {
     document.addEventListener('click', e => {
       const l = e.target.closest && e.target.closest('#nav a, #bottom-nav a');
       if (!l || l.getAttribute('href') !== '#' + this.route) return;
-      this.ui.gvId = null; this.ui.pWho = null; this.ui.ckRun = null; this.closeMenu(); this.render({ resetScroll: true });
+      this.ui.gvId = null; this.closeMenu(); this.render({ resetScroll: true });
     });
 
     // Delegação de eventos: data-act (clique), data-change, data-input, data-submit
@@ -198,9 +171,7 @@ const App = {
 
     document.body.classList.add('intro');
     this.render();
-    Jogo.check();   // ponto de partida do aviso de "+XP"
     setTimeout(() => document.body.classList.remove('intro'), 1600);
-    Tutorial.maybeShow();
     if (Native.available()) { Reminders.initNative(); Updater.check(); } else Reminders.webLoop();
     Drive.auto();
     Fire.init();
@@ -236,7 +207,7 @@ const Theme = {
 };
 
 /* Salva e redesenha a tela atual */
-function commit() { Store.save(); App.render(); Jogo.check(); if (typeof Equipes !== 'undefined') Equipes.schedule(); }
+function commit() { Store.save(); App.render(); }
 
 Actions.openMenu = () => App.openMenu();
 Actions.goAgenda = ({ d }) => { App.ui.agendaDate = d; App.go('agenda'); };
