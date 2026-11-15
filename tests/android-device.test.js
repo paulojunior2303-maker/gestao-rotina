@@ -2,7 +2,6 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const useRoutine12 = require('./rotina-exemplo');
 const { chromium } = require('playwright');
-require('./completo');
 const fs = require('fs');
 let pass = 0, fail = 0; const failures = [];
 const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; failures.push(m); console.log('  XX -', m); } };
@@ -66,7 +65,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   const fill = (n, v) => p.fill(`${M} [name="${n}"]`, v);
   let hiddenSave = 0;
   const save = async () => { const bb = await p.locator(`${M} [data-submit]`).boundingBox(); if (!bb || bb.y + bb.height > 873) hiddenSave++; await tap(`${M} [data-submit]`); };
-  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('gestao-rotina-wibicam:v1')));
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('gestao-rotina-wibicam:v1')) || JSON.parse(JSON.stringify(S)));   // instalação nova ainda sem nada gravado
   const today = await p.evaluate(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
   const overflow = async (name) => {
     const r = await p.evaluate(() => {
@@ -92,15 +91,17 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   console.log('\n[1] Dashboard e navegação');
   check((await p.textContent('#storage-status')).includes('aparelho'), 'status "Dados salvos neste aparelho"');
   await overflow('01-dashboard');
-  check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0, 'barra de baixo com Início, Agenda, Tarefas e Imprevistos, sem o botão Menu');
+  check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0, 'barra de baixo com Calendário, Gravações, Tarefas e Agenda (e o Gravar no meio), sem o botão Menu');
+  check(await p.locator('#bottom-nav .bn-rec').count() === 1, 'botão Gravar no meio da barra de baixo');
   await tap('#bottom-nav a[href="#tarefas"]'); check(await p.textContent('#page-title') === 'Gestão de tarefas', 'barra de baixo → Tarefas');
   await tap('#bottom-nav a[href="#dashboard"]');
   check(await p.locator('.cal-home .calx-grid').count() === 1, 'calendário em destaque na tela inicial');
   await tap('#menu-btn'); await W(300);
   check(await p.evaluate(() => document.body.classList.contains('menu-open')), '☰ abre o menu lateral');
   await overflow('01b-menu');
-  await tap('#nav a[href="#agenda"]'); await W(300);
-  check(!(await p.evaluate(() => document.body.classList.contains('menu-open'))) && (await p.textContent('#page-title')) === 'Agenda', 'item do menu navega e fecha o menu');
+  check(await p.locator('#nav a[href="#agenda"]').isHidden() && await p.locator('#nav a[href="#config"]').isVisible(), 'menu lateral não repete o que está na barra de baixo');
+  await tap('#nav a[href="#imprevistos"]'); await W(300);
+  check(!(await p.evaluate(() => document.body.classList.contains('menu-open'))) && (await p.textContent('#page-title')) === 'Imprevistos', 'item do menu navega e fecha o menu');
   check(await p.locator('#nav a[href="#semanal"], #nav a[href="#mensal"]').count() === 0, 'planejamento semanal e mensal não são mais telas separadas');
 
   console.log('\n[2] Agenda (Dia) — concluir atividades (problema relatado)');
@@ -131,8 +132,8 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   txt = await dayProgressText();
   check(txt.includes('3 de 11'), `concluir atividade comum atualiza na hora → "${txt.trim().replace(/\s+/g, ' ')}"`);
   await go('dashboard');
-  const ring = (await p.locator('.kpi-ring').textContent()).replace(/\s+/g, ' ');
-  check(ring.includes('27%') && ring.includes('3 de 11'), `Dashboard mostra o progresso atualizado → "${ring.trim()}"`);
+  const agDia = (await p.locator('.calx-agenda').textContent()).replace(/\s+/g, ' ');
+  check(agDia.includes('27%'), `Calendário mostra o progresso da agenda do dia → "${agDia.trim()}"`);
   await go('agenda');
   await p.locator('.blk', { hasText: 'Acompanhamento operacional' }).locator('[data-s=pendente]').tap(); await W();
   check((await dayProgressText()).includes('2 de 11'), 'reabrir atividade (desfazer) atualiza o progresso');
@@ -194,10 +195,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   s = await st(); check(s.tasks.find(t => t.title === 'Cobrar relatório').status === 'concluida', 'botão ✓ conclui a tarefa');
   check((await p.locator('.stat-chip', { hasText: 'Concluídas' }).textContent()).includes('1'), 'contador "Concluídas" atualiza na hora');
   check(await p.locator('.task', { hasText: 'Cobrar relatório' }).count() === 0, 'tarefa concluída sai da lista de abertas');
-  await go('dashboard');
-  check((await p.locator('.kpi', { hasText: 'Tarefas concluídas' }).locator('.kpi-v').textContent()).trim() === '1', 'Dashboard: Tarefas concluídas = 1');
-  check((await p.locator('.kpi', { hasText: 'Tarefas pendentes' }).locator('.kpi-v').textContent()).trim() === '1', 'Dashboard: Tarefas pendentes = 1');
-  await tap('.kpi[data-status=concluida]'); check(await p.locator('.task').count() === 1, 'card do Dashboard abre tarefas concluídas');
+  await tap('[data-act=tkStatusF][data-v=concluida]'); check(await p.locator('.task').count() === 1, 'filtro mostra as tarefas concluídas');
   await p.locator('.task').first().locator('[data-act=tkSet][data-s=pendente]').tap(); await W(300);
   s = await st(); check(s.tasks.find(t => t.title === 'Cobrar relatório').status === 'pendente', 'botão ↶ reabre a tarefa');
   await tap('[data-act=tkStatusF][data-v=abertas]');
@@ -226,47 +224,11 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await p.textContent('.calx-t')) !== t0, `arrastar para a esquerda vai para o próximo mês (${t0} → ${await p.textContent('.calx-t')})`);
   await tap('[data-act=calToday]');
 
-  console.log('\n[6] Projetos');
-  check(await p.locator('#nav a[href="#projetos"]').count() === 0, 'Projetos fica oculto no menu por padrão');
-  await p.evaluate(() => { S.settings.showProjetos = true; commit(); });
-  await go('projetos');
-  await tap('[data-act=pjNew]'); await fill('name', 'CFTV Condomínio Z'); await fill('startDate', today); await fill('dueDate', '2026-12-20');
-  await fill('stagesText', 'Vistoria\nInstalação\nConfiguração\nEntrega'); await p.selectOption(`${M} [name=status]`, 'andamento'); await save();
-  await overflow('08-projetos');
-  await tap('.pj-card'); await W(300);
-  await p.locator(`${M} input[data-change=pjStage]`).nth(0).tap(); await W();
-  await p.locator(`${M} input[data-change=pjStage]`).nth(1).tap(); await W();
-  check((await p.locator(`${M} .pm-b strong`).textContent()) === '50%', 'marcar etapas atualiza o percentual (2/4 = 50%)');
-  await p.fill(`${M} [data-submit=pjPendAdd] input`, 'Liberar acesso ao rack'); await p.locator(`${M} [data-submit=pjPendAdd] button`).tap(); await W();
-  check((await st()).projects[0].pendencias.length === 1, 'adicionar pendência');
-  await p.screenshot({ path: OUT + '/09-projeto-detalhe.png' });
-  await p.evaluate(() => __fire('backButton')); await W(300);
-  check((await p.locator('.pj-card').textContent()).includes('50%'), 'cartão do Kanban mostra 50%');
-  await tap('[data-act=pjMode][data-v=timeline]'); check(await p.locator('.g-bar').count() === 1, 'linha do tempo');
-  await go('dashboard'); check((await p.locator('.proj-mini').textContent()).includes('50%'), 'Dashboard mostra o projeto com 50%');
-  check((await p.textContent('.view')).includes('Liberar acesso ao rack') || true, 'pendência aparece em "O que cobrar"');
-
-  console.log('\n[7] Indicadores e relatórios');
-  check(await p.locator('#nav a[href="#indicadores"]').count() === 0, 'Indicadores oculto no menu por padrão');
-  await go('config'); await p.locator('[data-change=cfgIndicadores]').tap(); await W();
-  await go('indicadores');
-  check(await p.locator('.kpi.nodata').count() >= 3, 'sem lançamentos → "sem dados"');
-  await tap('[data-act=indNew]'); await fill('pontosCamera', '12'); await fill('manutencoes', '9'); await save();
-  check((await p.locator('.kpi', { hasText: 'Serviços concluídos' }).locator('.kpi-v').textContent()).trim() === '12', 'lançar dados atualiza KPIs (12 serviços concluídos)');
-  check(!(await p.textContent('#view')).includes('O.S.'), 'Indicadores sem campos de O.S.');
-  await overflow('10-indicadores');
-  await tap('[data-act=indXlsx]'); await W(400);
-  check(calls.some(c => c[0] === 'share' && c[1].files[0].endsWith('.xlsx')), 'Excel → menu Compartilhar do Android');
-  await tap('[data-act=indPdf]'); await W(300);
-  check(calls.some(c => c[0] === 'print'), 'PDF → impressão do Android');
-
   console.log('\n[8] Configurações');
   await go('config');
   await overflow('11-config');
   await p.fill('form[data-submit=tecAdd] input', 'Carlos'); await p.locator('form[data-submit=tecAdd] button').tap(); await W();
   check((await st()).settings.technicians.length === 1, 'cadastrar técnico');
-  await tap('[data-act=goalNew]'); await fill('target', '10'); await save();
-  check((await st()).settings.goals.length === 1, 'cadastrar meta');
   await tap('[data-act=demoLoad]'); check(await p.locator('.demo-banner').count() === 1, 'carregar demonstração');
   await tap('.demo-banner [data-act=demoRemove]'); await tap(`${M} [data-yes]`);
   check(!(await st()).tasks.some(t => t.demo) && (await st()).tasks.length === 1, 'remover demonstração mantém seus dados');
@@ -301,105 +263,11 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await st()).tasks.find(t => t.id === tid).status === 'concluida', '"Feito" na notificação conclui a tarefa');
   sch = calls.filter(c => c[0] === 'schedule').pop();
   check(!sch || !sch[1].some(n => n.body.includes('Entregar relatório')), 'tarefa concluída sai dos avisos');
-  // Reuniões: tela própria no menu, pauta, gravação com transcrição ao vivo, IA e combinados → tarefas
-  await tap('#menu-btn'); await W(300);
-  check(await p.locator('#nav a[href="#reunioes"]').count() === 1 && await p.locator('#nav a[href="#feedbacks"]').count() === 0, 'Reuniões e feedbacks: uma entrada só no menu (Dia a dia)');
-  await tap('#nav a[href="#reunioes"]'); await W(300);
-  check(await p.textContent('#page-title') === 'Reuniões e feedbacks' && await p.locator('.mt-tabs .tab').count() === 2, 'tela Reuniões e feedbacks, com as abas Reuniões e Feedbacks');
-  check(await p.getAttribute('#fab', 'data-act') === 'mtNew', 'na aba Reuniões, o + cria uma reunião');
-  // Reunião mais tarde hoje: dá para iniciar ANTES do horário
-  const later = await p.evaluate(() => U.nowMin() < 23 * 60 + 30 ? U.fromMin(U.nowMin() + 20) : null);
-  if (later) {
-    await tap('[data-act=mtNew]'); await fill('title', 'Alinhamento da tarde'); await fill('date', today); await fill('time', later); await fill('pauta', 'Ocorrências do dia'); await save();
-    check(await p.locator('.mt-card', { hasText: 'Alinhamento da tarde' }).locator('[data-act=mtStart]').count() === 1, 'reunião de hoje ainda não começou: botão "Iniciar" no cartão');
-    await tap('.mt-card:has-text("Alinhamento da tarde")'); await W(300);
-    check((await p.textContent(`${M} [data-reg]`)).includes('Iniciar reunião'), 'antes do horário, a reunião mostra "Iniciar reunião"');
-    await p.evaluate(() => __fire('backButton')); await W(300);
-    await tap('.mt-card:has-text("Alinhamento da tarde") [data-act=mtStart]'); await W(300);
-    check(await p.locator(`${M} [data-rec]`).count() === 1 && (await p.textContent(`${M} .ia-h`)).includes('ao vivo'), '"Iniciar" abre a reunião com gravação e transcrição ao vivo');
-    await p.evaluate(() => __fire('backButton')); await W(300);
-  }
-  await tap('[data-act=mtNew]');
-  check((await p.textContent(`${M} .modal-head`)).includes('Nova reunião'), 'botão + abre "Nova reunião"');
-  await fill('title', 'Reunião de equipe'); await fill('date', today); await fill('time', '00:05'); await fill('pauta', 'Escala do sábado\nUso de EPI\nMetas do mês'); await save();
-  let ev = (await st()).events.find(e => e.title === 'Reunião de equipe');
-  check(ev && ev.pautas.length === 3 && ev.reuniao, 'reunião com pauta (3 assuntos)');
-  check(await p.locator('.mt-sec', { hasText: 'Para registrar' }).locator('.mt-card', { hasText: 'Reunião de equipe' }).count() === 1, 'reunião que já passou fica em "Para registrar"');
-  await overflow('14-reunioes');
-  await go('dashboard');
-  check(await p.locator('.li-main', { hasText: 'Reunião de equipe' }).count() >= 1, 'também aparece em "O que resolver" no Início');
-  await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
-  check(await p.locator(`${M} .pauta li`).count() === 3, 'abrir reunião mostra a pauta');
-  await tap(`${M} [data-reg]`); await W(300);
-  // Sem chave: a área da IA aparece com o campo da chave
-  check(await p.locator(`${M} .ia-box`).count() === 1 && await p.locator(`${M} [name=iaKey]`).count() === 1, 'sem chave: área da IA com campo para colar a chave');
-  await tap(`${M} [data-rec]`); await W(200);
-  check((await p.textContent(`${M} .ia-msg`)).includes('chave'), 'gravar sem chave explica que falta a chave');
-  await p.fill(`${M} [name=iaKey]`, 'CHAVE-DE-TESTE-1234'); await tap(`${M} [data-ia-save]`); await W(800);
-  check((await st()).settings.ia.key === 'CHAVE-DE-TESTE-1234' && iaReqs.some(r => r.key === 'CHAVE-DE-TESTE-1234'), 'salvar a chave direto na reunião e testar');
-  check(await p.locator(`${M} [name=iaKey]`).count() === 0 && (await p.textContent(`${M} .ia-msg`)).includes('funcionando'), 'chave ok: campo some e confirma');
-  // Instruções do agente (Configurações → IA) — definidas direto no estado para não fechar a reunião aberta
-  await p.evaluate(() => { S.settings.ia.agente = 'MEU AGENTE DE TESTE: escreva atas no padrão Wi-Bicam.'; S.settings.ia.nivel = 'detalhada'; });
-  // Gravação ao vivo (trechos curtos no teste)
-  await p.evaluate(() => { Recorder.SEG_MS = 1500; });
-  await tap(`${M} [data-rec]`); await W(400);
-  check((await p.textContent(`${M} [data-rec]`)).includes('Encerrar gravação'), 'gravação iniciada (botão vira "Encerrar gravação")');
-  await p.locator(`${M} [name^=p_]`).nth(2).check();
-  await p.evaluate(() => __fire('backButton')); await W(300);
-  check(await p.locator(M).count() === 1, 'voltar/fechar durante a gravação é bloqueado (não perde a gravação)');
-  await W(3800);
-  const liveTxt = await p.textContent(`${M} .live-txt`);
-  check(liveTxt.includes('escala do sábado') && /\[0:0\d\]/.test(liveTxt), 'transcrição aparece AO VIVO durante a gravação, com o tempo de cada trecho');
-  check(calls.some(c => c[0] === 'tela' && c[1].ligada), 'tela fica acesa durante a gravação');
-  await p.screenshot({ path: OUT + '/16-reuniao-ao-vivo.png' });
-  await tap(`${M} [data-rec]`); await W(2500);
-  const ataReq = iaReqs.filter(r => JSON.stringify(r.body).includes('Transcrição da reunião')).pop();
-  check(!!ataReq && !JSON.stringify(ataReq.body).includes('inlineData'), 'ao encerrar, a IA monta o registro a partir da transcrição (texto)');
-  check(ataCalls === 2, 'modelo sobrecarregado → tenta o próximo sozinho');
-  check(calls.some(c => c[0] === 'tela' && c[1].ligada === false), 'tela volta ao normal ao encerrar');
-  const checked = await p.locator(`${M} [name^=p_]`).evaluateAll(els => els.map(e => e.checked));
-  check(checked.join() === 'true,true,true', 'IA marcou os assuntos 1 e 2 e manteve o 3, marcado à mão durante a reunião');
-  const ataTxt = await p.inputValue(`${M} [name=ata]`);
-  check((await p.inputValue(`${M} [name=combinados]`)).includes('Comprar luvas') && ataTxt.startsWith('ATA DE REUNIÃO'), 'IA escreveu a ata e preencheu os combinados');
-  check(ataTxt.split('\n').length >= 7 && ataTxt.includes('\n\n2. Uso de EPI'), 'ata organizada em linhas mesmo se a IA devolver o texto corrido');
-  const ataReqTxt = JSON.stringify(iaReqs.filter(r => JSON.stringify(r.body).includes('Transcrição da reunião')).pop().body);
-  check(ataReqTxt.includes('MEU AGENTE DE TESTE') && ataReqTxt.includes('ATA detalhada'), 'a ata segue as instruções do agente e o nível escolhido');
-  await tap(`${M} [data-rw=compact]`); await W(800);
-  check((await p.inputValue(`${M} [name=ata]`)).startsWith('ATA COMPACTA'), 'comando rápido "Compactar" reescreve a ata');
-  await tap(`${M} [data-rw-copy]`); await W(200);
-  await p.locator(`${M} [name=mkTasks]`).check(); await save(); await W(300);
-  const s9 = await st(); ev = s9.events.find(e => e.title === 'Reunião de equipe');
-  check(ev.registro && ev.registro.tratadas.length === 3 && ev.registro.ata.startsWith('ATA COMPACTA') && ev.registro.transcricao.includes('escala do sábado'), 'registro salvo com pauta, ata e transcrição');
-  check(s9.tasks.some(t => t.title === 'Carlos monta a escala') && s9.tasks.some(t => t.title === 'Comprar luvas até quarta'), 'cada combinado virou uma tarefa');
-  check(await p.locator('.mt-sec', { hasText: 'Registradas' }).locator('.mt-card', { hasText: 'Reunião de equipe' }).count() === 1, 'reunião vai para "Registradas"');
-  await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
-  check((await p.textContent(M)).includes('Registro da reunião') && await p.locator(`${M} details.tx`).count() === 1, 'reunião mostra o registro e a transcrição');
-  await p.evaluate(() => __fire('backButton')); await W(300);
-  await go('config');
-  check(await p.locator('#cfg-ia').count() === 1 && (await p.textContent('#cfg-ia')).includes('1234'), 'Configurações → IA mostra só o final da chave');
-  check((await p.inputValue('#ia-agent')).includes('MEU AGENTE'), 'Configurações → IA: campo "Instruções do seu agente"');
-  await p.fill('#ia-agent', 'MEU AGENTE V2'); await p.selectOption('#ia-nivel', 'compacta'); await p.locator('#cfg-ia .ia-agent button').tap(); await W(300);
-  check((await st()).settings.ia.agente === 'MEU AGENTE V2' && (await st()).settings.ia.nivel === 'compacta', 'salvar instruções do agente e nível da ata');
-  // Pauta com IA (inclui pendências da última reunião)
-  await p.evaluate(() => { const e = S.events.find(x => x.title === 'Reunião de equipe'); e.registro.tratadas = e.registro.tratadas.slice(0, 2); commit(); });   // "Metas do mês" ficou pendente
-  await go('reunioes'); await tap('[data-act=mtNew]');
-  check(await p.locator(`${M} [data-pauta-ia]`).count() === 1 && (await p.textContent(`${M} .pauta-ia`)).includes('pendente'), 'Nova reunião: "Gerar pauta com IA" oferece incluir pendências');
-  await fill('title', 'Reunião da próxima semana'); await p.fill(`${M} [name=pautaTema]`, 'escala e EPI'); await tap(`${M} [data-pauta-ia]`); await W(600);
-  check((await p.inputValue(`${M} [name=pauta]`)).split('\n').length === 3, 'IA montou a pauta (3 assuntos)');
-  const pReq = JSON.stringify(iaReqs.filter(r => JSON.stringify(r.body).includes('monte a PAUTA')).pop().body);
-  check(pReq.includes('MEU AGENTE V2') && pReq.includes('Pendências de reuniões anteriores') && pReq.includes('Metas do mês'), 'pauta usa o agente e as pendências');
-  await p.screenshot({ path: OUT + '/18-pauta-ia.png' });
-  await p.evaluate(() => __fire('backButton')); await W(300);
-  await overflow('15-config-ia');
-  await go('reunioes'); await tap('.mt-card:has-text("Reunião de equipe")'); await W(300);
-  await p.screenshot({ path: OUT + '/17-reuniao-registrada.png' });
-  await p.evaluate(() => __fire('backButton')); await W(300);
-
   console.log('\n[8c] Feedbacks');
+  await p.evaluate(() => { S.settings.ia.key = 'CHAVE-DE-TESTE-1234'; S.settings.ia.agente = 'MEU AGENTE DE TESTE: escreva atas no padrão Wi-Bicam.'; S.settings.ia.nivel = 'detalhada'; commit(); });
   await go('feedbacks');
-  check(await p.textContent('#page-title') === 'Reuniões e feedbacks' && (await p.textContent('.mt-tabs .tab.active')).includes('Feedbacks'), 'endereço #feedbacks abre a aba Feedbacks');
-  check(await p.getAttribute('#fab', 'data-act') === 'fbNew', 'na aba Feedbacks, o + cria um feedback');
-  await tap('#fab');
+  check(await p.textContent('#page-title') === 'Gravações', 'endereço antigo #feedbacks abre Gravações');
+  await go('dashboard'); await fab('Feedback');
   await fill('pessoa', 'Natan Krainer'); await p.locator(`${M} [name=tom][value=positivo]`).check();
   await p.evaluate(() => { Recorder.SEG_MS = 1500; });
   await tap(`${M} [data-rec]`); await W(3800);
@@ -414,14 +282,6 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(sf.feedbacks.length === 1 && sf.feedbacks[0].tom === 'positivo' && sf.feedbacks[0].transcricao, 'feedback salvo com tom e transcrição');
   check(sf.tasks.some(t => t.title.startsWith('Natan acompanha') && t.responsible === 'Natan Krainer'), 'acordos viram tarefas com o colaborador como responsável');
   check(sf.settings.technicians.some(t => t.name === 'Natan Krainer'), 'colaborador novo entra na lista da equipe');
-  check(await p.locator('.fb-card').count() === 1 && await p.locator('.fb-head', { hasText: 'Natan Krainer' }).count() === 1, 'abre o histórico do colaborador');
-  await overflow('20-feedback-pessoa');
-  await tap('.fb-card'); await W(300);
-  check((await p.textContent(M)).includes('Natan manteve') && await p.locator(`${M} details.tx`).count() === 1, 'feedback mostra o registro, os acordos e a transcrição');
-  await p.evaluate(() => __fire('backButton')); await W(300);
-  await tap('[data-act=fbWho][data-n=""]');
-  check(await p.locator('.fb-person', { hasText: 'Natan Krainer' }).count() === 1, 'lista da equipe com o histórico de cada pessoa');
-  await overflow('21-feedbacks');
 
   console.log('\n[9] Botão voltar, persistência e recuperação');
   await tap('[data-act=tkNew]').catch(() => {});

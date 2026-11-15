@@ -3,9 +3,6 @@
 /* Canal de teste (site …/teste/): dados guardados à parte, para nunca misturar com os reais */
 const CANAL_ENXUTO = typeof window !== 'undefined' && window.APP_CHANNEL === 'enxuto';   // cópia enxuta (calendário + gravar)
 const CANAL_TESTE = typeof window !== 'undefined' && (window.APP_CHANNEL === 'teste' || CANAL_ENXUTO);
-/* Modo enxuto (calendário + gravar), aprovado pelo usuário: vale para todo o app.
-   window.APP_COMPLETO = true liga as telas antigas (usado só pelos testes do app completo, tests/completo.js). */
-const MODO_ENXUTO = !(typeof window !== 'undefined' && window.APP_COMPLETO);
 const STORAGE_KEY = 'gestao-rotina-wibicam:v1' + (CANAL_ENXUTO ? ':enxuto' : CANAL_TESTE ? ':teste' : '');
 
 /* Indicadores lançados por dia. As chaves são fixas (dados guardados); os nomes podem ser trocados em
@@ -207,7 +204,6 @@ const Store = {
   replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
-    if (typeof Jogo !== 'undefined') Jogo.last = null;   // dados vindos de fora não geram o aviso de "+XP"
     this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 

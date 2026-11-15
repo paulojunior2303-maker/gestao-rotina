@@ -1,6 +1,5 @@
 const OUT = require('path').join(__dirname, 'output'); require('fs').mkdirSync(OUT, { recursive: true });
 const { chromium } = require('playwright');
-require('./completo');
 // meta.updatedAt muda ao importar (é uma alteração local, que sobe para o Google Drive): compara o resto
 const norm = j => { const o = JSON.parse(j); if (o.meta) delete o.meta.updatedAt; return JSON.stringify(o); };
 let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fail++; console.log('  XX -', m); } };
@@ -18,7 +17,6 @@ const phone = { viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, 
   });
   const a = await ctxA.newPage(); const errs = []; a.on('pageerror', e => errs.push('APK: ' + e.message));
   await a.goto('http://localhost:8765/android-app/www/index.html'); await a.waitForTimeout(700);
-  await a.locator('[data-tour=skip]').tap(); await a.waitForTimeout(300);
   // dados "reais" volumosos: demo + 120 dias de agenda + 300 lançamentos
   await a.evaluate(() => {
     Store.loadDemo();
@@ -46,7 +44,6 @@ const phone = { viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, 
   const ctxW = await b.newContext({ viewport: { width: 1366, height: 900 }, locale: 'pt-BR' });
   const w = await ctxW.newPage(); w.on('pageerror', e => errs.push('WEB: ' + e.message));
   await w.goto('http://localhost:8765/index.html'); await w.waitForTimeout(700);
-  await w.locator('[data-tour=skip]').click(); await w.waitForTimeout(300);
   await w.evaluate(() => location.hash = '#config'); await w.waitForTimeout(300);
   await w.locator('[data-act=xferIn]').click(); await w.waitForTimeout(300);
   await w.fill('.modal-wrap.open .code-box', code.slice(0, code.length - 200)); await w.locator('.modal-wrap.open [data-go]').click(); await w.waitForTimeout(400);
@@ -93,7 +90,6 @@ const phone = { viewport: { width: 393, height: 873 }, deviceScaleFactor: 2.75, 
   });
   const c = await ctxC.newPage(); c.on('pageerror', e => errs.push('CLAUDE: ' + e.message));
   await c.goto('http://localhost:8765/dist/gestao-rotina.html'); await c.waitForTimeout(1200);
-  await c.locator('[data-tour=skip]').tap(); await c.waitForTimeout(800);
   await c.evaluate(() => location.hash = '#config'); await c.waitForTimeout(300);
   await c.locator('[data-act=xferIn]').tap(); await c.waitForTimeout(300);
   await c.fill('.modal-wrap.open .code-box', code); await c.locator('.modal-wrap.open [data-go]').tap(); await c.waitForTimeout(500);
