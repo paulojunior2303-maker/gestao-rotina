@@ -59,7 +59,7 @@ const Gravador = {
   supported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) && !(typeof Cloud !== 'undefined' && Cloud.available()); },
   elapsed() { return this.cur ? Math.floor((Date.now() - this.cur.t0) / 1000) : 0; },
   fmt(s) { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h}:${U.pad(m)}:${U.pad(s % 60)}` : `${m}:${U.pad(s % 60)}`; },
-  nome(g) { return g.tipo === 'relatorio' ? `Relatório do dia ${U.fmtShort(g.date)}` : g.titulo || (g.tipo === 'feedback' ? `Feedback${g.pessoa ? ' com ' + g.pessoa : ''}` : g.tipo === 'reuniao' ? 'Reunião' : 'Gravação sem nome'); },
+  nome(g) { return g.tipo === 'audio' ? `Áudio ${g.de ? 'de ' + g.de : 'recebido'}` : g.tipo === 'relatorio' ? `Relatório do dia ${U.fmtShort(g.date)}` : g.titulo || (g.tipo === 'feedback' ? `Feedback${g.pessoa ? ' com ' + g.pessoa : ''}` : g.tipo === 'reuniao' ? 'Reunião' : 'Gravação sem nome'); },
   salvar() { Store.save(); if (typeof App !== 'undefined' && ['gravacoes', 'dashboard'].includes(App.route) && !document.querySelector('.modal-wrap input:focus, .modal-wrap textarea:focus')) App.render(); Gravador.paintBar(); },
 
   /* ---------- Gravar ---------- */
@@ -101,6 +101,51 @@ const Gravador = {
     rec.start(this.SLICE_MS);
     c.segTimer = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, this.SEG_MS);
   },
+  /* ---------- Áudio recebido (WhatsApp etc.) ---------- */
+  MAX_ARQ: 19 * 1024 * 1024,   // limite da IA para um arquivo de áudio enviado de uma vez
+  mimeDe(file) {
+    const t = (file.type || '').split(';')[0], ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (t && t !== 'application/octet-stream' && t !== 'audio/x-m4a') return t === 'audio/opus' ? 'audio/ogg' : t;
+    return ({ opus: 'audio/ogg', ogg: 'audio/ogg', oga: 'audio/ogg', m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', mp3: 'audio/mpeg', wav: 'audio/wav', webm: 'audio/webm', flac: 'audio/flac' })[ext] || 'audio/ogg';
+  },
+  escolherArquivo() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'audio/*,.opus,.ogg,.oga,.m4a,.mp3,.aac,.wav,.webm';
+    inp.style.display = 'none'; document.body.appendChild(inp);
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.remove(); if (f) this.perguntarDe(f); });
+    inp.click();
+  },
+  perguntarDe(file) {
+    if (file.size > this.MAX_ARQ) return UI.toast('Esse áudio é grande demais para enviar de uma vez (máximo ~19 MB, cerca de 1 hora).', 'error');
+    if (file.size < 500) return UI.toast('Esse arquivo parece vazio.', 'error');
+    UI.form({
+      title: 'Áudio recebido', submitLabel: 'Transcrever',
+      fields: [
+        { type: 'html', html: `<p class="muted small">${U.icon('mic', 13)} ${U.esc(file.name)} (${Math.max(1, Math.round(file.size / 1024))} KB). O app transcreve, resume o que foi pedido e mostra o que dá para pôr na agenda.</p>` },
+        { name: 'de', label: 'De quem é o áudio? (opcional)', placeholder: 'Ex.: meu chefe, Carlos, cliente X', list: D.techNames() },
+        { name: 'notas', label: 'Anotações (opcional)', type: 'textarea', rows: 2, placeholder: 'Algo que ajude a entender o pedido' },
+      ],
+      onSubmit(v) { Gravador.importar(file, v).catch(e => UI.toast('Não foi possível guardar o áudio: ' + e.message, 'error')); },
+    });
+  },
+  async importar(file, { de = '', notas = '' } = {}) {
+    await AudioDB.open();
+    const g = { id: U.uid(), at: new Date().toISOString(), date: U.today(), time: U.nowTime(), dur: 0, status: 'processando', motivo: '', tipo: 'audio', de: de.trim(), notas, titulo: '', pessoa: '', resumo: '', combinados: [], ref: null, audio: true, arquivo: file.name,
+      partes: [{ n: 0, ini: 0, dur: 0, st: 'pend', chars: 0, bytes: file.size }] };
+    await AudioDB.put('partes', { g: g.id, n: 0, blob: file, mime: this.mimeDe(file) });
+    this.list().push(g);
+    this.salvar();
+    // duração (só para mostrar)
+    try {
+      const a = new Audio(), u = URL.createObjectURL(file);
+      a.preload = 'metadata'; a.onloadedmetadata = () => { if (isFinite(a.duration)) { g.dur = g.partes[0].dur = Math.round(a.duration); this.salvar(); } URL.revokeObjectURL(u); };
+      a.onerror = () => URL.revokeObjectURL(u); a.src = u;
+    } catch (e) { /* sem duração */ }
+    UI.toast('Áudio guardado. Transcrevendo…', 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
+    this.processar();
+    return g;
+  },
+
   /* Junta os pedaços de uma parte num arquivo só e manda para a transcrição */
   async fecharParte(g, n) {
     const p = g.partes[n];
@@ -202,7 +247,13 @@ const Gravador = {
     if (!tx.trim()) { g.status = 'pronta'; g.vazia = true; g.resumo = ''; g.combinados = []; this.vincular(g, ''); this.salvar(); return; }
     if (!navigator.onLine) return this.espera(g, 'Sem internet para fazer o resumo. Ele sai sozinho quando a conexão voltar.');
     try {
-      if (g.tipo === 'relatorio') {
+      if (g.tipo === 'audio') {
+        const r = await IA.recado({ date: g.date, transcript: tx, de: g.de || '', notes: g.notas || '', equipe: D.techNames() });
+        g.resumo = r.resumo; g.combinados = [];
+        const feitos = (g.itens || []).filter(i => i.aplicado);
+        r.itens.forEach(i => { i.sel = i.situacao !== 'feito'; });
+        g.itens = [...feitos, ...r.itens.filter(i => !feitos.some(f => f.titulo.toLowerCase() === i.titulo.toLowerCase()))];
+      } else if (g.tipo === 'relatorio') {
         const r = await IA.relatorio({ date: g.date, transcript: tx, notes: g.notas || '', contexto: this.contextoDia(g.date), equipe: D.techNames() });
         g.resumo = r.relatorio; g.combinados = [];
         const feitos = (g.itens || []).filter(i => i.aplicado);
@@ -218,14 +269,14 @@ const Gravador = {
       g.status = 'pronta'; g.motivo = ''; g.resumidaEm = new Date().toISOString();
       this.vincular(g, tx);
       this.salvar();
-      UI.toast(g.tipo === 'relatorio' ? `Relatório pronto${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'item identificado', 'itens identificados')}` : ''}.` : `Resumo pronto: ${this.nome(g)}.`, 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
+      UI.toast(g.tipo === 'audio' ? `Áudio transcrito${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'pedido identificado', 'pedidos identificados')}` : ''}.` : g.tipo === 'relatorio' ? `Relatório pronto${(g.itens || []).length ? `: ${U.plural(g.itens.length, 'item identificado', 'itens identificados')}` : ''}.` : `Resumo pronto: ${this.nome(g)}.`, 'ok', { label: 'Abrir', onClick: () => Actions.gvOpen({ id: g.id }) });
     } catch (e) { this.espera(g, 'Resumo: ' + e.message); }
   },
   /* Cria/atualiza a reunião ou o feedback ligado à gravação (aparecem no calendário e no resto do app) */
   vincular(g, tx) {
     const comb = (g.combinados || []).join('\n');
     const old = g.ref;
-    if (g.tipo === 'relatorio') {   // o relatório fica na própria gravação (aparece no calendário por ela)
+    if (g.tipo === 'relatorio' || g.tipo === 'audio') {   // relatório e áudio recebido ficam na própria gravação (aparece no calendário por ela)
       if (old) { if (old.kind === 'ev') S.events = S.events.filter(e => e.id !== old.id); else S.feedbacks = FB.list().filter(f => f.id !== old.id); }
       g.ref = null; return;
     }
@@ -342,6 +393,11 @@ const Gravador = {
   /* Descrever (agora ou depois): tipo, nome, pessoa e anotações */
   descrever(g, fresh) {
     if (!g) return;
+    if (g.tipo === 'audio') return UI.form({
+      title: 'Áudio recebido', submitLabel: 'Salvar',
+      fields: [{ name: 'de', label: 'De quem é o áudio?', value: g.de, list: D.techNames(), placeholder: 'Ex.: meu chefe' }, { name: 'notas', label: 'Anotações', type: 'textarea', rows: 2, value: g.notas }],
+      onSubmit(v) { const mudou = v.de !== (g.de || '') || v.notas !== (g.notas || ''); Object.assign(g, { de: v.de, notas: v.notas }); if (mudou && g.status === 'pronta') { g.status = 'processando'; Gravador.salvar(); Gravador.processar(); UI.toast('Refazendo o resumo…'); } else { Gravador.salvar(); UI.toast('Salvo.'); } },
+    });
     UI.form({
       title: fresh ? (g.tipo === 'feedback' ? 'Gravação salva. Com quem foi?' : g.tipo === 'reuniao' ? 'Gravação salva. Qual foi o assunto?' : 'Gravação salva. O que foi?') : 'Descrever gravação',
       submitLabel: 'Salvar',
@@ -398,13 +454,14 @@ Views.gravacoes = {
     const pend = all.filter(x => x.status === 'pendente');
     const semDesc = all.filter(x => !x.tipo && x.status !== 'gravando');
     const card = x => `<button class="card gv-card" data-act="gvOpen" data-id="${x.id}">
-      <span class="gv-ic ${x.status === 'gravando' ? 'rec' : ''}">${U.icon(x.tipo === 'feedback' ? 'chat' : x.tipo === 'relatorio' ? 'list' : 'mic', 17)}</span>
+      <span class="gv-ic ${x.status === 'gravando' ? 'rec' : ''}">${U.icon(x.tipo === 'feedback' ? 'chat' : x.tipo === 'relatorio' ? 'list' : x.tipo === 'audio' ? 'upload' : 'mic', 17)}</span>
       <span class="gv-main"><strong>${U.esc(Gravador.nome(x))}</strong><small>${U.fmtShort(x.date)} ${x.time} · ${Gravador.fmt(x.dur)}</small>${Views.gravacoes.chip(x)}</span>${U.icon('right', 16)}</button>`;
     return `
       ${Gravador.supported() ? '' : `<div class="alert a-yellow">${U.icon('info')} <span>Gravar não funciona aqui. Use o app ou o site num navegador comum.</span></div>`}
       ${!IA.ready() && IA.supported() ? `<div class="alert a-yellow">${U.icon('spark')} <span>Para transcrever e resumir, cadastre a chave da IA. As gravações ficam guardadas até lá.</span> <a class="link" href="#config" data-act="cfgJump" data-id="ia">Configurar</a></div>` : ''}
       ${pend.length ? `<div class="alert a-yellow">${U.icon('clock')} <span>${U.plural(pend.length, 'gravação esperando', 'gravações esperando')} para transcrever: ${U.esc(pend[0].motivo || '')}</span> <button class="link" data-act="gvRetry">Tentar agora</button></div>` : ''}
       ${Gravador.recording() ? '' : `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fale o que fez hoje e o que vem amanhã: o app escreve o relatório e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
+      ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Enviar um áudio</strong><small>Recebeu um áudio no WhatsApp com um pedido? O app transcreve e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
       ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : H.empty('Nenhuma gravação ainda. Toque em <strong>Gravar</strong>, na barra de baixo, para começar. Não precisa criar a reunião antes.')}`;
   },
@@ -413,7 +470,7 @@ Views.gravacoes = {
     if (x.status === 'gravando') return '<span class="badge b-red">● Gravando</span>';
     if (x.status === 'pronta') {
       if (x.vazia) return '<span class="badge">Sem fala reconhecida</span>';
-      if (x.tipo === 'relatorio') { const f = (x.itens || []).filter(i => !i.aplicado && i.sel).length; return `<span class="badge b-green">Relatório pronto${f ? ` · ${f} para anotar` : ''}</span>`; }
+      if (x.tipo === 'relatorio' || x.tipo === 'audio') { const f = (x.itens || []).filter(i => !i.aplicado && i.sel).length; return `<span class="badge b-green">${x.tipo === 'audio' ? 'Transcrito' : 'Relatório pronto'}${f ? ` · ${f} para anotar` : ''}</span>`; }
       return `<span class="badge b-green">Resumo pronto${x.tipo ? '' : ' · descrever'}</span>`;
     }
     if (x.status === 'pendente') return `<span class="badge b-yellow">Esperando · ${ok} de ${tot} partes</span>`;
@@ -428,14 +485,14 @@ Views.gravacoes = {
         <div class="grow"><h2>${U.esc(Gravador.nome(g))}</h2><small class="muted">${U.fmtDate(g.date)} às ${g.time} · ${Gravador.fmt(g.dur)}${g.recuperada ? ' · recuperada' : ''}</small></div></div>
       <div class="gv-acts">
         ${g.status === 'gravando' ? `<button class="btn primary" data-act="gvTela">${U.icon('mic', 15)} Abrir gravação</button>` : `<button class="btn ${g.tipo ? 'ghost' : 'primary'}" data-act="gvDesc" data-id="${g.id}">${U.icon('edit', 15)} ${g.tipo ? 'Editar descrição' : 'Descrever'}</button>`}
-        ${done && g.resumo && g.tipo !== 'relatorio' ? `<button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar resumo</button>` : ''}
+        ${done && g.resumo && g.tipo !== 'relatorio' && g.tipo !== 'audio' ? `<button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar resumo</button>` : ''}
       </div>
       <div class="card gv-status">${Views.gravacoes.chip(g)}
         <p class="small">${done ? 'Transcrição e resumo prontos.' : g.status === 'gravando' ? 'Gravando agora.' : `Transcrição: ${ok} de ${g.partes.length} partes${ok === g.partes.length ? ', fazendo o resumo' : ''}.`}${g.motivo && g.status === 'pendente' ? `<br><span class="c-yellow">${U.esc(g.motivo)}</span>` : ''}</p>
         ${g.status === 'pendente' ? `<button class="btn sm" data-act="gvRetry">Tentar agora</button>` : ''}
         ${done && g.tipo ? `<button class="link" data-act="gvRedo" data-id="${g.id}">Refazer resumo</button>` : ''}
       </div>
-      ${g.tipo === 'relatorio' ? this.relatorioHtml(g) : g.resumo ? `<div class="card"><div class="card-h"><h3>${U.icon('spark')} Resumo</h3></div><div class="ata pre">${U.esc(g.resumo)}</div></div>` : ''}
+      ${g.tipo === 'relatorio' || g.tipo === 'audio' ? this.relatorioHtml(g) : g.resumo ? `<div class="card"><div class="card-h"><h3>${U.icon('spark')} Resumo</h3></div><div class="ata pre">${U.esc(g.resumo)}</div></div>` : ''}
       ${comb.length && g.tipo !== 'relatorio' ? `<div class="card"><div class="card-h"><h3>${U.icon('tasks')} ${g.tipo === 'feedback' ? 'Acordos' : 'Combinados'}</h3></div>
         <ul class="gv-comb">${comb.map(c => `<li>${U.esc(c)}</li>`).join('')}</ul>
         ${g.tarefas ? `<p class="muted small">${U.plural(g.tarefas, 'tarefa criada', 'tarefas criadas')}.</p>` : `<button class="btn sm" data-act="gvTasks" data-id="${g.id}">${U.icon('plus', 14)} Virar tarefas</button>`}</div>` : ''}
@@ -459,15 +516,16 @@ Views.gravacoes = {
         <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
         <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${i.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
     };
-    return `<div class="card"><div class="card-h"><h3>${U.icon('list')} Relatório do dia</h3></div>
+    const aud = g.tipo === 'audio';
+    return `<div class="card"><div class="card-h"><h3>${U.icon(aud ? 'upload' : 'list')} ${aud ? 'O que foi pedido' : 'Relatório do dia'}</h3></div>
         <div class="ata pre">${U.esc(g.resumo)}</div>
-        <div class="gv-acts"><a class="btn primary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(g.resumo)}">${U.icon('chat', 15)} Enviar pelo WhatsApp</a><button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar</button></div>
+        <div class="gv-acts">${aud ? '' : `<a class="btn primary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(g.resumo)}">${U.icon('chat', 15)} Enviar pelo WhatsApp</a>`}<button class="btn ghost" data-act="gvCopy" data-id="${g.id}">${U.icon('download', 15)} Copiar</button></div>
       </div>
       <div class="card"><div class="card-h"><h3>${U.icon('calendar')} O que o app identificou</h3></div>
-        ${itens.length ? `<p class="muted small">Confira o tipo de cada item e desmarque o que não quer anotar. O que já foi feito hoje fica só no relatório, a não ser que você marque.</p>
+        ${itens.length ? `<p class="muted small">${aud ? 'Confira o tipo de cada pedido e desmarque o que não quer anotar.' : 'Confira o tipo de cada item e desmarque o que não quer anotar. O que já foi feito hoje fica só no relatório, a não ser que você marque.'}</p>
           <ul class="rl-list">${itens.map(row).join('')}</ul>
           ${pend ? `<button class="btn primary rl-go" data-act="gvItApply" data-id="${g.id}">${U.icon('plus', 15)} Anotar no app (${pend})</button>` : itens.every(i => i.aplicado || !i.sel) ? '<p class="muted small">Tudo o que estava marcado já foi anotado.</p>' : ''}`
-        : '<p class="muted small">Nenhuma tarefa, imprevisto ou compromisso citado no relato.</p>'}
+        : `<p class="muted small">Nenhuma tarefa, imprevisto ou compromisso citado no ${aud ? 'áudio' : 'relato'}.</p>`}
       </div>`;
   },
   mount(root) {
@@ -493,8 +551,11 @@ Object.assign(Actions, {
       { label: 'Reunião', hint: 'Gera a ata e os combinados', icon: 'users', onClick: () => Gravador.start({ tipo: 'reuniao' }) },
       { label: 'Feedback', hint: 'Conversa individual com alguém da equipe', icon: 'chat', onClick: () => Gravador.start({ tipo: 'feedback' }) },
       { label: 'Relatório do dia', hint: 'O que você fez hoje e o que vem amanhã', icon: 'list', onClick: () => Gravador.start({ tipo: 'relatorio' }) },
+      { sep: true },
+      { label: 'Enviar um áudio', hint: 'Áudio do WhatsApp ou outro: o app transcreve e anota na agenda', icon: 'upload', onClick: () => Gravador.escolherArquivo() },
     ]);
   },
+  gvArq() { Gravador.escolherArquivo(); },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {

@@ -48,6 +48,9 @@ e diga o que mudou e como testar no celular.
   e o contexto do dia (`Gravador.contextoDia`) e devolve o relatório pronto (WhatsApp/copiar) + `g.itens` (tarefa | imprevisto | compromisso | agenda, com data,
   hora, duração, responsável e situação feito|pendente|futuro). A pessoa confere/troca o tipo e toca em "Anotar no app" (`Gravador.aplicar`; agenda sem hora vira tarefa;
   o que já foi feito fica só no relatório, exceto imprevisto). Testes em `tests/enxuto.test.js` [7].
+- **Áudio recebido** (Gravar → "Enviar um áudio" ou botão em Gravações; `tipo: 'audio'`, `g.de`): `Gravador.escolherArquivo/perguntarDe/importar` guarda o arquivo
+  (WhatsApp .opus → `audio/ogg`, `mimeDe`; até ~19 MB) como parte 0 no IndexedDB e usa o mesmo caminho de transcrição/novas tentativas; no fim `IA.recado` devolve o resumo
+  do que foi pedido + itens (`IA.itensNorm`, mesmo formato do relatório; pedido para o usuário = `responsavel` vazio). Tela igual à do relatório ("O que foi pedido" + "Anotar no app").
 - **Nome de quem usa o app** (`settings.usuario`; cartão "Como você se chama?" no Calendário enquanto estiver vazio e Configurações → Você): vai na saudação e em `IA.system`
   (quem fala na primeira pessoa nas gravações é essa pessoa). No relatório do dia, item do próprio usuário fica com `responsavel` vazio (agenda/tarefa dele); de outra pessoa, com o nome dela.
 - **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`

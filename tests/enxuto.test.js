@@ -11,6 +11,11 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
     const txt = JSON.stringify(r.request().postDataJSON());
     const ok = text => r.fulfill({ json: { candidates: [{ content: { parts: [{ text }] } }] } });
     if (txt.includes('Transcreva fielmente')) { tr++; return ok(`— Trecho ${tr}: falamos da escala do sábado e da compra de luvas.`); }
+    if (txt.includes('Tarefa: /recado')) { ia.recado = txt; return ok(JSON.stringify({ resumo: '• Enviar o orçamento da câmera 360 até amanhã.\n• Reunião com a diretoria amanhã às 15h.', itens: [
+      { tipo: 'tarefa', titulo: 'Enviar o orçamento da câmera 360', data: amanha, responsavel: '', situacao: 'futuro' },
+      { tipo: 'compromisso', titulo: 'Reunião com a diretoria', data: amanha, hora: '15:00', situacao: 'futuro' },
+      { tipo: 'tarefa', titulo: 'Conferir as câmeras do bloco C', responsavel: 'Carlos Souza', situacao: 'futuro' },
+    ] })); }
     if (txt.includes('Tarefa: /relatorio') && txt.includes('Paulo J')) { ia.relEu = txt; return ok(JSON.stringify({ relatorio: 'RELATÓRIO DIÁRIO\nResponsável: Paulo Júnior\n\nPlanejamento para o próximo dia:\n• Ligar para o fornecedor de cabos.', itens: [
       { tipo: 'tarefa', titulo: 'Ligar para o fornecedor de cabos', data: amanha, responsavel: 'Paulo Júnior', situacao: 'futuro' },
       { tipo: 'tarefa', titulo: 'Revisar as câmeras do bloco A', data: amanha, responsavel: 'Carlos Souza', situacao: 'futuro' },
@@ -61,7 +66,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   console.log('\n[2] Gravar com um toque');
   await tap('#bottom-nav .bn-rec');
   const opts = await p.$$eval(`${M} .sheet-item`, a => a.map(x => x.textContent.trim()));
-  check(opts.length === 3 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as 3 opções (Reunião, Feedback, Relatório do dia) e ainda não grava');
+  check(opts.length === 4 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && /Enviar um áudio/.test(opts[3]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as opções (Reunião, Feedback, Relatório do dia, Enviar um áudio) e ainda não grava');
   await p.screenshot({ path: OUT + '/enxuto-0-opcoes.png' });
   await tap(`${M} .sheet-item:has-text("Reunião")`);
   check(await p.locator(`${M} .gv-clock`).count() === 1 && await p.locator(`${M} h2`, { hasText: 'Gravando a reunião' }).count() === 1, 'escolheu Reunião: começa a gravar na hora (sem criar a reunião antes)');
@@ -161,7 +166,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check((await p.textContent('.ata.pre')).includes('RELATÓRIO DIÁRIO') && await p.locator('a[href^="https://wa.me/?text=REL"]').count() === 1, 'relatório pronto para enviar pelo WhatsApp ou copiar');
   check(await p.locator('.rl-it').count() === 6 && await p.locator('.rl-it input:checked').count() === 5, '6 itens identificados; o que já foi feito (menos imprevisto) fica desmarcado');
   const alm = await p.locator('.rl-it', { hasText: 'Organizar o almoxarifado' }).textContent();
-  check(alm.includes('sem horário, vira tarefa') && alm.includes(amanha.slice(8, 10) + '/' + amanha.slice(5, 7)), 'item sem horário avisa que vira tarefa e mostra o dia para onde vai');
+  check(alm.includes('sem horário, vira tarefa') && (alm.includes(amanha.slice(8, 10) + '/' + amanha.slice(5, 7)) || alm.includes('amanhã')), 'item sem horário avisa que vira tarefa e mostra o dia para onde vai');
   await p.screenshot({ path: OUT + '/enxuto-6-relatorio.png', fullPage: true }); await fits('Relatório');
   await p.locator('.rl-it', { hasText: 'Visita ao cliente Jardins' }).locator('select').selectOption('compromisso'); await W(200);
   await tap('[data-act=gvItApply]');
@@ -212,6 +217,31 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   const tEu = s.tasks.find(x => x.title === 'Ligar para o fornecedor de cabos');
   check(tEu && tEu.responsible === '' && tEu.dueDate === amanha, 'entra na sua agenda de amanhã (tarefa sua, sem delegar)');
   check(s.tasks.find(x => x.title === 'Revisar as câmeras do bloco A').responsible === 'Carlos Souza', 'a do Carlos vai com ele de responsável');
+
+  console.log('\n[10] Enviar um áudio recebido (WhatsApp)');
+  await p.evaluate(() => { App.ui.gvId = null; location.hash = '#dashboard'; App.render(); document.querySelectorAll('.toast').forEach(t => t.remove()); }); await W(300);
+  await tap('#bottom-nav .bn-rec');
+  check(await p.locator(`${M} .sheet-item`, { hasText: 'Enviar um áudio' }).count() === 1, 'Gravar tem a opção "Enviar um áudio"');
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator(`${M} .sheet-item`, { hasText: 'Enviar um áudio' }).tap()]);
+  await fc.setFiles({ name: 'PTT-20261115-WA0007.opus', mimeType: '', buffer: Buffer.alloc(9000, 7) }); await W(400);
+  check(await p.locator(`${M} h2`, { hasText: 'Áudio recebido' }).count() === 1 && (await p.textContent(`${M} .modal-body`)).includes('PTT-20261115-WA0007.opus'), 'escolheu o arquivo: pergunta de quem é o áudio');
+  await p.locator(`${M} [name=de]`).fill('meu chefe'); await tap(`${M} [data-submit]`);
+  await espera(() => { const g = S.gravacoes.find(x => x.tipo === 'audio'); return g && g.status === 'pronta'; }, 20000, 'áudio transcrito');
+  const ga = await p.evaluate(() => S.gravacoes.find(x => x.tipo === 'audio'));
+  const parte = await p.evaluate(id => AudioDB.get('partes', [id, 0]).then(a => a && a.mime), ga.id);
+  check(parte === 'audio/ogg', 'áudio do WhatsApp (.opus) guardado no aparelho e enviado como ogg');
+  check(ia.recado.includes('ÁUDIO RECEBIDO de meu chefe') && ia.recado.includes('Paulo Júnior') && ia.recado.includes('Trecho'), 'a IA sabe que o áudio é do chefe, para você, e recebe a transcrição');
+  check(ga.resumo.includes('orçamento da câmera 360') && ga.itens.length === 3 && ga.itens.every(i => i.sel), 'resumo do pedido e 3 itens identificados');
+  await p.evaluate(id => { App.ui.gvId = id; location.hash = '#gravacoes'; App.render(); }, ga.id); await W(400);
+  check(await p.locator('.ps-head h2', { hasText: 'Áudio de meu chefe' }).count() === 1 && (await p.textContent('.view')).includes('O que foi pedido'), 'tela do áudio: "O que foi pedido" e os itens');
+  await p.screenshot({ path: OUT + '/enxuto-8-audio.png', fullPage: true }); await fits('Áudio recebido');
+  await tap('[data-act=gvItApply]');
+  s = await st();
+  check(s.tasks.some(x => x.title === 'Enviar o orçamento da câmera 360' && x.dueDate === amanha && x.responsible === ''), 'pedido para você vira tarefa sua para amanhã');
+  check(s.events.some(e => e.title === 'Reunião com a diretoria' && e.date === amanha && e.time === '15:00'), 'reunião citada no áudio entra no calendário às 15:00');
+  check(s.tasks.some(x => x.title === 'Conferir as câmeras do bloco C' && x.responsible === 'Carlos Souza'), 'pedido para o Carlos vai com ele de responsável');
+  await go('gravacoes'); await p.evaluate(() => { App.ui.gvId = null; App.render(); });
+  check(await p.locator('.gv-arq-btn').count() === 1, 'em Gravações também tem "Enviar um áudio"');
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();

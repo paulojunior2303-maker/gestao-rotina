@@ -11,7 +11,7 @@ const Cal = {
   itemsOn(k) {
     const out = [];
     // Gravações (reunião/feedback gravado): a reunião ligada a ela não aparece de novo
-    (S.gravacoes || []).filter(g => g.date === k).forEach(g => out.push({ type: 'gravacao', label: Gravador.nome(g), time: g.time, id: g.id, done: g.status === 'pronta', act: 'gvOpen', sub: g.status === 'pronta' ? (g.tipo === 'feedback' ? 'Feedback · resumo pronto' : 'Reunião · resumo pronto') : g.status === 'gravando' ? 'Gravando agora' : 'Gravação · transcrevendo' }));
+    (S.gravacoes || []).filter(g => g.date === k).forEach(g => out.push({ type: 'gravacao', label: Gravador.nome(g), time: g.time, id: g.id, done: g.status === 'pronta', act: 'gvOpen', sub: g.status === 'pronta' ? (g.tipo === 'feedback' ? 'Feedback · resumo pronto' : g.tipo === 'relatorio' ? 'Relatório do dia · pronto' : g.tipo === 'audio' ? 'Áudio recebido · transcrito' : 'Reunião · resumo pronto') : g.status === 'gravando' ? 'Gravando agora' : 'Gravação · transcrevendo' }));
     S.events.filter(e => e.date === k && !e.gravacaoId).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));

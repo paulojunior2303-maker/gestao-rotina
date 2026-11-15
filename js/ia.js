@@ -167,13 +167,41 @@ Responda em JSON com:
           tipo: { type: 'STRING', enum: this.RELATORIO_TIPOS }, titulo: { type: 'STRING' }, data: { type: 'STRING' }, hora: { type: 'STRING' },
           duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
       } } });
+    return { relatorio: this.tidy(String(r.relatorio || '')), itens: this.itensNorm(r.itens, eu) };
+  },
+  /* Itens para a agenda devolvidos pela IA (relatório do dia e áudio recebido): limpa e valida */
+  itensNorm(lista, eu = this.usuario()) {
     const ok = (re, v) => re.test(String(v || '')) ? String(v) : '';
-    const itens = (r.itens || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
+    return (lista || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
       id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
       data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
-      responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(), situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
+      responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma|voce|você)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(),
+      situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
     }));
-    return { relatorio: this.tidy(String(r.relatorio || '')), itens };
+  },
+  ITENS_SCHEMA: { type: 'ARRAY', items: { type: 'OBJECT', required: ['tipo', 'titulo', 'situacao'], properties: {
+    tipo: { type: 'STRING', enum: ['tarefa', 'imprevisto', 'compromisso', 'agenda'] }, titulo: { type: 'STRING' }, data: { type: 'STRING' }, hora: { type: 'STRING' },
+    duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
+
+  /* Áudio recebido (ex.: WhatsApp do chefe pedindo algo): resumo do recado + itens para a agenda de quem usa o app */
+  async recado({ date, transcript, de = '', notes = '', equipe = [] }) {
+    const eu = this.usuario(), amanha = D.nextWorkday(date);
+    const system = this.system(`Tarefa: /recado. A transcrição abaixo é de um ÁUDIO RECEBIDO ${de ? `de ${de}` : '(de outra pessoa)'} por ${eu || 'quem usa o aplicativo'} (não foi gravado por quem usa o app).
+Data em que foi recebido: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
+Use só o que foi dito. Não invente prazos, horários, nomes nem tarefas.
+Responda em JSON com:
+- "resumo": em poucas linhas, o que ${de || 'a pessoa'} pediu ou informou, com prazos quando ditos (texto simples, um tópico "• " por pedido).
+- "itens": cada pedido ou combinado concreto, um por item, com:
+  - "tipo": "tarefa" (algo a fazer), "compromisso" (horário marcado: visita, reunião, entrega), "agenda" (bloco de trabalho com horário definido) ou "imprevisto" (problema relatado que precisa de atenção);
+  - "titulo": curto, no infinitivo (ex.: "Enviar o orçamento ao cliente X");
+  - "data": AAAA-MM-DD resolvendo "hoje", "amanhã", dias da semana etc. a partir da data em que foi recebido; vazio se não foi dita;
+  - "hora": HH:MM se foi dita; senão vazio;
+  - "duracao": minutos, se foi dita; senão 0;
+  - "responsavel": vazio quando o pedido é para quem recebeu o áudio (${eu || 'a pessoa que usa o app'}); o nome de outra pessoa da equipe se o pedido for para ela (equipe: ${equipe.join(', ') || 'não cadastrada'});
+  - "situacao": "futuro" (a fazer) ou "feito" (se o áudio só informa algo que já aconteceu).`);
+    const r = await this.call({ system, timeout: 120000, parts: [{ text: `Transcrição do áudio (automática, pode ter erros):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações de quem recebeu:\n"""\n${notes.trim()}\n"""` : ''}` }],
+      schema: { type: 'OBJECT', required: ['resumo', 'itens'], properties: { resumo: { type: 'STRING' }, itens: this.ITENS_SCHEMA } } });
+    return { resumo: this.tidy(String(r.resumo || '')), itens: this.itensNorm(r.itens, eu) };
   },
 
   /* Comandos rápidos do agente sobre um texto pronto */
