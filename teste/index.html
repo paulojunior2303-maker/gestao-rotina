@@ -1113,6 +1113,14 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .more-box[hidden] { display: none; }
 .more-box { margin: 0; grid-column: 1 / -1; }
 
+/* Nome de quem usa o app */
+.eu-card { display: flex; flex-direction: column; gap: 10px; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.eu-card strong { display: block; font-family: var(--font-d); font-size: 16px; }
+.eu-card small { display: block; color: var(--muted); font-size: 12.5px; }
+.eu-row { display: flex; gap: 8px; }
+.eu-row input { flex: 1; min-width: 0; min-height: 42px; padding: 8px 12px; border: 1px solid var(--input-border); border-radius: 11px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 15px; outline: none; }
+.eu-row input:focus { border-color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -1292,6 +1300,7 @@ const Store = {
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
         jogo: true,              // modo jogo: XP, sequência e conquistas (Configurações → Aparência)
+        usuario: '',             // nome de quem usa o app (quem fala nas gravações e no relatório do dia)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
@@ -2480,11 +2489,14 @@ const IA = {
 Escreva em português do Brasil, de forma profissional, natural e objetiva, direto ao ponto, sem burocracia e sem repetir informações.
 Não invente fatos, participantes, decisões ou responsabilidades. Não transforme sugestões em decisões; o que ficou sem definição é pendência.
 Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere que transcrições automáticas podem ter erros e não complete trechos incompreensíveis com suposições.`,
+  /* Nome de quem usa o app (Configurações → Você) */
+  usuario() { return ((S.settings && S.settings.usuario) || '').trim(); },
   system(task) {
+    const eu = this.usuario();
     return `${this.agent() || this.DEFAULT_AGENT}
 
 === Instruções do aplicativo FlowFire (seguir sempre, junto com as de cima) ===
-${task}
+${eu ? `Quem usa o aplicativo e grava as reuniões, feedbacks e relatórios é ${eu}, a liderança. Quando a fala estiver na primeira pessoa ("eu fiz", "vou fazer", "eu passei para o Carlos"), quem fala é ${eu}: use esse nome onde o documento pedir o responsável, o líder ou quem registrou.\n` : ''}${task}
 Entregue texto simples, pronto para copiar: sem markdown (não use #, ** ou _). Numere os assuntos ("1. ", "2. ") e use "• " para os tópicos.`;
   },
 
@@ -2556,9 +2568,9 @@ ${notes.trim() ? `Anotações da liderança:\n"""\n${notes.trim()}\n"""` : ''}` 
      contexto = o que o app já sabe do dia (agenda, tarefas concluídas, imprevistos), só para completar o relatório. */
   RELATORIO_TIPOS: ['tarefa', 'imprevisto', 'compromisso', 'agenda'],
   async relatorio({ date, transcript, notes = '', contexto = '', equipe = [] }) {
-    const amanha = D.nextWorkday(date);
+    const amanha = D.nextWorkday(date), eu = this.usuario();
     const system = this.system(`Tarefa: /relatorio. Escreva o RELATÓRIO DIÁRIO de atividades da liderança a partir do relato falado (transcrição) do fim do dia.
-Data do relatório: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
+Data do relatório: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.${eu ? `\nResponsável pelo relatório (quem está falando): ${eu}. Ponha esse nome no cabeçalho.` : ''}
 Use só o que foi dito e o que estiver no contexto do app. Não invente atividades, números, nomes ou horários.
 Responda em JSON com:
 - "relatorio": o relatório pronto para enviar, com quebras de linha (\n): cabeçalho (Relatório diário, data, responsável se dito), "Atividades realizadas" (um tópico "• " por atividade, com o resultado quando dito), "Imprevistos e ocorrências" (se houver), "Pendências" (se houver) e "Planejamento para o próximo dia" (se houver). Seções sem conteúdo ficam de fora.
@@ -2568,7 +2580,7 @@ Responda em JSON com:
   - "data": AAAA-MM-DD resolvendo "hoje", "amanhã", dias da semana etc. a partir da data do relatório; vazio se não foi dita;
   - "hora": HH:MM se foi dita; senão vazio;
   - "duracao": minutos, se foi dita; senão 0;
-  - "responsavel": nome da pessoa da equipe que vai fazer, se foi dito (equipe: ${equipe.join(', ') || 'não cadastrada'}); senão vazio;
+  - "responsavel": nome da pessoa da equipe que vai fazer, se foi dito (equipe: ${equipe.join(', ') || 'não cadastrada'}); vazio se for ${eu || 'quem está falando'} (a própria pessoa: vai para a agenda dela) ou se não foi dito;
   - "situacao": "feito" (já aconteceu/foi concluído hoje), "pendente" (ficou por fazer) ou "futuro" (planejado para depois).`);
     const r = await this.call({ system, timeout: 120000, parts: [{ text: `${contexto ? `Contexto do app (o que já está registrado hoje):\n${contexto}\n\n` : ''}Relato falado (transcrição automática, pode ter erros):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações:\n"""\n${notes.trim()}\n"""` : ''}` }],
       schema: { type: 'OBJECT', required: ['relatorio', 'itens'], properties: {
@@ -2581,7 +2593,7 @@ Responda em JSON com:
     const itens = (r.itens || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
       id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
       data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
-      responsavel: String(i.responsavel || '').trim(), situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
+      responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(), situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
     }));
     return { relatorio: this.tidy(String(r.relatorio || '')), itens };
   },
@@ -3448,13 +3460,17 @@ Views.dashboard = {
   hero() {
     const h = new Date().getHours(), t = U.today(), d = U.parse(t);
     const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-    return `<span class="th-greet">${greet}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
+    const eu = (S.settings.usuario || '').trim().split(' ')[0];
+    return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
   },
   renderEnxuto() {
     const rec = Gravador.recording();
     const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
     return `
     ${Updater.banner()}
+    ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">
+      <div><strong>Como você se chama?</strong><small>Seu nome vai no relatório do dia, nas atas e na saudação. O que você disser que vai fazer entra na sua agenda.</small></div>
+      <div class="eu-row"><input name="nome" placeholder="Seu nome" maxlength="40" autocomplete="name" required><button class="btn primary">Salvar</button></div></form>`}
     <button class="gv-rec-big ${rec ? 'on' : ''}" data-act="${rec ? 'gvTela' : 'gvRec'}">
       <span class="gv-rec-ic">${U.icon(rec ? 'stop' : 'mic', 26)}</span>
       <span><strong>${rec ? 'Gravando… toque para abrir' : 'Gravar reunião ou feedback'}</strong><small>${rec ? 'A gravação continua enquanto você usa o app' : 'Um toque para começar. Você descreve depois.'}</small></span>
@@ -3468,6 +3484,9 @@ Views.dashboard = {
   render() { return this.renderEnxuto(); },
 };
 Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });
+Object.assign(Actions, {
+  euNome(_, form) { const v = form.elements.nome.value.trim().replace(/\s+/g, ' '); if (!v) return; S.settings.usuario = v; commit(); UI.toast(`Prazer, ${v.split(' ')[0]}! Dá para mudar em Configurações → Você.`); },
+});
 
 </script>
   <script>/* js/views/agenda.js */
@@ -4736,7 +4755,7 @@ Views.gravacoes = {
       const quando = Gravador.quando(i, g);
       if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind]}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
       return `<li class="rl-it ${i.sel ? '' : 'off'}"><label class="rl-ck"><input type="checkbox" ${i.sel ? 'checked' : ''} data-change="gvItSel" data-id="${g.id}" data-it="${i.id}" aria-label="Anotar ${U.esc(i.titulo)}"></label>
-        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
+        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
         <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${i.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
     };
     return `<div class="card"><div class="card-h"><h3>${U.icon('list')} Relatório do dia</h3></div>
@@ -5005,7 +5024,10 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['voce', 'Você'], ['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+
+    ${sec('voce', 'Você', 'Seu nome aparece na saudação e é usado pela IA: quem fala nas gravações e no relatório do dia é você, e o que você disser que vai fazer entra na sua agenda.', `
+      <label class="field cfg-usuario"><span class="lbl">Seu nome</span><input type="text" value="${U.esc(st.usuario || '')}" placeholder="Ex.: Paulo Júnior" data-change="cfgUsuario" maxlength="40" autocomplete="name"></label>`)}
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -5201,6 +5223,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgUsuario(_, el) { S.settings.usuario = el.value.trim().replace(/\s+/g, ' '); commit(); UI.toast(S.settings.usuario ? `Pronto, ${S.settings.usuario.split(' ')[0]}! Seu nome vai nos relatórios e atas.` : 'Nome apagado.'); },
   cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
   cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
   themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
@@ -5249,6 +5272,7 @@ Views.guia = {
       'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',
       'Quando todas as partes estão prontas, a IA faz o <strong>resumo</strong> (ata da reunião ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>, que viram tarefas com um toque.',
       'Precisa da chave da IA em <strong>Configurações → IA</strong>. Sem ela, as gravações ficam guardadas esperando.',
+      'Diga ao app <strong>o seu nome</strong> (no Calendário, na primeira vez, ou em <strong>Configurações → Você</strong>). Ele entra no cabeçalho do relatório e nas atas, e o que você disser que vai fazer ("eu vou…") entra na <strong>sua agenda</strong>; o que for de outra pessoa da equipe vai com ela de responsável.',
     ]))}
     ${sec('seguro', 'check', 'O áudio nunca se perde', li([
       'O áudio vai para o celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, ao abrir de novo a gravação é <strong>recuperada</strong>.',
