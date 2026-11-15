@@ -11,6 +11,10 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
     const txt = JSON.stringify(r.request().postDataJSON());
     const ok = text => r.fulfill({ json: { candidates: [{ content: { parts: [{ text }] } }] } });
     if (txt.includes('Transcreva fielmente')) { tr++; return ok(`— Trecho ${tr}: falamos da escala do sábado e da compra de luvas.`); }
+    if (txt.includes('Tarefa: /relatorio') && txt.includes('Paulo J')) { ia.relEu = txt; return ok(JSON.stringify({ relatorio: 'RELATÓRIO DIÁRIO\nResponsável: Paulo Júnior\n\nPlanejamento para o próximo dia:\n• Ligar para o fornecedor de cabos.', itens: [
+      { tipo: 'tarefa', titulo: 'Ligar para o fornecedor de cabos', data: amanha, responsavel: 'Paulo Júnior', situacao: 'futuro' },
+      { tipo: 'tarefa', titulo: 'Revisar as câmeras do bloco A', data: amanha, responsavel: 'Carlos Souza', situacao: 'futuro' },
+    ] })); }
     if (txt.includes('Tarefa: /relatorio')) { ia.rel = (ia.rel || 0) + 1; ia.relCtx = txt.includes('Contexto do app'); return ok(JSON.stringify({ relatorio: `RELATÓRIO DIÁRIO\nData: hoje\n\nAtividades realizadas:\n• Ajustei o NVR do cliente X.\n\nPlanejamento para o próximo dia:\n• Visita ao cliente Jardins às 9h.`, itens: [
       { tipo: 'imprevisto', titulo: 'Câmera 4 do bloco B parou', situacao: 'feito' },
       { tipo: 'tarefa', titulo: 'Ajustar o NVR do cliente X', situacao: 'feito' },
@@ -183,6 +187,31 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(await p.locator(`${M} h2`, { hasText: 'Com quem foi' }).count() === 1 && await p.locator(`${M} input[name=tipo][value=feedback]:checked`).count() === 1 && await p.locator(`${M} [name=pessoa]`).isVisible(), 'ao encerrar, pergunta com quem foi o feedback');
   await p.locator(`${M} [name=pessoa]`).fill('Carlos Souza'); await tap(`${M} [data-submit]`);
   check(await p.evaluate(() => S.gravacoes.some(g => g.tipo === 'feedback' && g.pessoa === 'Carlos Souza' && g.status !== 'gravando')), 'feedback salvo com a pessoa');
+
+  console.log('\n[9] Seu nome');
+  await go('gravacoes'); await go('dashboard');
+  check(await p.locator('.eu-card').count() === 1, 'sem nome: o Calendário pergunta "Como você se chama?"');
+  await p.screenshot({ path: OUT + '/enxuto-7-nome.png' });
+  await p.locator('.eu-card input[name=nome]').fill('Paulo  Júnior'); await tap('.eu-card button');
+  check(await p.evaluate(() => S.settings.usuario) === 'Paulo Júnior' && await p.locator('.eu-card').count() === 0, 'nome salvo e o cartão some');
+  check((await p.textContent('.th-greet')).includes(', Paulo'), 'saudação com o seu nome');
+  await go('config');
+  check(await p.inputValue('[data-change=cfgUsuario]') === 'Paulo Júnior', 'Configurações → Você mostra o nome (dá para mudar)');
+  await p.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
+  await go('dashboard'); await tap('#bottom-nav .bn-rec'); await tap(`${M} .sheet-item:has-text("Relatório do dia")`);
+  await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 1, 8000, 'gravando relatório com nome'); await W(1200);
+  await tap(`${M} [data-stop]`); await W(600);
+  await espera(() => S.gravacoes.filter(g => g.tipo === 'relatorio' && g.status === 'pronta').length === 2, 20000, 'segundo relatório pronto');
+  check(ia.relEu.includes('Quem usa o aplicativo e grava') && ia.relEu.includes('Responsável pelo relatório (quem está falando): Paulo Júnior'), 'a IA sabe que quem fala é você (nome no cabeçalho e na primeira pessoa)');
+  const gEu = await p.evaluate(() => { const l = S.gravacoes.filter(g => g.tipo === 'relatorio').sort((a, b) => b.at.localeCompare(a.at)); return l[0]; });
+  check(gEu.itens[0].responsavel === '' && gEu.itens[1].responsavel === 'Carlos Souza', 'o que você vai fazer fica sem responsável (é seu); o do Carlos fica com ele');
+  await p.evaluate(id => { App.ui.gvId = id; location.hash = '#gravacoes'; App.render(); }, gEu.id); await W(400);
+  check((await p.locator('.rl-it', { hasText: 'fornecedor de cabos' }).textContent()).includes('com você'), 'na lista aparece "com você"');
+  await tap('[data-act=gvItApply]');
+  s = await st();
+  const tEu = s.tasks.find(x => x.title === 'Ligar para o fornecedor de cabos');
+  check(tEu && tEu.responsible === '' && tEu.dueDate === amanha, 'entra na sua agenda de amanhã (tarefa sua, sem delegar)');
+  check(s.tasks.find(x => x.title === 'Revisar as câmeras do bloco A').responsible === 'Carlos Souza', 'a do Carlos vai com ele de responsável');
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();

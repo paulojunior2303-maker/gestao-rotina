@@ -49,6 +49,7 @@ const Store = {
         showIndicadores: false,
         showProjetos: false,     // tela Projetos oculta por padrão (Configurações → Aparência)
         jogo: true,              // modo jogo: XP, sequência e conquistas (Configurações → Aparência)
+        usuario: '',             // nome de quem usa o app (quem fala nas gravações e no relatório do dia)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
         lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador

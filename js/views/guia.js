@@ -34,6 +34,7 @@ Views.guia = {
       'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',
       'Quando todas as partes estão prontas, a IA faz o <strong>resumo</strong> (ata da reunião ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>, que viram tarefas com um toque.',
       'Precisa da chave da IA em <strong>Configurações → IA</strong>. Sem ela, as gravações ficam guardadas esperando.',
+      'Diga ao app <strong>o seu nome</strong> (no Calendário, na primeira vez, ou em <strong>Configurações → Você</strong>). Ele entra no cabeçalho do relatório e nas atas, e o que você disser que vai fazer ("eu vou…") entra na <strong>sua agenda</strong>; o que for de outra pessoa da equipe vai com ela de responsável.',
     ]))}
     ${sec('seguro', 'check', 'O áudio nunca se perde', li([
       'O áudio vai para o celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, ao abrir de novo a gravação é <strong>recuperada</strong>.',

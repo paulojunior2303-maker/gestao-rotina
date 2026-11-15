@@ -15,7 +15,10 @@ Views.config = {
     const lsSize = (() => { try { return Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024); } catch (e) { return 0; } })();
 
     return `
-    <nav class="cfg-nav">${[['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+    <nav class="cfg-nav">${[['voce', 'Você'], ['aparencia', 'Aparência'], ...(Fire.supported() ? [['conta', 'Conta']] : []), ['drive', 'Google Drive'], ['lembretes', 'Lembretes'], ['ia', 'IA'], ['jornada', 'Jornada'], ['rotina', 'Rotina padrão'], ['categorias', 'Categorias'], ['prioridades', 'Prioridades e status'], ['tecnicos', 'Equipe'], ['dados', 'Dados']].map(([id, l]) => `<a href="#config" data-act="cfgJump" data-id="${id}">${l}</a>`).join('')}</nav>
+
+    ${sec('voce', 'Você', 'Seu nome aparece na saudação e é usado pela IA: quem fala nas gravações e no relatório do dia é você, e o que você disser que vai fazer entra na sua agenda.', `
+      <label class="field cfg-usuario"><span class="lbl">Seu nome</span><input type="text" value="${U.esc(st.usuario || '')}" placeholder="Ex.: Paulo Júnior" data-change="cfgUsuario" maxlength="40" autocomplete="name"></label>`)}
 
     ${sec('aparencia', 'Aparência', 'Escolha o visual do app e quais telas aparecem no menu.', `
       <div class="theme-pick" role="radiogroup" aria-label="Tema">${[
@@ -211,6 +214,7 @@ Object.assign(Actions, {
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
     el.value = '';
   },
+  cfgUsuario(_, el) { S.settings.usuario = el.value.trim().replace(/\s+/g, ' '); commit(); UI.toast(S.settings.usuario ? `Pronto, ${S.settings.usuario.split(' ')[0]}! Seu nome vai nos relatórios e atas.` : 'Nome apagado.'); },
   cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
   cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
   themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },

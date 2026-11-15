@@ -48,6 +48,8 @@ e diga o que mudou e como testar no celular.
   e o contexto do dia (`Gravador.contextoDia`) e devolve o relatório pronto (WhatsApp/copiar) + `g.itens` (tarefa | imprevisto | compromisso | agenda, com data,
   hora, duração, responsável e situação feito|pendente|futuro). A pessoa confere/troca o tipo e toca em "Anotar no app" (`Gravador.aplicar`; agenda sem hora vira tarefa;
   o que já foi feito fica só no relatório, exceto imprevisto). Testes em `tests/enxuto.test.js` [7].
+- **Nome de quem usa o app** (`settings.usuario`; cartão "Como você se chama?" no Calendário enquanto estiver vazio e Configurações → Você): vai na saudação e em `IA.system`
+  (quem fala na primeira pessoa nas gravações é essa pessoa). No relatório do dia, item do próprio usuário fica com `responsavel` vazio (agenda/tarefa dele); de outra pessoa, com o nome dela.
 - **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`
   (`APP_CHANNEL = 'enxuto'` → `CANAL_ENXUTO`, também `CANAL_TESTE`; LocalStorage `…:enxuto`; sem Drive e sem conta FlowFire por enquanto). Publicar: `bash tools/publicar-enxuto.sh "msg"`
   (grava `enxuto/index.html` no `main`; o `pages.yml` copia a pasta). O app oficial agora é igual a ela (mesmo código); a cópia só muda os dados (aparelho) e a falta de conta/Drive.

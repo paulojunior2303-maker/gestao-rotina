@@ -1101,3 +1101,11 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .more-tg { display: inline-flex; align-items: center; gap: 5px; }
 .more-box[hidden] { display: none; }
 .more-box { margin: 0; grid-column: 1 / -1; }
+
+/* Nome de quem usa o app */
+.eu-card { display: flex; flex-direction: column; gap: 10px; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.eu-card strong { display: block; font-family: var(--font-d); font-size: 16px; }
+.eu-card small { display: block; color: var(--muted); font-size: 12.5px; }
+.eu-row { display: flex; gap: 8px; }
+.eu-row input { flex: 1; min-width: 0; min-height: 42px; padding: 8px 12px; border: 1px solid var(--input-border); border-radius: 11px; background: var(--surface-2); color: var(--text); font: inherit; font-size: 15px; outline: none; }
+.eu-row input:focus { border-color: var(--accent); }

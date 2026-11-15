@@ -456,7 +456,7 @@ Views.gravacoes = {
       const quando = Gravador.quando(i, g);
       if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind]}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
       return `<li class="rl-it ${i.sel ? '' : 'off'}"><label class="rl-ck"><input type="checkbox" ${i.sel ? 'checked' : ''} data-change="gvItSel" data-id="${g.id}" data-it="${i.id}" aria-label="Anotar ${U.esc(i.titulo)}"></label>
-        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
+        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
         <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${i.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
     };
     return `<div class="card"><div class="card-h"><h3>${U.icon('list')} Relatório do dia</h3></div>

@@ -67,11 +67,14 @@ const IA = {
 Escreva em português do Brasil, de forma profissional, natural e objetiva, direto ao ponto, sem burocracia e sem repetir informações.
 Não invente fatos, participantes, decisões ou responsabilidades. Não transforme sugestões em decisões; o que ficou sem definição é pendência.
 Elimine conversas paralelas. Preserve nomes, números, datas e prazos. Considere que transcrições automáticas podem ter erros e não complete trechos incompreensíveis com suposições.`,
+  /* Nome de quem usa o app (Configurações → Você) */
+  usuario() { return ((S.settings && S.settings.usuario) || '').trim(); },
   system(task) {
+    const eu = this.usuario();
     return `${this.agent() || this.DEFAULT_AGENT}
 
 === Instruções do aplicativo FlowFire (seguir sempre, junto com as de cima) ===
-${task}
+${eu ? `Quem usa o aplicativo e grava as reuniões, feedbacks e relatórios é ${eu}, a liderança. Quando a fala estiver na primeira pessoa ("eu fiz", "vou fazer", "eu passei para o Carlos"), quem fala é ${eu}: use esse nome onde o documento pedir o responsável, o líder ou quem registrou.\n` : ''}${task}
 Entregue texto simples, pronto para copiar: sem markdown (não use #, ** ou _). Numere os assuntos ("1. ", "2. ") e use "• " para os tópicos.`;
   },
 
@@ -143,9 +146,9 @@ ${notes.trim() ? `Anotações da liderança:\n"""\n${notes.trim()}\n"""` : ''}` 
      contexto = o que o app já sabe do dia (agenda, tarefas concluídas, imprevistos), só para completar o relatório. */
   RELATORIO_TIPOS: ['tarefa', 'imprevisto', 'compromisso', 'agenda'],
   async relatorio({ date, transcript, notes = '', contexto = '', equipe = [] }) {
-    const amanha = D.nextWorkday(date);
+    const amanha = D.nextWorkday(date), eu = this.usuario();
     const system = this.system(`Tarefa: /relatorio. Escreva o RELATÓRIO DIÁRIO de atividades da liderança a partir do relato falado (transcrição) do fim do dia.
-Data do relatório: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
+Data do relatório: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.${eu ? `\nResponsável pelo relatório (quem está falando): ${eu}. Ponha esse nome no cabeçalho.` : ''}
 Use só o que foi dito e o que estiver no contexto do app. Não invente atividades, números, nomes ou horários.
 Responda em JSON com:
 - "relatorio": o relatório pronto para enviar, com quebras de linha (\n): cabeçalho (Relatório diário, data, responsável se dito), "Atividades realizadas" (um tópico "• " por atividade, com o resultado quando dito), "Imprevistos e ocorrências" (se houver), "Pendências" (se houver) e "Planejamento para o próximo dia" (se houver). Seções sem conteúdo ficam de fora.
@@ -155,7 +158,7 @@ Responda em JSON com:
   - "data": AAAA-MM-DD resolvendo "hoje", "amanhã", dias da semana etc. a partir da data do relatório; vazio se não foi dita;
   - "hora": HH:MM se foi dita; senão vazio;
   - "duracao": minutos, se foi dita; senão 0;
-  - "responsavel": nome da pessoa da equipe que vai fazer, se foi dito (equipe: ${equipe.join(', ') || 'não cadastrada'}); senão vazio;
+  - "responsavel": nome da pessoa da equipe que vai fazer, se foi dito (equipe: ${equipe.join(', ') || 'não cadastrada'}); vazio se for ${eu || 'quem está falando'} (a própria pessoa: vai para a agenda dela) ou se não foi dito;
   - "situacao": "feito" (já aconteceu/foi concluído hoje), "pendente" (ficou por fazer) ou "futuro" (planejado para depois).`);
     const r = await this.call({ system, timeout: 120000, parts: [{ text: `${contexto ? `Contexto do app (o que já está registrado hoje):\n${contexto}\n\n` : ''}Relato falado (transcrição automática, pode ter erros):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações:\n"""\n${notes.trim()}\n"""` : ''}` }],
       schema: { type: 'OBJECT', required: ['relatorio', 'itens'], properties: {
@@ -168,7 +171,7 @@ Responda em JSON com:
     const itens = (r.itens || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
       id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
       data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
-      responsavel: String(i.responsavel || '').trim(), situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
+      responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(), situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
     }));
     return { relatorio: this.tidy(String(r.relatorio || '')), itens };
   },
