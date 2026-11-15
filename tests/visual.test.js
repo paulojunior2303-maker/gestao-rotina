@@ -92,6 +92,18 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await go('config'); await p.locator('[data-act=themeSet][data-v=escuro]').tap(); await W(300);
   check(await p.evaluate(() => !document.documentElement.dataset.contraste && document.documentElement.dataset.theme === 'dark'), 'voltar para Escuro tira o contraste alto');
 
+  console.log('\n[5] Revisão ui-ux-pro-max');
+  await go('tarefas');
+  check(await p.getAttribute('.stat-chip.active', 'aria-pressed') === 'true' && await p.locator('.stat-chip[aria-pressed=false]').count() === 4, 'situação escolhida é anunciada (aria-pressed)');
+  await go('dashboard');
+  check(await p.locator('.calx-mode .tab[aria-selected=true]').count() === 1, 'aba Semana/Mês escolhida é anunciada (aria-selected)');
+  check(await p.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingBottom) === '120px', 'foco do teclado não fica escondido atrás da barra de baixo');
+  await p.evaluate(() => { S.settings.theme = 'claro'; commit(); }); await W();
+  const lum2 = c => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+  const cores = await p.evaluate(() => ['--red', '--green'].map(v => { const d = document.createElement('i'); d.style.color = `var(${v})`; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; }));
+  for (const c of cores) { const r = (1.05) / (lum2(c) + 0.05); check(r >= 4.5, `tema claro: ${c} legível sobre branco (${r.toFixed(2)})`); }
+  await p.evaluate(() => { S.settings.theme = 'escuro'; commit(); }); await W();
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));

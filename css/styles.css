@@ -30,10 +30,10 @@
   --accent: #7b3fe4;
   --lilac: #a985f2;
   --link: #6224cf;
-  --green: #1d9a69;
+  --green: #157f56;
   --blue: #7b3fe4;
   --yellow: #c27d10;
-  --red: #d63a51;
+  --red: #c42d45;
   --gray: #8e87a3;
   --cy1: #6b2fd9; --cy2: #8b5cf0; --cy3: #a985f2; --cy4: #c6aff8;
   --t-evento: #a985f2; --t-tarefa: #6b2fd9; --t-projeto: #2f9f93; --t-imprevisto: #d63a51;
@@ -1173,3 +1173,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .alert .link { display: inline-block; padding: 10px 4px; margin: -10px -4px; }
   .btn:not(.sm) { min-height: 44px; }
 }
+
+/* Revisão ui-ux-pro-max: retorno visual ao tocar nas linhas da lista e foco nunca escondido atrás da barra de baixo */
+.calx-it:active, .blk-it:active, .task .tk-body:active, .tab:active, .gv-card:active { opacity: .72; }
+.calx-it, .blk-it, .task .tk-body, .tab { transition: opacity .12s, border-color .15s, background .15s; }
+@media (max-width: 900px) { html { scroll-padding-bottom: 120px; } }

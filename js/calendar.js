@@ -69,7 +69,7 @@ const Cal = {
         </div>
         <span class="grow"></span>
         ${showsToday && s.sel === t ? '' : `<button class="btn sm ghost" data-act="calToday" data-cal="${id}">Hoje</button>`}
-        ${id === 'agenda' ? '' : `<div class="tabs calx-mode" role="tablist"><button class="tab ${s.mode === 'week' ? 'active' : ''}" data-act="calMode" data-cal="${id}" data-v="week">Semana</button><button class="tab ${s.mode === 'month' ? 'active' : ''}" data-act="calMode" data-cal="${id}" data-v="month">Mês</button></div>`}
+        ${id === 'agenda' ? '' : `<div class="tabs calx-mode" role="tablist"><button class="tab ${s.mode === 'week' ? 'active' : ''}" role="tab" aria-selected="${s.mode === 'week'}" data-act="calMode" data-cal="${id}" data-v="week">Semana</button><button class="tab ${s.mode === 'month' ? 'active' : ''}" role="tab" aria-selected="${s.mode === 'month'}" data-act="calMode" data-cal="${id}" data-v="month">Mês</button></div>`}
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>

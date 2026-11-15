@@ -11,7 +11,7 @@ Views.imprevistos = {
     const nOpen = all.filter(o => OPEN(o.status)).length;
     const tk = U.today();
     const nToday = all.filter(o => o.date === tk).length, minToday = Capture.minutesOn(tk);
-    const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
+    const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" aria-pressed="${f === v}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
 
     const card = o => {
       const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
