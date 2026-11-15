@@ -25,10 +25,10 @@ Views.guia = {
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
     return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
     ${sec('gravar', 'mic', 'Gravar uma reunião ou feedback', li([
-      'Toque em <strong>Gravar</strong> (no meio da barra de baixo, ou no botão grande do Calendário). Começa na hora: não precisa criar a reunião antes.',
+      'Toque em <strong>Gravar</strong> (no meio da barra de baixo) e escolha: <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora: não precisa criar a reunião antes.',
       'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
       'Quer usar o app enquanto grava? Toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar.',
-      'No fim, toque em <strong>Encerrar gravação</strong> e diga se foi reunião ou feedback (e com quem). Pode deixar para depois.',
+      'No fim, toque em <strong>Encerrar gravação</strong> e complete os detalhes: o assunto da reunião ou com quem foi o feedback. Pode deixar para depois.',
     ]), true)}
     ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
       'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',

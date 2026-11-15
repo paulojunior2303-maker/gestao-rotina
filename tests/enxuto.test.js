@@ -56,7 +56,11 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
 
   console.log('\n[2] Gravar com um toque');
   await tap('#bottom-nav .bn-rec');
-  check(await p.locator(`${M} .gv-clock`).count() === 1, 'um toque já começa a gravar (sem criar reunião antes)');
+  const opts = await p.$$eval(`${M} .sheet-item`, a => a.map(x => x.textContent.trim()));
+  check(opts.length === 3 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as 3 opções (Reunião, Feedback, Relatório do dia) e ainda não grava');
+  await p.screenshot({ path: OUT + '/enxuto-0-opcoes.png' });
+  await tap(`${M} .sheet-item:has-text("Reunião")`);
+  check(await p.locator(`${M} .gv-clock`).count() === 1 && await p.locator(`${M} h2`, { hasText: 'Gravando a reunião' }).count() === 1, 'escolheu Reunião: começa a gravar na hora (sem criar a reunião antes)');
   await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 3, 15000, 'três partes');
   await espera(() => Gravador.cur.g.partes.filter(p => p.st === 'ok').length >= 2, 15000, 'partes transcritas durante a gravação');
   check(true, 'partes fechadas e transcritas enquanto grava');
@@ -65,7 +69,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(await p.locator('.gv-bar').count() === 1 && await p.locator('#bottom-nav .bn-rec.on').count() === 1, 'dá para usar o app gravando (barra vermelha e botão com o tempo)');
   await tap('.gv-bar');
   await tap(`${M} [data-stop]`); await W(800);
-  check(await p.locator(`${M} h2`, { hasText: 'Gravação salva' }).count() === 1, 'ao encerrar, pergunta o que foi (dá para deixar para depois)');
+  check(await p.locator(`${M} h2`, { hasText: 'Qual foi o assunto' }).count() === 1 && await p.locator(`${M} input[name=tipo][value=reuniao]:checked`).count() === 1, 'ao encerrar, pede os detalhes da reunião (dá para deixar para depois)');
   await p.screenshot({ path: OUT + '/enxuto-3-descrever.png' });
   await p.locator(`${M} .btn`, { hasText: 'Descrever depois' }).tap(); await W();
   await espera(() => S.gravacoes[0].status === 'pronta', 20000, 'resumo pronto');
@@ -77,7 +81,6 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(nAudio === g.partes.length, `áudio guardado no aparelho (${nAudio} partes)`);
   await go('dashboard');
   check(await p.locator('.calx-day .calx-it.t-gravacao').count() === 1 && await p.locator('.calx-day .calx-it.t-reuniao').count() === 0, 'a gravação aparece no dia do calendário (sem repetir a reunião)');
-  check(await p.locator('.gv-att-it', { hasText: 'Descrever' }).count() === 1, 'lembra de descrever a gravação');
   await tap('.calx-day .calx-it.t-gravacao');
   check(await p.locator('.ata.pre', { hasText: 'Escala do sábado' }).count() === 1, 'detalhe com o resumo');
   await p.locator('.gv-tx summary').tap(); await W(400);
@@ -105,7 +108,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   console.log('\n[4] Sem internet: o áudio espera e transcreve quando volta');
   const tr0 = tr;
   await ctx.setOffline(true);
-  await go('dashboard'); await tap('#bottom-nav .bn-rec');
+  await go('dashboard'); await tap('#bottom-nav .bn-rec'); await tap(`${M} .sheet-item:has-text("Reunião")`);
   await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 2, 10000, 'gravando sem internet');
   await tap(`${M} [data-stop]`); await W(800);
   await p.locator(`${M} .btn`, { hasText: 'Descrever depois' }).tap(); await W(600);
@@ -120,7 +123,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(true, 'internet voltou: transcreveu e resumiu sozinho');
 
   console.log('\n[5] App fechou no meio da gravação');
-  await go('dashboard'); await tap('#bottom-nav .bn-rec');
+  await go('dashboard'); await tap('#bottom-nav .bn-rec'); await tap(`${M} .sheet-item:has-text("Reunião")`);
   await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 2, 10000, 'segunda parte começando');
   await W(1600);   // pedaços da parte em andamento já salvos
   const gid = await p.evaluate(() => Gravador.cur.g.id);
@@ -170,6 +173,16 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await go('dashboard');
   await p.evaluate(() => { const s = Cal.st('home'); s.sel = U.today(); App.render(); });
   check(await p.locator('.calx-day .calx-it', { hasText: 'Relatório do dia' }).count() === 1, 'o relatório aparece no calendário do dia');
+
+  console.log('\n[8] Gravar feedback');
+  await p.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
+  await tap('#bottom-nav .bn-rec'); await tap(`${M} .sheet-item:has-text("Feedback")`);
+  check(await p.locator(`${M} h2`, { hasText: 'Gravando o feedback' }).count() === 1, 'escolheu Feedback: grava na hora');
+  await espera(() => Gravador.cur && Gravador.cur.g.partes.length >= 1, 8000, 'gravando feedback'); await W(1200);
+  await tap(`${M} [data-stop]`); await W(800);
+  check(await p.locator(`${M} h2`, { hasText: 'Com quem foi' }).count() === 1 && await p.locator(`${M} input[name=tipo][value=feedback]:checked`).count() === 1 && await p.locator(`${M} [name=pessoa]`).isVisible(), 'ao encerrar, pergunta com quem foi o feedback');
+  await p.locator(`${M} [name=pessoa]`).fill('Carlos Souza'); await tap(`${M} [data-submit]`);
+  check(await p.evaluate(() => S.gravacoes.some(g => g.tipo === 'feedback' && g.pessoa === 'Carlos Souza' && g.status !== 'gravando')), 'feedback salvo com a pessoa');
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();

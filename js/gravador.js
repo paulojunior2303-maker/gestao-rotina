@@ -298,7 +298,7 @@ const Gravador = {
   },
   tela() {
     if (this.telaM) return;
-    const m = this.telaM = UI.modal({ title: this.cur && this.cur.g.tipo === 'relatorio' ? 'Gravando o relatório do dia' : 'Gravando', body: '<div class="gv-tela"></div>', onClose: () => { this.telaM = null; } });
+    const m = this.telaM = UI.modal({ title: ({ relatorio: 'Gravando o relatório do dia', reuniao: 'Gravando a reunião', feedback: 'Gravando o feedback' })[this.cur && this.cur.g.tipo] || 'Gravando', body: '<div class="gv-tela"></div>', onClose: () => { this.telaM = null; } });
     m.setFooter('');
     m.el.classList.add('gv-modal');
     this.paintTela(true);
@@ -343,7 +343,7 @@ const Gravador = {
   descrever(g, fresh) {
     if (!g) return;
     UI.form({
-      title: fresh ? 'Gravação salva. O que foi?' : 'Descrever gravação',
+      title: fresh ? (g.tipo === 'feedback' ? 'Gravação salva. Com quem foi?' : g.tipo === 'reuniao' ? 'Gravação salva. Qual foi o assunto?' : 'Gravação salva. O que foi?') : 'Descrever gravação',
       submitLabel: 'Salvar',
       fields: [
         ...(fresh ? [{ type: 'html', html: `<p class="muted small">${this.fmt(g.dur)} gravados. A transcrição e o resumo saem sozinhos${IA.ready() ? '' : ' assim que você cadastrar a chave da IA'}. Se preferir, descreva depois.</p>` }] : []),
@@ -486,7 +486,15 @@ Views.gravacoes = {
 };
 
 Object.assign(Actions, {
-  gvRec({ tipo } = {}) { Gravador.start({ tipo: tipo || '' }); },
+  /* Gravar: primeiro escolhe o tipo (reunião, feedback ou relatório do dia); os detalhes ficam para o fim */
+  gvRec({ tipo } = {}) {
+    if (tipo || Gravador.recording()) return Gravador.start({ tipo: tipo || '' });
+    UI.sheet('O que você vai gravar?', [
+      { label: 'Reunião', hint: 'Gera a ata e os combinados', icon: 'users', onClick: () => Gravador.start({ tipo: 'reuniao' }) },
+      { label: 'Feedback', hint: 'Conversa individual com alguém da equipe', icon: 'chat', onClick: () => Gravador.start({ tipo: 'feedback' }) },
+      { label: 'Relatório do dia', hint: 'O que você fez hoje e o que vem amanhã', icon: 'list', onClick: () => Gravador.start({ tipo: 'relatorio' }) },
+    ]);
+  },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {
