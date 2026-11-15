@@ -48,7 +48,7 @@ e diga o que mudou e como testar no celular.
   e o contexto do dia (`Gravador.contextoDia`) e devolve o relatório pronto (WhatsApp/copiar) + `g.itens` (tarefa | imprevisto | compromisso | agenda, com data,
   hora, duração, responsável e situação feito|pendente|futuro). A pessoa confere/troca o tipo e toca em "Anotar no app" (`Gravador.aplicar`; agenda sem hora vira tarefa;
   o que já foi feito fica só no relatório, exceto imprevisto). Testes em `tests/enxuto.test.js` [7].
-- **Pedido recebido** (Gravar → "Recebi um pedido (áudio ou texto)" ou botão em Gravações; `tipo: 'audio'`, `g.de`, `origem` audio|texto|misto): tela única `Gravador.pedido`
+- **Áudio ou texto** (Gravar → "Áudio ou texto" ou botão em Gravações; nome genérico a pedido do usuário; `tipo: 'audio'`, `g.de`, `origem` audio|texto|misto): tela única `Gravador.pedido`
   com **vários áudios** (input sem `accept`, para o Android abrir o gerenciador de arquivos; `ehAudio`/`mimeDe`: WhatsApp .opus → `audio/ogg`; até ~19 MB cada) e/ou o texto colado.
   `importarPedido` guarda cada áudio como uma parte (rótulo "Áudio N", arquivo) e o texto como parte `texto: true` em `textos`; transcrição/novas tentativas iguais às gravações;
   no fim `IA.recado({ fontes })` analisa tudo junto e devolve resumo + itens (`IA.itensNorm`; pedido para o usuário = `responsavel` vazio). Tela igual à do relatório.

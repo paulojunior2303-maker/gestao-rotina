@@ -70,7 +70,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   console.log('\n[2] Gravar com um toque');
   await tap('#bottom-nav .bn-rec');
   const opts = await p.$$eval(`${M} .sheet-item`, a => a.map(x => x.textContent.trim()));
-  check(opts.length === 4 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && /Recebi um pedido/.test(opts[3]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as opções (Reunião, Feedback, Relatório do dia, Recebi um pedido) e ainda não grava');
+  check(opts.length === 4 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && /Áudio ou texto/.test(opts[3]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as opções (Reunião, Feedback, Relatório do dia, Áudio ou texto) e ainda não grava');
   await p.screenshot({ path: OUT + '/enxuto-0-opcoes.png' });
   await tap(`${M} .sheet-item:has-text("Reunião")`);
   check(await p.locator(`${M} .gv-clock`).count() === 1 && await p.locator(`${M} h2`, { hasText: 'Gravando a reunião' }).count() === 1, 'escolheu Reunião: começa a gravar na hora (sem criar a reunião antes)');
@@ -222,19 +222,19 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(tEu && tEu.responsible === '' && tEu.dueDate === amanha, 'entra na sua agenda de amanhã (tarefa sua, sem delegar)');
   check(s.tasks.find(x => x.title === 'Revisar as câmeras do bloco A').responsible === 'Carlos Souza', 'a do Carlos vai com ele de responsável');
 
-  console.log('\n[10] Pedido recebido: vários áudios e texto juntos');
+  console.log('\n[10] Áudio ou texto: vários áudios e texto juntos');
   await p.evaluate(() => { App.ui.gvId = null; location.hash = '#dashboard'; App.render(); document.querySelectorAll('.toast').forEach(t => t.remove()); }); await W(300);
   await tap('#bottom-nav .bn-rec');
-  check(await p.locator(`${M} .sheet-item`, { hasText: 'Recebi um pedido (áudio ou texto)' }).count() === 1 && await p.locator(`${M} .sheet-item`, { hasText: 'Colar' }).count() === 0, 'Gravar: uma opção só para áudio e texto');
-  await tap(`${M} .sheet-item:has-text("Recebi um pedido")`);
-  check(await p.locator(`${M} h2`, { hasText: 'Pedido recebido' }).count() === 1 && await p.locator(`${M} [name=pdTexto]`).count() === 1, 'abre a tela única do pedido (áudios + texto)');
+  check(await p.locator(`${M} .sheet-item`, { hasText: 'Áudio ou texto' }).count() === 1 && await p.locator(`${M} .sheet-item`, { hasText: 'Colar' }).count() === 0, 'Gravar: uma opção só para áudio e texto');
+  await tap(`${M} .sheet-item:has-text("Áudio ou texto")`);
+  check(await p.locator(`${M} h2`, { hasText: 'Áudio ou texto' }).count() === 1 && await p.locator(`${M} [name=pdTexto]`).count() === 1, 'abre a tela única "Áudio ou texto"');
   const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator(`${M} [data-add]`).tap()]);
   check(fc.isMultiple() && !(await fc.element().getAttribute('accept')), 'escolher áudios: vários de uma vez, pelo gerenciador de arquivos (sem limitar a câmera/gravador)');
   await fc.setFiles([{ name: 'PTT-20261115-WA0007.opus', mimeType: '', buffer: Buffer.alloc(9000, 7) }, { name: 'AUD-20261115-WA0008.m4a', mimeType: 'audio/mp4', buffer: Buffer.alloc(9000, 8) }, { name: 'foto.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(9000, 9) }]); await W(400);
   check(await p.locator(`${M} .pd-list li`).count() === 2 && await p.locator('.toast', { hasText: 'foto.jpg' }).count() === 1, '2 áudios na lista; a foto é recusada com aviso');
   await p.locator(`${M} [name=pdTexto]`).fill('Bom dia! Preciso que instale 2 câmeras na portaria até sexta. E marca a visita técnica no Jardins quinta às 10h.');
   await p.locator(`${M} [name=pdDe]`).fill('meu chefe');
-  await p.screenshot({ path: OUT + '/enxuto-8-pedido.png' }); await fits('Pedido recebido');
+  await p.screenshot({ path: OUT + '/enxuto-8-pedido.png' }); await fits('Áudio ou texto');
   await tap(`${M} [data-go]`);
   await espera(() => { const g = S.gravacoes.find(x => x.tipo === 'audio'); return g && g.status === 'pronta'; }, 20000, 'pedido analisado');
   const ga = await p.evaluate(() => S.gravacoes.find(x => x.tipo === 'audio'));

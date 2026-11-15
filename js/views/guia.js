@@ -28,8 +28,7 @@ Views.guia = {
       'Toque em <strong>Gravar</strong> (no meio da barra de baixo) e escolha: <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora: não precisa criar a reunião antes.',
       'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
       'Quer usar o app enquanto grava? Toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar.',
-      'Recebeu um <strong>áudio no WhatsApp</strong> com um pedido? Salve ou compartilhe o áudio no celular, toque em <strong>Gravar → Enviar um áudio</strong> e escolha o arquivo. O app transcreve, resume o que foi pedido e mostra o que pode ir para a agenda; você confere e toca em <strong>Anotar no app</strong>.',
-      'Pedido <strong>por escrito</strong>? Copie a mensagem e use <strong>Gravar → Colar uma mensagem (texto)</strong>: o app faz o mesmo (resumo do pedido e itens para a agenda).',
+      '<strong>Áudio ou texto</strong> (no Gravar): envie um ou vários áudios (por exemplo, do WhatsApp) e/ou cole um texto. A IA transcreve, faz o resumo e mostra o que pode ir para a agenda; você confere e toca em <strong>Anotar no app</strong>. No app instalado dá para mandar direto do WhatsApp: selecione os áudios → <strong>Compartilhar</strong> → <strong>FlowFire</strong>.',
       'No fim, toque em <strong>Encerrar gravação</strong> e complete os detalhes: o assunto da reunião ou com quem foi o feedback. Pode deixar para depois.',
     ]), true)}
     ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
