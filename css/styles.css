@@ -1130,3 +1130,21 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .btn.sm { min-height: 40px; padding: 7px 13px; font-size: 13px; }
   .calx-legend i { width: 9px; height: 9px; }
 }
+
+/* Tarefas: busca + botão "Filtros"; no celular os filtros ficam escondidos até a pessoa abrir (ou se algum estiver ligado) */
+.tk-busca { display: flex; gap: 8px; align-items: center; }
+.tk-busca input[type=search] { flex: 1; min-width: 0; min-height: 44px; padding: 9px 13px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; }
+.tk-busca input[type=search]::placeholder { color: var(--muted); }
+.tk-busca input[type=search]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); outline: none; }
+.tk-fbtn { min-height: 44px; gap: 6px; flex-shrink: 0; }
+.tk-fbtn.on { border-color: var(--accent); color: var(--text); }
+.tk-fn { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px; background: var(--primary); color: #fff; font-size: 12px; }
+@media (min-width: 901px) { .tk-fbtn { display: none; } }
+@media (max-width: 900px) {
+  .tk-filtros:not(.aberto) { display: none; }
+  .stat-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 2px; }
+  .stat-chips::-webkit-scrollbar { display: none; }
+  .stat-chip { min-width: 0; flex-shrink: 0; flex-direction: row; align-items: baseline; gap: 6px; padding: 10px 14px; min-height: 44px; }
+  .stat-chip strong { font-size: 17px; }
+  .stat-chip span { font-size: 13px; }
+}
