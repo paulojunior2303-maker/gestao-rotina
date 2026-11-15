@@ -4578,7 +4578,7 @@ const Gravador = {
   },
   tela() {
     if (this.telaM) return;
-    const m = this.telaM = UI.modal({ title: this.cur && this.cur.g.tipo === 'relatorio' ? 'Gravando o relatório do dia' : 'Gravando', body: '<div class="gv-tela"></div>', onClose: () => { this.telaM = null; } });
+    const m = this.telaM = UI.modal({ title: ({ relatorio: 'Gravando o relatório do dia', reuniao: 'Gravando a reunião', feedback: 'Gravando o feedback' })[this.cur && this.cur.g.tipo] || 'Gravando', body: '<div class="gv-tela"></div>', onClose: () => { this.telaM = null; } });
     m.setFooter('');
     m.el.classList.add('gv-modal');
     this.paintTela(true);
@@ -4623,7 +4623,7 @@ const Gravador = {
   descrever(g, fresh) {
     if (!g) return;
     UI.form({
-      title: fresh ? 'Gravação salva. O que foi?' : 'Descrever gravação',
+      title: fresh ? (g.tipo === 'feedback' ? 'Gravação salva. Com quem foi?' : g.tipo === 'reuniao' ? 'Gravação salva. Qual foi o assunto?' : 'Gravação salva. O que foi?') : 'Descrever gravação',
       submitLabel: 'Salvar',
       fields: [
         ...(fresh ? [{ type: 'html', html: `<p class="muted small">${this.fmt(g.dur)} gravados. A transcrição e o resumo saem sozinhos${IA.ready() ? '' : ' assim que você cadastrar a chave da IA'}. Se preferir, descreva depois.</p>` }] : []),
@@ -4766,7 +4766,15 @@ Views.gravacoes = {
 };
 
 Object.assign(Actions, {
-  gvRec({ tipo } = {}) { Gravador.start({ tipo: tipo || '' }); },
+  /* Gravar: primeiro escolhe o tipo (reunião, feedback ou relatório do dia); os detalhes ficam para o fim */
+  gvRec({ tipo } = {}) {
+    if (tipo || Gravador.recording()) return Gravador.start({ tipo: tipo || '' });
+    UI.sheet('O que você vai gravar?', [
+      { label: 'Reunião', hint: 'Gera a ata e os combinados', icon: 'users', onClick: () => Gravador.start({ tipo: 'reuniao' }) },
+      { label: 'Feedback', hint: 'Conversa individual com alguém da equipe', icon: 'chat', onClick: () => Gravador.start({ tipo: 'feedback' }) },
+      { label: 'Relatório do dia', hint: 'O que você fez hoje e o que vem amanhã', icon: 'list', onClick: () => Gravador.start({ tipo: 'relatorio' }) },
+    ]);
+  },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {
@@ -5232,10 +5240,10 @@ Views.guia = {
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
     return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
     ${sec('gravar', 'mic', 'Gravar uma reunião ou feedback', li([
-      'Toque em <strong>Gravar</strong> (no meio da barra de baixo, ou no botão grande do Calendário). Começa na hora: não precisa criar a reunião antes.',
+      'Toque em <strong>Gravar</strong> (no meio da barra de baixo) e escolha: <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora: não precisa criar a reunião antes.',
       'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
       'Quer usar o app enquanto grava? Toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar.',
-      'No fim, toque em <strong>Encerrar gravação</strong> e diga se foi reunião ou feedback (e com quem). Pode deixar para depois.',
+      'No fim, toque em <strong>Encerrar gravação</strong> e complete os detalhes: o assunto da reunião ou com quem foi o feedback. Pode deixar para depois.',
     ]), true)}
     ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
       'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',
