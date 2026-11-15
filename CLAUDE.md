@@ -48,11 +48,13 @@ e diga o que mudou e como testar no celular.
   e o contexto do dia (`Gravador.contextoDia`) e devolve o relatório pronto (WhatsApp/copiar) + `g.itens` (tarefa | imprevisto | compromisso | agenda, com data,
   hora, duração, responsável e situação feito|pendente|futuro). A pessoa confere/troca o tipo e toca em "Anotar no app" (`Gravador.aplicar`; agenda sem hora vira tarefa;
   o que já foi feito fica só no relatório, exceto imprevisto). Testes em `tests/enxuto.test.js` [7].
-- **Áudio recebido** (Gravar → "Enviar um áudio" ou botão em Gravações; `tipo: 'audio'`, `g.de`): `Gravador.escolherArquivo/perguntarDe/importar` guarda o arquivo
-  (WhatsApp .opus → `audio/ogg`, `mimeDe`; até ~19 MB) como parte 0 no IndexedDB e usa o mesmo caminho de transcrição/novas tentativas; no fim `IA.recado` devolve o resumo
-  do que foi pedido + itens (`IA.itensNorm`, mesmo formato do relatório; pedido para o usuário = `responsavel` vazio). Tela igual à do relatório ("O que foi pedido" + "Anotar no app").
-  **Mensagem escrita**: Gravar → "Colar uma mensagem (texto)" (ou "Enviar áudio ou texto" em Gravações → `Gravador.receber`): `Gravador.colarTexto/importarTexto` cria a mesma gravação
-  `tipo: 'audio'` com `origem: 'texto'` (sem áudio; o texto fica em `textos` [g, 0]) e `IA.recado({ escrito: true })`.
+- **Pedido recebido** (Gravar → "Recebi um pedido (áudio ou texto)" ou botão em Gravações; `tipo: 'audio'`, `g.de`, `origem` audio|texto|misto): tela única `Gravador.pedido`
+  com **vários áudios** (input sem `accept`, para o Android abrir o gerenciador de arquivos; `ehAudio`/`mimeDe`: WhatsApp .opus → `audio/ogg`; até ~19 MB cada) e/ou o texto colado.
+  `importarPedido` guarda cada áudio como uma parte (rótulo "Áudio N", arquivo) e o texto como parte `texto: true` em `textos`; transcrição/novas tentativas iguais às gravações;
+  no fim `IA.recado({ fontes })` analisa tudo junto e devolve resumo + itens (`IA.itensNorm`; pedido para o usuário = `responsavel` vazio). Tela igual à do relatório.
+  **Compartilhar do Android** (WhatsApp → Compartilhar → FlowFire, um ou vários áudios e/ou texto): `CompartilharPlugin.java` (intent-filters SEND/SEND_MULTIPLE `*/*` no
+  `AndroidManifest.xml`, porque o WhatsApp manda .opus com tipo desconhecido) lê os arquivos e manda em base64 no evento `recebido` (retido até o app ouvir; reserva `pendentes()`);
+  `Gravador.ouvirCompartilhar/compartilhado` abre a tela do pedido já preenchida. Só funciona no APK (testado com build local `assembleDebug`).
 - **Nome de quem usa o app** (`settings.usuario`; cartão "Como você se chama?" no Calendário enquanto estiver vazio e Configurações → Você): vai na saudação e em `IA.system`
   (quem fala na primeira pessoa nas gravações é essa pessoa). No relatório do dia, item do próprio usuário fica com `responsavel` vazio (agenda/tarefa dele); de outra pessoa, com o nome dela.
 - **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`

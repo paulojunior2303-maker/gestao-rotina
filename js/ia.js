@@ -184,9 +184,10 @@ Responda em JSON com:
     duracao: { type: 'INTEGER' }, responsavel: { type: 'STRING' }, situacao: { type: 'STRING', enum: ['feito', 'pendente', 'futuro'] } } } },
 
   /* Áudio recebido (ex.: WhatsApp do chefe pedindo algo): resumo do recado + itens para a agenda de quem usa o app */
-  async recado({ date, transcript, de = '', notes = '', equipe = [], escrito = false }) {
+  async recado({ date, transcript, de = '', notes = '', equipe = [], escrito = false, fontes = '' }) {
+    fontes = fontes || (escrito ? 'uma MENSAGEM ESCRITA RECEBIDA' : 'um ÁUDIO RECEBIDO (transcrito)');
     const eu = this.usuario(), amanha = D.nextWorkday(date);
-    const system = this.system(`Tarefa: /recado. ${escrito ? 'O texto abaixo é uma MENSAGEM ESCRITA RECEBIDA' : 'A transcrição abaixo é de um ÁUDIO RECEBIDO'} ${de ? `de ${de}` : '(de outra pessoa)'} por ${eu || 'quem usa o aplicativo'} (não foi gravado por quem usa o app).
+    const system = this.system(`Tarefa: /recado. Abaixo está o conteúdo de ${fontes} ${de ? `de ${de}` : '(de outra pessoa)'} por ${eu || 'quem usa o aplicativo'} (não foi gravado nem escrito por quem usa o app). Se houver mais de um áudio ou áudio e texto, junte tudo num pedido só, sem repetir itens.
 Data em que foi recebido: ${U.fmtDate(date)} (${U.WD[U.weekday(date)]}). Próximo dia útil: ${U.fmtDate(amanha)}.
 Use só o que foi dito. Não invente prazos, horários, nomes nem tarefas.
 Responda em JSON com:
@@ -199,7 +200,7 @@ Responda em JSON com:
   - "duracao": minutos, se foi dita; senão 0;
   - "responsavel": vazio quando o pedido é para quem recebeu o áudio (${eu || 'a pessoa que usa o app'}); o nome de outra pessoa da equipe se o pedido for para ela (equipe: ${equipe.join(', ') || 'não cadastrada'});
   - "situacao": "futuro" (a fazer) ou "feito" (se o áudio só informa algo que já aconteceu).`);
-    const r = await this.call({ system, timeout: 120000, parts: [{ text: `${escrito ? 'Mensagem recebida (texto colado):' : 'Transcrição do áudio (automática, pode ter erros):'}\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações de quem recebeu:\n"""\n${notes.trim()}\n"""` : ''}` }],
+    const r = await this.call({ system, timeout: 120000, parts: [{ text: `Conteúdo recebido (transcrição automática dos áudios, pode ter erros; mensagem escrita como veio):\n"""\n${transcript.trim()}\n"""${notes.trim() ? `\n\nAnotações de quem recebeu:\n"""\n${notes.trim()}\n"""` : ''}` }],
       schema: { type: 'OBJECT', required: ['resumo', 'itens'], properties: { resumo: { type: 'STRING' }, itens: this.ITENS_SCHEMA } } });
     return { resumo: this.tidy(String(r.resumo || '')), itens: this.itensNorm(r.itens, eu) };
   },
