@@ -11,6 +11,10 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
     const txt = JSON.stringify(r.request().postDataJSON());
     const ok = text => r.fulfill({ json: { candidates: [{ content: { parts: [{ text }] } }] } });
     if (txt.includes('Transcreva fielmente')) { tr++; return ok(`— Trecho ${tr}: falamos da escala do sábado e da compra de luvas.`); }
+    if (txt.includes('Tarefa: /recado') && txt.includes('MENSAGEM ESCRITA RECEBIDA')) { ia.msg = txt; return ok(JSON.stringify({ resumo: '• Instalar 2 câmeras na portaria até sexta.\n• Visita técnica quinta às 10h.', itens: [
+      { tipo: 'tarefa', titulo: 'Instalar 2 câmeras na portaria', data: amanha, situacao: 'futuro' },
+      { tipo: 'compromisso', titulo: 'Visita técnica ao condomínio Jardins', data: amanha, hora: '10:00', situacao: 'futuro' },
+    ] })); }
     if (txt.includes('Tarefa: /recado')) { ia.recado = txt; return ok(JSON.stringify({ resumo: '• Enviar o orçamento da câmera 360 até amanhã.\n• Reunião com a diretoria amanhã às 15h.', itens: [
       { tipo: 'tarefa', titulo: 'Enviar o orçamento da câmera 360', data: amanha, responsavel: '', situacao: 'futuro' },
       { tipo: 'compromisso', titulo: 'Reunião com a diretoria', data: amanha, hora: '15:00', situacao: 'futuro' },
@@ -66,7 +70,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   console.log('\n[2] Gravar com um toque');
   await tap('#bottom-nav .bn-rec');
   const opts = await p.$$eval(`${M} .sheet-item`, a => a.map(x => x.textContent.trim()));
-  check(opts.length === 4 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && /Enviar um áudio/.test(opts[3]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as opções (Reunião, Feedback, Relatório do dia, Enviar um áudio) e ainda não grava');
+  check(opts.length === 5 && /Reunião/.test(opts[0]) && /Feedback/.test(opts[1]) && /Relatório do dia/.test(opts[2]) && /Enviar um áudio/.test(opts[3]) && /Colar uma mensagem/.test(opts[4]) && !(await p.evaluate(() => Gravador.recording())), 'Gravar abre as opções (Reunião, Feedback, Relatório do dia, Enviar um áudio, Colar uma mensagem) e ainda não grava');
   await p.screenshot({ path: OUT + '/enxuto-0-opcoes.png' });
   await tap(`${M} .sheet-item:has-text("Reunião")`);
   check(await p.locator(`${M} .gv-clock`).count() === 1 && await p.locator(`${M} h2`, { hasText: 'Gravando a reunião' }).count() === 1, 'escolheu Reunião: começa a gravar na hora (sem criar a reunião antes)');
@@ -242,6 +246,32 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(s.tasks.some(x => x.title === 'Conferir as câmeras do bloco C' && x.responsible === 'Carlos Souza'), 'pedido para o Carlos vai com ele de responsável');
   await go('gravacoes'); await p.evaluate(() => { App.ui.gvId = null; App.render(); });
   check(await p.locator('.gv-arq-btn').count() === 1, 'em Gravações também tem "Enviar um áudio"');
+
+  console.log('\n[11] Colar uma mensagem escrita');
+  await p.evaluate(() => { App.ui.gvId = null; location.hash = '#dashboard'; App.render(); document.querySelectorAll('.toast').forEach(t => t.remove()); }); await W(300);
+  await tap('#bottom-nav .bn-rec'); await tap(`${M} .sheet-item:has-text("Colar uma mensagem")`);
+  check(await p.locator(`${M} h2`, { hasText: 'Mensagem recebida' }).count() === 1 && await p.locator(`${M} [name=texto]`).isVisible(), 'abre o campo para colar o texto');
+  await tap(`${M} [data-submit]`);
+  check(await p.locator(`${M} h2`, { hasText: 'Mensagem recebida' }).count() === 1 && !(await p.evaluate(() => S.gravacoes.some(g => g.origem === 'texto'))), 'sem texto não continua');
+  await p.locator(`${M} [name=texto]`).fill('Bom dia! Preciso que instale 2 câmeras na portaria até sexta. E marca a visita técnica no Jardins quinta às 10h.');
+  await p.locator(`${M} [name=de]`).fill('síndico do Jardins');
+  await p.screenshot({ path: OUT + '/enxuto-9-texto.png' });
+  await tap(`${M} [data-submit]`);
+  await espera(() => { const g = S.gravacoes.find(x => x.origem === 'texto'); return g && g.status === 'pronta'; }, 15000, 'mensagem analisada');
+  const gt = await p.evaluate(() => S.gravacoes.find(x => x.origem === 'texto'));
+  check(ia.msg.includes('MENSAGEM ESCRITA RECEBIDA de síndico do Jardins') && ia.msg.includes('instale 2 câmeras na portaria'), 'a IA recebe o texto como mensagem escrita, com quem mandou');
+  check(gt.itens.length === 2 && gt.resumo.includes('portaria'), 'resumo do pedido e 2 itens identificados');
+  await p.evaluate(id => { App.ui.gvId = id; location.hash = '#gravacoes'; App.render(); }, gt.id); await W(400);
+  check(await p.locator('.ps-head h2', { hasText: 'Mensagem de síndico do Jardins' }).count() === 1 && (await p.textContent('.view')).includes('mensagem escrita') && await p.locator('[data-gv-audio]').count() === 0, 'tela da mensagem (sem parte de áudio)');
+  await p.locator('.gv-tx summary').tap(); await W(300);
+  check((await p.textContent('.gv-tx-body')).startsWith('Bom dia! Preciso'), 'mostra a mensagem recebida');
+  await tap('[data-act=gvItApply]');
+  s = await st();
+  check(s.tasks.some(x => x.title === 'Instalar 2 câmeras na portaria' && x.dueDate === amanha) && s.events.some(e => e.title === 'Visita técnica ao condomínio Jardins' && e.time === '10:00'), 'pedidos por escrito anotados na agenda');
+  await go('gravacoes'); await p.evaluate(() => { App.ui.gvId = null; App.render(); });
+  await tap('.gv-arq-btn');
+  check(await p.locator(`${M} .sheet-item`).count() === 2 && (await p.textContent(M)).includes('Uma mensagem escrita'), 'em Gravações, "Enviar áudio ou texto" oferece os dois');
+  await p.keyboard.press('Escape'); await W();
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();

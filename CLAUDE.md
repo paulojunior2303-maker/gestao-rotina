@@ -51,6 +51,8 @@ e diga o que mudou e como testar no celular.
 - **Áudio recebido** (Gravar → "Enviar um áudio" ou botão em Gravações; `tipo: 'audio'`, `g.de`): `Gravador.escolherArquivo/perguntarDe/importar` guarda o arquivo
   (WhatsApp .opus → `audio/ogg`, `mimeDe`; até ~19 MB) como parte 0 no IndexedDB e usa o mesmo caminho de transcrição/novas tentativas; no fim `IA.recado` devolve o resumo
   do que foi pedido + itens (`IA.itensNorm`, mesmo formato do relatório; pedido para o usuário = `responsavel` vazio). Tela igual à do relatório ("O que foi pedido" + "Anotar no app").
+  **Mensagem escrita**: Gravar → "Colar uma mensagem (texto)" (ou "Enviar áudio ou texto" em Gravações → `Gravador.receber`): `Gravador.colarTexto/importarTexto` cria a mesma gravação
+  `tipo: 'audio'` com `origem: 'texto'` (sem áudio; o texto fica em `textos` [g, 0]) e `IA.recado({ escrito: true })`.
 - **Nome de quem usa o app** (`settings.usuario`; cartão "Como você se chama?" no Calendário enquanto estiver vazio e Configurações → Você): vai na saudação e em `IA.system`
   (quem fala na primeira pessoa nas gravações é essa pessoa). No relatório do dia, item do próprio usuário fica com `responsavel` vazio (agenda/tarefa dele); de outra pessoa, com o nome dela.
 - **Cópia enxuta** (ramo `enxuto`, site https://paulojunior2303-maker.github.io/gestao-rotina/enxuto/): `python3 build.py --enxuto` → `dist/gestao-rotina-enxuto.html`
