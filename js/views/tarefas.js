@@ -5,7 +5,7 @@ Views.tarefas = {
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
-    const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
+    const t = U.today(), ws = Cal.inicioSemana(t), we = U.addDays(ws, 6);
     const all = S.tasks;
     const counts = {
       abertas: all.filter(x => OPEN(x.status)).length,

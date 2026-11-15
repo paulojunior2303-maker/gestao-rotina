@@ -5,7 +5,7 @@
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
   TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', imprevisto: 'Imprevisto' },
-  WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+  WD: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
 
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
   itemsOn(k) {
@@ -28,16 +28,17 @@ const Cal = {
     const r = this.range(s);
     if (k < r.cells[0] || k > r.cells[r.cells.length - 1] || (s.mode === 'month' && U.monthKey(k) !== r.mk)) s.anchor = k;
   },
-  mondayOf(k) { return U.weekStart(k); },
+  /* A semana do calendário começa no domingo (pedido do usuário) */
+  inicioSemana(k) { return U.addDays(k, -U.weekday(k)); },
   range(s) {
-    if (s.mode === 'week') { const a = this.mondayOf(s.anchor); return { from: a, to: U.addDays(a, 6), cells: [0, 1, 2, 3, 4, 5, 6].map(i => U.addDays(a, i)) }; }
+    if (s.mode === 'week') { const a = this.inicioSemana(s.anchor); return { from: a, to: U.addDays(a, 6), cells: [0, 1, 2, 3, 4, 5, 6].map(i => U.addDays(a, i)) }; }
     const mk = U.monthKey(s.anchor), first = U.monthStart(mk), last = U.monthEnd(mk);
-    const cells = []; for (let k = this.mondayOf(first); cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length % 7 === 0 && k >= last) break; }
+    const cells = []; for (let k = this.inicioSemana(first); cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length % 7 === 0 && k >= last) break; }
     return { from: first, to: last, cells, mk };
   },
   title(s) {
     if (s.mode === 'month') return U.fmtMonth(U.monthKey(s.anchor));
-    const a = this.mondayOf(s.anchor), z = U.addDays(a, 6), da = U.parse(a), dz = U.parse(z);
+    const a = this.inicioSemana(s.anchor), z = U.addDays(a, 6), da = U.parse(a), dz = U.parse(z);
     return da.getMonth() === dz.getMonth() ? `${da.getDate()} a ${dz.getDate()} de ${U.MONTHS[dz.getMonth()].toLowerCase()}` : `${da.getDate()}/${U.pad(da.getMonth() + 1)} a ${dz.getDate()}/${U.pad(dz.getMonth() + 1)}`;
   },
 
@@ -111,7 +112,7 @@ Object.assign(Actions, {
   calNav({ cal, n }) {
     const s = Cal.st(cal), t = U.today();
     if (s.mode === 'week') {
-      s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
+      s.anchor = U.addDays(Cal.inicioSemana(s.anchor), Number(n) * 7);
       // Na Agenda, mantém o mesmo dia da semana (ou hoje, se a semana for a atual)
       const r = Cal.range(s);
       s.sel = t >= r.from && t <= r.to ? t : cal === 'agenda' ? U.addDays(s.sel, Number(n) * 7) : r.from;
