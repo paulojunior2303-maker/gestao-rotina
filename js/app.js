@@ -57,7 +57,7 @@ const App = {
       : Cloud.state === 'on' ? '<span class="dot-ok"></span> Dados salvos na sua conta (privados)'
       : Cloud.state === 'connecting' ? '<span class="dot-wait"></span> Conectando…'
       : Store.persistent ? `<span class="dot-ok"></span> Dados salvos neste ${Native.available() ? 'aparelho' : 'navegador'}`
-      : '<span class="dot-err"></span> Armazenamento indisponível — os dados serão perdidos ao fechar';
+      : '<span class="dot-err"></span> Sem onde salvar: você perde os dados ao fechar';
   },
 
   render(opts = {}) {
@@ -77,8 +77,8 @@ const App = {
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
     document.title = `${view.title} · FlowFire${CANAL_ENXUTO ? ' Enxuto' : ''}${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
-    const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
-      : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
+    const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>O app não conseguiu entrar na sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'Você perde o que mudar até conseguir.'} Recarregue a página para tentar de novo.</span></div>`
+      : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para guardar os dados.' : 'Abra o app num navegador comum (Chrome, Edge, Firefox, Safari).'} Enquanto isso, faça um backup em Configurações → Exportar backup.</span></div>`;
     try {
       root.innerHTML = warn + Drive.banner() + demo + Gravador.barHtml() + view.render(this.params);
       if (view.mount) view.mount(root);

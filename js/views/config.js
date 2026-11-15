@@ -53,7 +53,7 @@ Views.config = {
         <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
         <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
         <li>Copie a chave e cole no campo acima.</li></ol></details>
-      <p class="muted small mt">A chave fica guardada nos seus dados (e nos backups). Nada é enviado para a IA sem você tocar em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para melhorar os modelos; ative o faturamento no AI Studio para evitar isso.</p>`)}
+      <p class="muted small mt">A chave fica guardada nos seus dados e nos backups. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
