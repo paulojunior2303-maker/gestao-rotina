@@ -204,8 +204,11 @@ const Theme = {
   apply() {
     const t = this.current();
     if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
+    // "Sol forte": tema claro com contraste alto, para ler na rua (pedido do usuário)
+    const sol = ((S && S.settings && S.settings.theme) || '') === 'sol';
+    if ((document.documentElement.dataset.contraste === 'alto') !== sol) { if (sol) document.documentElement.dataset.contraste = 'alto'; else delete document.documentElement.dataset.contraste; }
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : '#f5f3f9');
+    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : sol ? '#ffffff' : '#f5f3f9');
   },
   init() {
     this.apply();

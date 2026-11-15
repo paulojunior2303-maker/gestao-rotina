@@ -70,6 +70,28 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   const w = await p.evaluate(() => document.documentElement.scrollWidth);
   check(w <= 393, `Tarefas cabe em 393 px (${w}px)`);
 
+  console.log('\n[4] Tema "Sol forte"');
+  await go('config');
+  await p.locator('[data-act=themeSet][data-v=sol]').tap(); await W(300);
+  const at = await p.evaluate(() => [document.documentElement.dataset.theme, document.documentElement.dataset.contraste, getComputedStyle(document.body).backgroundColor, getComputedStyle(document.body).color]);
+  check(at[0] === 'light' && at[1] === 'alto' && at[2] === 'rgb(255, 255, 255)' && at[3] === 'rgb(0, 0, 0)', 'Sol forte: fundo branco e texto preto');
+  const lum = c => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+  const ratio = (a, c) => { const [x, y] = [lum(a), lum(c)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  for (const r of ['dashboard', 'agenda', 'tarefas', 'gravacoes', 'imprevistos']) {
+    await go(r);
+    const pares = await p.evaluate(() => {
+      const bgOf = el => { while (el) { const c = getComputedStyle(el).backgroundColor; if (c && !c.startsWith('rgba(0, 0, 0, 0)') && c !== 'transparent') return c; el = el.parentElement; } return 'rgb(255, 255, 255)'; };
+      return [...document.querySelectorAll('#view p, #view small, #view .muted, #view h2, #view h3, #view .tk-title, #view .blk-title')].filter(e => e.offsetParent && e.textContent.trim()).slice(0, 80).map(e => [getComputedStyle(e).color, bgOf(e), e.tagName + '.' + e.className]);
+    });
+    const fracos = pares.map(([f, b, n]) => [ratio(f, b), n]).filter(([x]) => x < 7);
+    check(!fracos.length, `${r}: todo texto com contraste alto (≥ 7)${fracos.length ? ' → ' + fracos.slice(0, 3).map(([x, n]) => n + ' ' + x.toFixed(1)).join('; ') : ''}`);
+    if (r === 'dashboard') await shot('4-sol');
+  }
+  await p.reload(); await W(600);
+  check(await p.evaluate(() => document.documentElement.dataset.contraste) === 'alto', 'Sol forte continua ao reabrir o app');
+  await go('config'); await p.locator('[data-act=themeSet][data-v=escuro]').tap(); await W(300);
+  check(await p.evaluate(() => !document.documentElement.dataset.contraste && document.documentElement.dataset.theme === 'dark'), 'voltar para Escuro tira o contraste alto');
+
   // __MAIS__
 
   check(!errs.length, 'sem erros no console' + (errs.length ? ': ' + errs.join(' | ') : ''));
