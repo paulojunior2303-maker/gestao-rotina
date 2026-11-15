@@ -210,7 +210,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await go('semanal'); check((await p.textContent('#page-title')) === 'Agenda', 'endereço antigo #semanal abre a Agenda');
   await go('dashboard');
   await p.locator('.calx-d.today').first().tap(); await W(300);
-  check(await p.locator('.calx-day h3').count() === 1, 'tocar no dia mostra a lista do dia');
+  check(await p.locator('.calx-day h2').count() === 1, 'tocar no dia mostra a lista do dia');
   await fab('Compromisso');
   await fill('title', 'Reunião com fornecedor'); await fill('time', '10:00'); await save();
   check((await st()).events.length === 1 && await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'novo compromisso pelo + do Início aparece na lista do dia');

@@ -17,7 +17,7 @@ Views.imprevistos = {
       const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
       const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
       return `<div class="occ card prio-border-${o.priority} ${D.occLate(o) ? 'late' : ''} ${OPEN(o.status) ? '' : 'closed'}">
-        <div class="occ-h"><h3>${U.esc(o.title)}</h3>${H.demo(o)}<span class="grow"></span>${H.prio(o.priority)} ${H.status(o.status)}</div>
+        <div class="occ-h"><h2 class="occ-t">${U.esc(o.title)}</h2>${H.demo(o)}<span class="grow"></span>${H.prio(o.priority)} ${H.status(o.status)}</div>
         <div class="occ-meta">
           <span>${U.icon('clock', 14)} Registrado ${U.fmtDate(o.date)} ${o.time || ''}</span>
           ${o.responsible ? `<span>${U.icon('user', 14)} ${U.esc(o.responsible)}</span>` : ''}
@@ -33,8 +33,8 @@ Views.imprevistos = {
           <button class="btn sm ghost ok-text" data-act="occStatus" data-id="${o.id}" data-s="concluida">${U.icon('check', 15)} Resolver</button>`
           : `<button class="btn sm ghost" data-act="occStatus" data-id="${o.id}" data-s="pendente">${U.icon('undo', 15)} Reabrir</button>`}
           <span class="grow"></span>
-          <button class="icon-btn" data-act="occEdit" data-id="${o.id}" title="Editar">${U.icon('edit', 16)}</button>
-          <button class="icon-btn" data-act="occDelete" data-id="${o.id}" title="Excluir">${U.icon('trash', 16)}</button>
+          <button class="icon-btn" data-act="occEdit" data-id="${o.id}" title="Editar" aria-label="Editar imprevisto">${U.icon('edit', 16)}</button>
+          <button class="icon-btn" data-act="occDelete" data-id="${o.id}" title="Excluir" aria-label="Excluir imprevisto">${U.icon('trash', 16)}</button>
         </div>
       </div>`;
     };

@@ -48,7 +48,7 @@
   --shadow: 0 1px 2px rgba(31, 18, 61, .05);
   --shadow-pop: 0 18px 50px rgba(23, 12, 46, .18);
   /* barra lateral e barra inferior: sempre escuras (identidade) */
-  --side-bg: #100d17; --side-text: #b8b0c8; --side-muted: #776f88; --side-line: rgba(255, 255, 255, .06);
+  --side-bg: #100d17; --side-text: #b8b0c8; --side-muted: #8f88a2; --side-line: rgba(255, 255, 255, .06);
   --side-active: rgba(148, 97, 245, .16); --side-hi: #d6c6ff;
 
   --font: "Geist", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
@@ -173,8 +173,9 @@ body.canal-teste .topbar { box-shadow: inset 0 3px 0 #e3a043; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px 20px; box-shadow: var(--shadow); min-width: 0; }
 .card.flat { background: transparent; border: 0; border-top: 1px solid var(--border); border-radius: 0; box-shadow: none; padding: 18px 2px 0; }
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-.card-h h3 { display: flex; align-items: center; gap: 9px; }
-.card-h h3 .ic { color: var(--accent); width: 17px; height: 17px; }
+.card-h h3, .card-h .h3 { display: flex; align-items: center; gap: 9px; }
+h2.h3 { font-size: 16px; }
+.card-h h3 .ic, .card-h .h3 .ic { color: var(--accent); width: 17px; height: 17px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .grid-2.tight { gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
@@ -365,7 +366,7 @@ a.kpi[href]:hover, a.kpi[data-act]:hover { background: var(--hover); }
 .occ.closed { opacity: .7; }
 .occ.closed::before { background: var(--green); }
 .occ-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.occ-h h3 { font-size: 16px; }
+.occ-h h3, .occ-h .occ-t { font-size: 16px; }
 .occ-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); align-items: center; }
 .occ-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .occ-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
@@ -873,7 +874,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 
 .calx-day { border-left: 1px solid var(--border); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
 .calx-day-h { display: flex; align-items: flex-end; gap: 8px; }
-.calx-day-h h3 { font-size: 21px; letter-spacing: -.02em; }
+.calx-day-h h2 { font-size: 21px; letter-spacing: -.02em; }
 .calx-day-h small { font-size: 12.5px; }
 .calx-list { display: flex; flex-direction: column; gap: 6px; }
 .calx-it { position: relative; display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 11px; background: var(--surface); border: 1px solid var(--line); cursor: pointer; transition: border-color .15s; }
@@ -964,7 +965,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .calx-chips, .calx-ag { display: none; }
   .calx-dots { display: flex; }
   .calx-legend { font-size: 12px; gap: 4px 10px; }
-  .calx-day-h h3 { font-size: 19px; }
+  .calx-day-h h2 { font-size: 19px; }
   .mt-tabs { align-self: stretch; display: flex; }
   .mt-tabs .tab { flex: 1; justify-content: center; }
   .fb-people { grid-template-columns: minmax(0, 1fr); }
@@ -1163,3 +1164,12 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 }
 :root[data-contraste="alto"] .card, :root[data-contraste="alto"] .task, :root[data-contraste="alto"] .blk { border-color: var(--border); }
 :root[data-contraste="alto"] body { font-weight: 450; }
+
+/* Polimento (skill impeccable): abas, "Ver o mês inteiro", atalhos das Configurações e links dentro de avisos com área de toque maior no celular */
+@media (max-width: 900px) {
+  .tab { min-height: 40px; }
+  .calx-exp { min-height: 44px; }
+  .cfg-nav a { padding: 10px 14px; }
+  .alert .link { display: inline-block; padding: 10px 4px; margin: -10px -4px; }
+  .btn:not(.sm) { min-height: 44px; }
+}
