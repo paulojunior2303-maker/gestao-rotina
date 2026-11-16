@@ -82,35 +82,33 @@ Views.tarefas = {
 };
 
 const Tasks = {
+  /* Formulário enxuto (pedido do usuário): tudo numa tela só, sem "Mais opções".
+     Categoria, status e data de início saem do formulário (ficam como estão; o status muda pelos botões ▶ ✓ ✕ da lista).
+     Descrição e observações antigas viram um campo só, "Observação". */
   form(x, defaults = {}) {
     const isNew = !x;
     x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
+    const obs = [x.description, x.notes].filter(Boolean).join('\n');
     UI.form({
       title: isNew ? 'Nova tarefa' : 'Editar tarefa',
-      wide: true,
       fields: [
-        { name: 'title', label: 'Nome', required: true, value: x.title },
-        { name: 'dueDate', label: 'Dia', type: 'date', value: x.dueDate, half: true, hint: 'Sem dia, ela aparece hoje na Agenda.' },
-        { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime, half: true },
+        { name: 'title', label: 'O que precisa fazer?', required: true, value: x.title },
+        { name: 'dueDate', label: 'Dia', type: 'date', value: x.dueDate, half: true },
+        { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, half: true },
         { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS, value: String(x.dur || ''), half: true },
-        { name: 'responsible', label: 'Responsável (se delegada)', value: x.responsible, list: D.techNames(), half: true },
+        { name: 'responsible', label: 'Quem faz?', value: x.responsible, list: D.techNames(), placeholder: 'Você', half: true },
         { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
-        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true, hint: 'Ao concluir, a próxima é criada sozinha.' },
-        { name: 'description', label: 'Descrição', type: 'textarea', value: x.description, more: true },
-        { name: 'category', label: 'Categoria', type: 'select', options: H.catOptions(), value: x.category, half: true, more: true },
-        { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: x.status, half: true, more: true },
-        { name: 'startDate', label: 'Data de início', type: 'date', value: x.startDate, half: true, more: true },
-        { type: 'html', html: isNew ? '' : `<p class="muted small">Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · Concluída em ${U.fmtDateTime(x.completedAt)}` : ''}</p>`, half: true, more: true },
-        { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: x.notes, more: true },
+        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true },
+        { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
+        { type: 'html', html: `<p class="muted small tk-form-dica">Sem dia, a tarefa aparece hoje na Agenda até você concluir.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
       ],
-      moreOpen: !isNew && !!(x.description || x.notes),
-      validate: v => v.startDate && v.dueDate && v.dueDate < v.startDate ? 'O prazo não pode ser anterior à data de início.' : null,
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); Actions.tkDelete({ id: x.id }); } }],
       onSubmit(v) {
         if (v.repeat && !v.dueDate) v.dueDate = U.today();
         v.dur = v.dueDate && v.dueTime ? Number(v.dur) || 0 : 0;
-        if (isNew) S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: v.status === 'concluida' ? new Date().toISOString() : null, ...v });
-        else { const st = v.status; Object.assign(x, { ...v, status: x.status }); Tasks.setStatus(x, st); }
+        v.notes = '';
+        if (isNew) S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, category: x.category, status: 'pendente', startDate: x.startDate || U.today(), ...v });
+        else Object.assign(x, v);
         commit(); UI.toast(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.');
       },
     });

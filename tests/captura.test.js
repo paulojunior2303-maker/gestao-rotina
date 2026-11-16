@@ -116,11 +116,13 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await p.tap('#fab'); await W();
   await p.locator(`${M} #cap-t`).fill('Ligar para fornecedor às 16:15');
   await W(150);
-  check(await p.inputValue(`${M} #cap-time`) === '16:15' && await p.locator(`${M} [data-tdur]`).count() === 5, 'horário do texto preenchido e aparece "Quanto tempo?"');
-  await p.tap(`${M} [data-tdur="15"]`); await p.tap(`${M} [data-save]`); await W();
+  check(await p.inputValue(`${M} #cap-time`) === '16:15' && !(await p.locator(`${M} #cap-dur`).isDisabled()), 'horário do texto preenchido e a duração fica liberada');
+  check(await p.locator(`${M} #cap-prio`).isVisible() && await p.locator(`${M} #cap-rep`).isVisible() && await p.locator(`${M} #cap-obs`).isVisible() && !(await p.locator(`${M} [data-more]`).isVisible()), 'tarefa: prioridade, repetir e observação já à vista, sem "Mais detalhes"');
+  await p.selectOption(`${M} #cap-dur`, '15'); await p.selectOption(`${M} #cap-prio`, 'alta'); await p.locator(`${M} #cap-obs`).fill('Pedir prazo de entrega');
+  await p.tap(`${M} [data-save]`); await W();
   s = await st();
   const ab = s.tasks.find(x => x.title === 'Ligar para fornecedor às 16:15');
-  check(ab && ab.dueDate === today && ab.dueTime === '16:15' && ab.dur === 15 && !(s.days[today] || []).some(x => x.title.startsWith('Ligar')), 'vira tarefa de hoje 16:15 com 15 min (sem bloco duplicado na agenda)');
+  check(ab && ab.dueDate === today && ab.dueTime === '16:15' && ab.dur === 15 && ab.priority === 'alta' && ab.description === 'Pedir prazo de entrega' && !(s.days[today] || []).some(x => x.title.startsWith('Ligar')), 'vira tarefa de hoje 16:15 com 15 min (sem bloco duplicado na agenda)');
   // Sem data
   await p.tap('#fab'); await W();
   await p.locator(`${M} #cap-t`).fill('Organizar o almoxarifado');

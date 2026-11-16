@@ -1185,3 +1185,13 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-it .icon-btn { flex: none; margin: -6px -6px -6px 0; }
 .cap-nodate { margin: 2px 0 0; }
 .ag-head .ag-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+/* Formulário de tarefa enxuto: dois campos por linha também no celular */
+.form-grid:has(.tk-form-dica) { grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+.tk-form-dica { margin: 0; }
+/* Anotação rápida: campos lado a lado (horário + duração, prioridade + repetir) */
+.cap-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cap-2 > label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cap-2 .cap-in, .cap-sel { width: 100%; min-width: 0; }
+.cap-sel { min-height: 44px; padding: 9px 11px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; }
+.cap-sel:disabled { opacity: .5; }
+.cap-obs { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; resize: vertical; }

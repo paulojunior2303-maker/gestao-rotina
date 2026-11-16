@@ -68,7 +68,7 @@ const Capture = {
   /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
   open({ type, k } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', touched: {} };
+    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', prio: 'media', obs: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
     const techs = D.techNames();
     const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
@@ -84,15 +84,20 @@ const Capture = {
           ${st.dur ? `<p class="cap-prev">${U.icon('clock', 14)} <span>Entra na agenda agora, das <strong>${s}</strong> às <strong>${e}</strong>, e o resto do dia é empurrado.${cur ? ` “${U.esc(cur.title)}” continua depois.` : ''}</span></p>` : ''}
           ${whoField('Quem resolve?')}`;
       }
+      // Tarefa: tudo numa tela só (pedido do usuário), sem "Mais detalhes"
       const tm = U.addDays(t, 1);
       const other = st.due && st.due !== t && st.due !== tm;
+      const sel = (id, name, opts, v, dis) => `<select id="${id}" name="${name}" class="cap-sel" ${dis ? 'disabled' : ''}>${opts.map(([a, l]) => `<option value="${a}" ${String(v) === String(a) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
       return `<span class="cap-l">Quando?</span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
         <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label>${btn('due', '', 'Sem data', !st.due)}</div>
-        ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>. Ao concluir, a próxima é criada sozinha.</span><button type="button" class="link" data-norep>tirar</button></p>` : ''}
-        ${st.due ? `<div class="cap-row"><label class="cap-l" for="cap-time">Horário (opcional)</label><input type="time" id="cap-time" class="cap-in" value="${st.time}"></div>` : `<p class="muted small cap-nodate">Sem data, ela fica no dia de hoje da Agenda e do Calendário até você concluir.</p>`}
-        ${st.due && st.time ? `<span class="cap-l">Quanto tempo?</span><div class="cap-chips">${btn('tdur', 0, 'Não sei', !st.tdur)}${Capture.DURS.map(([v, l]) => btn('tdur', v, l, st.tdur === v)).join('')}</div>` : ''}
-        ${whoField('Quem faz?')}`;
+        ${st.due ? `<div class="cap-2"><label><span class="cap-l">Horário</span><input type="time" id="cap-time" class="cap-in" value="${st.time}"></label>
+          <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS, st.tdur || '', !st.time)}</label></div>`
+          : `<p class="muted small cap-nodate">Sem data, ela fica no dia de hoje da Agenda e do Calendário até você concluir.</p>`}
+        ${whoField('Quem faz?')}
+        <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
+          <label><span class="cap-l">Repetir</span>${sel('cap-rep', 'repeat', Tasks.REPEAT, st.repeat)}</label></div>
+        <label class="cap-l" for="cap-obs">Observação</label><textarea id="cap-obs" class="cap-obs" rows="1" placeholder="Opcional">${U.esc(st.obs)}</textarea>`;
     };
     const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : 'Criar tarefa';
     const ph = () => st.type === 'imprevisto' ? 'O que aconteceu? Ex.: câmeras offline no cliente X' : 'O que precisa fazer? Ex.: ligar para o cliente amanhã às 10h';
@@ -105,7 +110,7 @@ const Capture = {
         <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
         <div class="cap-opts"></div>
         <div class="form-error" hidden></div>
-        <button type="button" class="link cap-more" data-more>Mais detalhes…</button>
+        <button type="button" class="link cap-more" data-more ${st.type === 'imprevisto' ? '' : 'hidden'}>Mais detalhes…</button>
       </div>`,
       footer: `<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-save>${saveLabel()}</button>`,
     });
@@ -115,6 +120,7 @@ const Capture = {
       $('.cap-opts').innerHTML = optsHtml();
       $('[data-save]').textContent = saveLabel();
       ta.placeholder = ph();
+      $('[data-more]').hidden = st.type !== 'imprevisto';
       m.el.querySelectorAll('[data-type]').forEach(b => { const on = b.dataset.type === st.type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
     };
     const err = msg => { const e = $('.form-error'); e.textContent = msg || ''; e.hidden = !msg; };
@@ -136,8 +142,6 @@ const Capture = {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
-      if (b.dataset.tdur !== undefined) { st.tdur = +b.dataset.tdur; st.touched.tdur = true; paint(); return; }
-      if (b.hasAttribute('data-norep')) { st.repeat = ''; st.touched.repeat = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-more')) { const d = Capture.read(st, ta); m.close(); setTimeout(() => Capture.details(st.type, d, k), 160); return; }
@@ -146,9 +150,16 @@ const Capture = {
     m.el.addEventListener('input', e => {
       const id = e.target.id;
       if (id === 'cap-who') { st.who = e.target.value.trim(); st.touched.who = true; }
-      if (id === 'cap-time') { const had = !!st.time; st.time = e.target.value; st.touched.time = true; if (had !== !!st.time) { paint(); $('#cap-time').focus(); } }
+      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; const d = $('#cap-dur'); if (d) d.disabled = !st.time; }
+      if (id === 'cap-obs') st.obs = e.target.value;
     });
-    m.el.addEventListener('change', e => { if (e.target.id === 'cap-date' && e.target.value) { st.due = e.target.value; st.touched.due = true; paint(); } });
+    m.el.addEventListener('change', e => {
+      const id = e.target.id, v = e.target.value;
+      if (id === 'cap-date' && v) { st.due = v; st.touched.due = true; paint(); }
+      if (id === 'cap-dur') { st.tdur = +v || 0; st.touched.tdur = true; }
+      if (id === 'cap-prio') st.prio = v;
+      if (id === 'cap-rep') { st.repeat = v; st.touched.repeat = true; }
+    });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('[data-save]').click(); } });
     setTimeout(() => ta.focus(), 80);
     return m;
@@ -183,7 +194,7 @@ const Capture = {
       return;
     }
     const due = d.due || (st.repeat ? t : '');
-    S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: due, dueTime: due ? d.time || '' : '', dur: due && d.time ? d.dur || 0 : 0, notes: '', repeat: st.repeat || '' });
+    S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, category: 'administrativo', responsible: d.who, priority: st.prio || 'media', status: 'pendente', startDate: t, dueDate: due, dueTime: due ? d.time || '' : '', dur: due && d.time ? d.dur || 0 : 0, notes: '', repeat: st.repeat || '', description: (st.obs || '').trim() });
     commit();
     const quando = !due ? 'sem data (aparece hoje na Agenda)' : `${due === t ? 'hoje' : due === U.addDays(t, 1) ? 'amanhã' : U.fmtShort(due)}${d.time ? ' às ' + d.time : ''}`;
     UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : `Tarefa criada: ${quando}.`, 'ok', App.route === 'agenda' && App.ui.agendaDate === (due || t) ? undefined : { label: 'Ver na agenda', onClick: () => Actions.goAgenda({ d: due || t }) });

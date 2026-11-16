@@ -42,6 +42,10 @@ e diga o que mudou e como testar no celular.
   e `IA.itensNorm` convertem `tipo: 'agenda'` em tarefa). `Cal.itemsOn(hoje)` também traz as tarefas abertas **sem data** e as **atrasadas** (`semData`), para tudo aparecer
   no Calendário e na Agenda; nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
   Blocos da rotina (`S.days`) continuam: vêm da rotina padrão e o `Actions.agNew` segue existindo (formulário completo), mas sem botão no "+".
+- **Formulário de tarefa enxuto (pedido do usuário)**: tudo numa tela só, sem "Mais detalhes"/"Mais opções". No "+" (`Capture`, aba Tarefa): Quando, Horário + Duração
+  (`#cap-dur`, `Tasks.DURS`), Quem faz, Prioridade + Repetir (`#cap-prio`, `#cap-rep`) e Observação (`#cap-obs` → `description`). "Mais detalhes" só no Imprevisto.
+  `Tasks.form` (Nova tarefa da tela Tarefas e Editar): os mesmos campos, dois por linha também no celular (`.form-grid:has(.tk-form-dica)`); **sem** categoria,
+  status e data de início (ficam como estão; status pelos botões da lista). Ao editar, `description` + `notes` antigas viram um campo só ("Observação").
 - **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo
   (Tarefa · Imprevisto). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
   (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer". Testes: `tests/captura.test.js`.
