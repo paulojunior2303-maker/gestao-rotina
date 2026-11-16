@@ -57,11 +57,12 @@ const App = {
       : Cloud.state === 'on' ? '<span class="dot-ok"></span> Dados salvos na sua conta (privados)'
       : Cloud.state === 'connecting' ? '<span class="dot-wait"></span> Conectando…'
       : Store.persistent ? `<span class="dot-ok"></span> Dados salvos neste ${Native.available() ? 'aparelho' : 'navegador'}`
-      : '<span class="dot-err"></span> Armazenamento indisponível — os dados serão perdidos ao fechar';
+      : '<span class="dot-err"></span> Sem onde salvar: você perde os dados ao fechar';
   },
 
   render(opts = {}) {
     Theme.apply();
+    if (opts.resetScroll) document.body.classList.remove('fab-off');
     const view = Views[this.route];
     const root = document.getElementById('view');
     let focus = null;
@@ -76,8 +77,8 @@ const App = {
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
     document.title = `${view.title} · FlowFire${CANAL_ENXUTO ? ' Enxuto' : ''}${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
-    const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
-      : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
+    const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>O app não conseguiu entrar na sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'Você perde o que mudar até conseguir.'} Recarregue a página para tentar de novo.</span></div>`
+      : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para guardar os dados.' : 'Abra o app num navegador comum (Chrome, Edge, Firefox, Safari).'} Enquanto isso, faça um backup em Configurações → Exportar backup.</span></div>`;
     try {
       root.innerHTML = warn + Drive.banner() + demo + Gravador.barHtml() + view.render(this.params);
       if (view.mount) view.mount(root);
@@ -106,6 +107,15 @@ const App = {
     }
     this.parseHash();
     window.addEventListener('hashchange', () => { this.parseHash(); this.closeMenu(); this.render({ resetScroll: true }); });
+    // O "+" sai da frente enquanto a pessoa rola para baixo (não cobre os botões da lista);
+    // volta ao rolar para cima, no fim da página ou ao trocar de tela
+    let lastY = 0;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY, fim = y + innerHeight >= document.documentElement.scrollHeight - 40;
+      if (y > lastY + 4 && y > 60 && !fim) document.body.classList.add('fab-off');
+      else if (y < lastY - 4 || fim || y <= 60) document.body.classList.remove('fab-off');
+      lastY = y;
+    }, { passive: true });
     // Tocar de novo na tela atual (menu ou barra de baixo) volta para a lista dela
     document.addEventListener('click', e => {
       const l = e.target.closest && e.target.closest('#nav a, #bottom-nav a');
@@ -194,8 +204,11 @@ const Theme = {
   apply() {
     const t = this.current();
     if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
+    // "Sol forte": tema claro com contraste alto, para ler na rua (pedido do usuário)
+    const sol = ((S && S.settings && S.settings.theme) || '') === 'sol';
+    if ((document.documentElement.dataset.contraste === 'alto') !== sol) { if (sol) document.documentElement.dataset.contraste = 'alto'; else delete document.documentElement.dataset.contraste; }
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : '#f5f3f9');
+    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : sol ? '#ffffff' : '#f5f3f9');
   },
   init() {
     this.apply();

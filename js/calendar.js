@@ -5,7 +5,9 @@
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
   TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', imprevisto: 'Imprevisto' },
-  WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+  /* Gravação pronta e reunião registrada deram certo: não aparecem riscadas (riscado = concluído/cancelado) */
+  feito(i) { return i.done ? (i.type === 'gravacao' || i.type === 'reuniao' ? 'ok' : 'done') : ''; },
+  WD: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
 
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
   itemsOn(k) {
@@ -28,16 +30,17 @@ const Cal = {
     const r = this.range(s);
     if (k < r.cells[0] || k > r.cells[r.cells.length - 1] || (s.mode === 'month' && U.monthKey(k) !== r.mk)) s.anchor = k;
   },
-  mondayOf(k) { return U.weekStart(k); },
+  /* A semana do calendário começa no domingo (pedido do usuário) */
+  inicioSemana(k) { return U.addDays(k, -U.weekday(k)); },
   range(s) {
-    if (s.mode === 'week') { const a = this.mondayOf(s.anchor); return { from: a, to: U.addDays(a, 6), cells: [0, 1, 2, 3, 4, 5, 6].map(i => U.addDays(a, i)) }; }
+    if (s.mode === 'week') { const a = this.inicioSemana(s.anchor); return { from: a, to: U.addDays(a, 6), cells: [0, 1, 2, 3, 4, 5, 6].map(i => U.addDays(a, i)) }; }
     const mk = U.monthKey(s.anchor), first = U.monthStart(mk), last = U.monthEnd(mk);
-    const cells = []; for (let k = this.mondayOf(first); cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length % 7 === 0 && k >= last) break; }
+    const cells = []; for (let k = this.inicioSemana(first); cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length % 7 === 0 && k >= last) break; }
     return { from: first, to: last, cells, mk };
   },
   title(s) {
     if (s.mode === 'month') return U.fmtMonth(U.monthKey(s.anchor));
-    const a = this.mondayOf(s.anchor), z = U.addDays(a, 6), da = U.parse(a), dz = U.parse(z);
+    const a = this.inicioSemana(s.anchor), z = U.addDays(a, 6), da = U.parse(a), dz = U.parse(z);
     return da.getMonth() === dz.getMonth() ? `${da.getDate()} a ${dz.getDate()} de ${U.MONTHS[dz.getMonth()].toLowerCase()}` : `${da.getDate()}/${U.pad(da.getMonth() + 1)} a ${dz.getDate()}/${U.pad(dz.getMonth() + 1)}`;
   },
 
@@ -52,7 +55,7 @@ const Cal = {
       const max = s.mode === 'week' ? 5 : 3;
       return `<button class="${cls}" data-act="calSel" data-cal="${id}" data-k="${k}" aria-label="${U.fmtLong(k)}${items.length ? `, ${U.plural(items.length, 'item', 'itens')}` : ''}" ${k === s.sel ? 'aria-pressed="true"' : ''}>
         <span class="calx-n">${U.parse(k).getDate()}</span>
-        ${inMonth && items.length ? `<span class="calx-chips">${items.slice(0, max).map(i => `<span class="calx-chip t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}">${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span>`).join('')}${items.length > max ? `<span class="calx-more">+${items.length - max}</span>` : ''}</span>
+        ${inMonth && items.length ? `<span class="calx-chips">${items.slice(0, max).map(i => `<span class="calx-chip t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}">${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span>`).join('')}${items.length > max ? `<span class="calx-more">+${items.length - max}</span>` : ''}</span>
         <span class="calx-dots">${items.slice(0, 4).map(i => `<i class="t-${i.type} ${i.late ? 'late' : ''}"></i>`).join('')}${items.length > 4 ? '<i class="more"></i>' : ''}</span>` : ''}
         ${inMonth && ag && ag.total && s.mode === 'week' ? `<span class="calx-ag" title="Agenda do dia">${ag.pct}%</span>` : ''}
       </button>`;
@@ -66,7 +69,7 @@ const Cal = {
         </div>
         <span class="grow"></span>
         ${showsToday && s.sel === t ? '' : `<button class="btn sm ghost" data-act="calToday" data-cal="${id}">Hoje</button>`}
-        ${id === 'agenda' ? '' : `<div class="tabs calx-mode" role="tablist"><button class="tab ${s.mode === 'week' ? 'active' : ''}" data-act="calMode" data-cal="${id}" data-v="week">Semana</button><button class="tab ${s.mode === 'month' ? 'active' : ''}" data-act="calMode" data-cal="${id}" data-v="month">Mês</button></div>`}
+        ${id === 'agenda' ? '' : `<div class="tabs calx-mode" role="tablist"><button class="tab ${s.mode === 'week' ? 'active' : ''}" role="tab" aria-selected="${s.mode === 'week'}" data-act="calMode" data-cal="${id}" data-v="week">Semana</button><button class="tab ${s.mode === 'month' ? 'active' : ''}" role="tab" aria-selected="${s.mode === 'month'}" data-act="calMode" data-cal="${id}" data-v="month">Mês</button></div>`}
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
@@ -84,9 +87,9 @@ const Cal = {
     const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : wd;
     return `<div class="calx-day">
       <div class="calx-day-h">
-        <div><small class="muted">${when}</small><h3>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h3></div>
+        <div><small class="muted">${when}</small><h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2></div>
       </div>
-      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}</span>
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${i.sub ? i.sub : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}`}</small></span>
           ${U.icon('right', 15)}</div>`).join('')}</div>`
@@ -111,7 +114,7 @@ Object.assign(Actions, {
   calNav({ cal, n }) {
     const s = Cal.st(cal), t = U.today();
     if (s.mode === 'week') {
-      s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
+      s.anchor = U.addDays(Cal.inicioSemana(s.anchor), Number(n) * 7);
       // Na Agenda, mantém o mesmo dia da semana (ou hoje, se a semana for a atual)
       const r = Cal.range(s);
       s.sel = t >= r.from && t <= r.to ? t : cal === 'agenda' ? U.addDays(s.sel, Number(n) * 7) : r.from;

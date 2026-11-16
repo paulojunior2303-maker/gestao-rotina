@@ -5,7 +5,7 @@ Views.tarefas = {
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
-    const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
+    const t = U.today(), ws = Cal.inicioSemana(t), we = U.addDays(ws, 6);
     const all = S.tasks;
     const counts = {
       abertas: all.filter(x => OPEN(x.status)).length,
@@ -31,9 +31,10 @@ Views.tarefas = {
     });
     list.sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.taskLate(b) - D.taskLate(a)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
 
-    const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
+    const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" aria-pressed="${f.status === k}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
     const sel = (name, opts, label) => `<select data-change="tkFilter" data-k="${name}" aria-label="${label}"><option value="">${label}</option>${UI.opts(opts, f[name])}</select>`;
     const filtersOn = f.priority || f.category || f.period || f.from || f.to || f.q;
+    const nFiltros = [f.priority, f.category, f.period, f.from || f.to].filter(Boolean).length;
 
     const row = x => {
       const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
@@ -63,8 +64,11 @@ Views.tarefas = {
     <div class="toolbar">
       <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
-    <div class="filters card">
-      <input type="search" placeholder="Buscar tarefa, descrição ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+    <div class="tk-busca">
+      <input type="search" placeholder="Buscar tarefa ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      <button class="btn ghost tk-fbtn ${App.ui.taskFOpen ? 'on' : ''}" data-act="tkFiltros" aria-expanded="${App.ui.taskFOpen || nFiltros ? 'true' : 'false'}">${U.icon('filter', 16)} Filtros${nFiltros ? ` <b class="tk-fn">${nFiltros}</b>` : ''}</button>
+    </div>
+    <div class="filters card tk-filtros ${App.ui.taskFOpen || nFiltros ? 'aberto' : ''}">
       ${sel('category', H.catOptions(), 'Todas as categorias')}
       ${sel('priority', H.prioOptions(), 'Todas as prioridades')}
       ${sel('period', [['hoje', 'Prazo hoje'], ['semana', 'Prazo nesta semana'], ['proximos', 'Próximos 7 dias'], ['semprazo', 'Sem prazo']], 'Qualquer prazo')}
@@ -72,7 +76,7 @@ Views.tarefas = {
       <label class="inline">Até <input type="date" value="${f.to}" data-change="tkFilter" data-k="to"></label>
       ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
     </div>
-    <p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>
+    ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
     <div class="task-list">${list.length ? list.map(row).join('') : H.empty(all.length ? 'Nenhuma tarefa com esses filtros.' : 'Nenhuma tarefa cadastrada ainda.', all.length ? '' : '<button class="btn sm primary" data-act="tkNew">Criar primeira tarefa</button>')}</div>`;
   },
 };
@@ -176,5 +180,6 @@ Object.assign(Actions, {
   tkStatusF({ v }) { App.ui.taskF.status = v; App.render(); },
   tkFilter({ k }, el) { App.ui.taskF[k] = el.value; App.render(); },
   tkSearch(_, el) { App.ui.taskF.q = el.value; App.render({ keepFocus: true }); },
+  tkFiltros() { App.ui.taskFOpen = !App.ui.taskFOpen; App.render(); },
   tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });

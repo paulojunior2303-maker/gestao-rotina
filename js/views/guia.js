@@ -23,30 +23,44 @@ Views.guia = {
   renderEnxuto() {
     const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${open ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
-    return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
+    return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Você grava ou cola o que aconteceu, e o app põe na agenda: tarefas, compromissos e imprevistos do seu dia.</p></div></div>
     ${sec('gravar', 'mic', 'Gravar uma reunião ou feedback', li([
-      'Toque em <strong>Gravar</strong> (no meio da barra de baixo) e escolha: <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora: não precisa criar a reunião antes.',
-      'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
-      'Quer usar o app enquanto grava? Toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar.',
-      '<strong>Áudio ou texto</strong> (no Gravar): envie um ou vários áudios (por exemplo, do WhatsApp) e/ou cole um texto. A IA transcreve, faz o resumo e mostra o que pode ir para a agenda; você confere e toca em <strong>Anotar no app</strong>. No app instalado dá para mandar direto do WhatsApp: selecione os áudios → <strong>Compartilhar</strong> → <strong>FlowFire</strong>.',
-      'No fim, toque em <strong>Encerrar gravação</strong> e complete os detalhes: o assunto da reunião ou com quem foi o feedback. Pode deixar para depois.',
+      'Toque em <strong>Gravar</strong>, no meio da barra de baixo, e escolha <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora, sem você criar a reunião antes.',
+      'Pode deixar o celular na mesa. A tela fica acesa e você grava por horas.',
+      'Para usar o app enquanto grava, toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar à gravação.',
+      'No fim, toque em <strong>Encerrar gravação</strong> e diga o assunto da reunião ou com quem foi o feedback. Se estiver com pressa, complete depois.',
     ]), true)}
-    ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
-      'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',
-      'Quando todas as partes estão prontas, a IA faz o <strong>resumo</strong> (ata da reunião ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>, que viram tarefas com um toque.',
-      'Precisa da chave da IA em <strong>Configurações → IA</strong>. Sem ela, as gravações ficam guardadas esperando.',
-      'Diga ao app <strong>o seu nome</strong> (no Calendário, na primeira vez, ou em <strong>Configurações → Você</strong>). Ele entra no cabeçalho do relatório e nas atas, e o que você disser que vai fazer ("eu vou…") entra na <strong>sua agenda</strong>; o que for de outra pessoa da equipe vai com ela de responsável.',
+    ${sec('audio', 'upload', 'Áudio ou texto do WhatsApp', li([
+      'Em <strong>Gravar → Áudio ou texto</strong>, escolha um ou vários áudios, cole um texto, ou os dois.',
+      'A IA transcreve, resume e separa o que é tarefa, compromisso ou imprevisto. Você confere e toca em <strong>Anotar no app</strong>.',
+      'No app instalado, você manda direto do WhatsApp: segure o áudio, toque em <strong>Compartilhar</strong> e escolha <strong>FlowFire</strong>.',
     ]))}
-    ${sec('seguro', 'check', 'O áudio nunca se perde', li([
-      'O áudio vai para o celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, ao abrir de novo a gravação é <strong>recuperada</strong>.',
-      'Sem internet? As partes esperam e são transcritas <strong>sozinhas</strong> quando a conexão voltar.',
-      'O áudio fica guardado até você apagar (em Gravações → abra a gravação → <strong>Apagar o áudio</strong>). A transcrição e o resumo continuam.',
-      'Dá para ouvir e baixar cada parte do áudio.',
+    ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
+      'O app corta a gravação em <strong>partes de 10 minutos</strong> e transcreve cada parte assim que ela fecha.',
+      'Com todas as partes prontas, a IA escreve o <strong>resumo</strong> (ata ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>. Um toque transforma cada combinado em tarefa.',
+      'A IA precisa da sua chave em <strong>Configurações → IA</strong>. Enquanto você não cadastra, o app guarda as gravações.',
+      'Cadastre <strong>o seu nome</strong> em <strong>Configurações → Você</strong>. Quando você disser "eu vou…", o item entra na <strong>sua agenda</strong>; quando falar de alguém da equipe, o item vai com essa pessoa de responsável.',
+    ]))}
+    ${sec('seguro', 'check', 'Se o app fechar no meio', li([
+      'O app salva o áudio no celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, você abre o app de novo e recupera a gravação.',
+      'Sem internet, o app guarda as partes e transcreve quando a conexão voltar.',
+      'O áudio fica no celular até você apagar: abra a gravação e toque em <strong>Apagar o áudio</strong>. O resumo e a transcrição continuam.',
+      'Você pode ouvir e baixar cada parte.',
     ]))}
     ${sec('calendario', 'calendar', 'Calendário', li([
-      'O mês inteiro na tela inicial. Toque num dia para ver o que tem nele: gravações, reuniões, compromissos e prazos.',
-      'O <strong>+</strong> adiciona tarefa, compromisso ou atividade no dia escolhido.',
-      CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para os dados irem para a nuvem. O áudio e a transcrição completa ficam no aparelho.',
+      'A tela inicial mostra o mês inteiro. Toque num dia para ver gravações, reuniões, compromissos e prazos.',
+      'O <strong>+</strong> anota uma tarefa, um compromisso ou uma atividade no dia que você escolheu.',
+      CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para guardar os dados na nuvem. O áudio e a transcrição completa ficam no aparelho.',
+    ]))}
+    ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
+      'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário.',
+      'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
+      'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
+    ]))}
+    ${sec('tarefas', 'tasks', 'Tarefas', li([
+      'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
+      'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
+      'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
     ]))}`;
   },
   render() { return this.renderEnxuto(); },

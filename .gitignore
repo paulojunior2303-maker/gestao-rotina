@@ -6,3 +6,6 @@ dist/
 *.keystore
 keystore.properties
 tests/output/
+
+# Arquivos locais da skill impeccable (críticas e servidor temporário)
+.impeccable/

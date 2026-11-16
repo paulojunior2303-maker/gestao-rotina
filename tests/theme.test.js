@@ -15,7 +15,7 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
   const font = await p.evaluate(async () => { await document.fonts.ready; return [document.fonts.check('16px Geist'), document.fonts.check('16px "Bricolage Grotesque"')]; });
   check(font[0] && font[1], 'fontes da identidade (Geist e Bricolage Grotesque) carregadas sem internet');
   await p.evaluate(() => location.hash = '#config'); await W(300);
-  check(await p.locator('#cfg-aparencia .theme-opt').count() === 3, 'Configurações → Aparência com 3 opções (Escuro, Claro, Automático)');
+  check(await p.locator('#cfg-aparencia .theme-opt').count() === 4, 'Configurações → Aparência com 4 opções (Escuro, Claro, Automático, Sol forte)');
   await p.locator('[data-act=themeSet][data-v=claro]').tap(); await W(300);
   check(await theme() === 'light' && await bg() === 'rgb(245, 243, 249)', 'tocar em "Claro" aplica o tema na hora');
   check(await p.locator('.theme-opt.on[data-v=claro]').count() === 1, 'opção escolhida fica marcada');

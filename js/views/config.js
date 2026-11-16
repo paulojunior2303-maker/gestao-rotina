@@ -25,6 +25,7 @@ Views.config = {
         ['escuro', 'Escuro', 'Grafite e roxo'],
         ['claro', 'Claro', 'Fundo claro'],
         ['auto', 'Automático', 'Segue o aparelho'],
+        ['sol', 'Sol forte', 'Contraste alto, para a rua'],
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>`)}
@@ -52,7 +53,7 @@ Views.config = {
         <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
         <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
         <li>Copie a chave e cole no campo acima.</li></ol></details>
-      <p class="muted small mt">A chave fica guardada nos seus dados (e nos backups). Nada é enviado para a IA sem você tocar em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para melhorar os modelos; ative o faturamento no AI Studio para evitar isso.</p>`)}
+      <p class="muted small mt">A chave fica guardada nos seus dados e nos backups. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
@@ -217,7 +218,7 @@ Object.assign(Actions, {
   cfgUsuario(_, el) { S.settings.usuario = el.value.trim().replace(/\s+/g, ' '); commit(); UI.toast(S.settings.usuario ? `Pronto, ${S.settings.usuario.split(' ')[0]}! Seu nome vai nos relatórios e atas.` : 'Nome apagado.'); },
   cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
   cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
-  themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
+  themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : v === 'sol' ? 'Sol forte ativado: cores mais fortes para ler na rua.' : 'Modo claro ativado.'); },
   xferOut() { Transfer.openExport(); },
   xferIn() { Transfer.openImport(); },
   demoLoad() { Store.loadDemo(); commit(); UI.toast('Dados de demonstração carregados (marcados como EXEMPLO).'); },

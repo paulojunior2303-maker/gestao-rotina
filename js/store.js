@@ -219,7 +219,7 @@ const Store = {
     S.tasks.push(
       tk('Revisar pendências da semana', 'pendencias', 'alta', 'pendente', U.addDays(t, 1)),
       tk('Conferir estoque de materiais', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
-      tk('Enviar relatório semanal', 'indicadores', 'urgente', 'pendente', U.addDays(t, -1)),
+      tk('Enviar relatório semanal', 'administrativo', 'urgente', 'pendente', U.addDays(t, -1)),
       tk('Agendar treinamento da equipe', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
     );
     const t1 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo A' }, t2 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo B' };

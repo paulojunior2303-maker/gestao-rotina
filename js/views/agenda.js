@@ -42,10 +42,10 @@ Views.agenda = {
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
-    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
-          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
+          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : i.type === 'gravacao' ? ' · pronta' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
         <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
     const list = [
       ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
