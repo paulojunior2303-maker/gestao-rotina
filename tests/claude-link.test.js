@@ -30,12 +30,12 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   assert(Object.keys(store).includes('data/users/u123/core'), 'primeiro acesso envia o estado inicial para a conta');
   assert(await p.locator('.alert.a-red').count() === 0 || !(await p.textContent('#view')).includes('Não há onde salvar'), 'sem aviso de armazenamento');
   await p.goto('http://localhost:8765/dist/gestao-rotina.html#tarefas'); await p.waitForTimeout(1200);
-  await p.click('[data-act=tkNew]'); await p.fill('.modal-wrap.open [name=title]', 'Tarefa na nuvem'); await p.fill('.modal-wrap.open [name=dueDate]', '2026-11-12'); await p.click('.modal-wrap.open [data-submit]');
+  await p.click('[data-act=tkNew]'); await p.fill('.modal-wrap.open [name=title]', 'Tarefa na nuvem'); await p.fill('.modal-wrap.open [name=dueDate]', '2030-11-12'); await p.click('.modal-wrap.open [data-submit]');
   await p.goto('http://localhost:8765/dist/gestao-rotina.html#agenda'); await p.waitForTimeout(1200);
   await useRoutine12(p); await p.waitForTimeout(300);
   await p.locator('.blk:not(.blk-it)').first().locator('[data-s=concluida]').click(); await p.waitForTimeout(1200);
   assert(store['data/users/u123/tasks'].items[0].title === 'Tarefa na nuvem', 'tarefa gravada no documento tasks');
-  assert(Object.keys(store).some(k => k.includes('/days-2026-11')), 'agenda do dia gravada no documento do mês');
+  assert(Object.keys(store).some(k => k.includes('/days-' + new Date().toLocaleDateString('sv').slice(0, 7))), 'agenda do dia gravada no documento do mês');
   // backup
   await p.goto('http://localhost:8765/dist/gestao-rotina.html#config'); await p.waitForTimeout(1200);
   await p.click('[data-act=dataExport]'); await p.waitForTimeout(400);
