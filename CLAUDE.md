@@ -72,6 +72,14 @@ e diga o que mudou e como testar no celular.
   lista do dia escolhido, arrastar para trocar de mês/semana, "Hoje". Reuniões têm cor própria (`--t-reuniao`).
 - **Intervalo de almoço**: `settings.breakMode` = flexivel (padrão; "+" → "Intervalo agora" na Agenda, empurra o resto) | fixo (bloco da rotina) | nenhum.
 - **Tarefas**: botões na linha (▶ começar, ✓ concluir, ✕ cancelar, ↶ reabrir; ⋯ só Editar e Excluir); não há seletor de status na lista.
+  A tela abre direto na lista: situações numa linha que rola para o lado (`.stat-chips`, `aria-pressed`), busca à vista (`.tk-busca`) e os demais filtros
+  atrás do botão **Filtros** (`tkFiltros`, `App.ui.taskFOpen`; no celular ficam escondidos, a não ser que algum esteja ligado; no computador sempre à vista).
+- **Revisão de design (v1.1.22, aprovada pelo usuário)**: semana do calendário começa no **domingo** (`Cal.inicioSemana`; `U.weekStart` continua segunda para dados antigos);
+  gravação com cor própria (`--t-gravacao`, verde-azulado) e gravação pronta/reunião registrada **sem risco** (`Cal.feito` → `ok`); "+" discreto (superfície, ícone roxo,
+  sem brilho) que sai da frente ao rolar para baixo (`body.fab-off`); toques de 44 px no celular; tema **"Sol forte"** (`settings.theme = 'sol'` → tema claro +
+  `data-contraste="alto"`); saudação por hora (`Views.dashboard.saudacao`: bom dia 5h–11h59, boa tarde 12h–17h59, boa noite 18h–4h59).
+  O usuário **recusou** trocar o Início por um resumo "agora/próximo" (o calendário do mês inteiro fica) e **recusou** os conceitos visuais novos (letreiro, painel de embarque, placa de obra): manter a identidade v2.
+  Testes: `tests/visual.test.js`.
 - **Nome do app: FlowFire** (tudo junto, na fonte arredondada Quicksand no menu), ícone em `icon.svg` (só as duas labaredas roxas da logo original, em vetor; o arco e a estrela foram retirados a pedido do usuário) e PNGs do Android em `res/mipmap-*` e `splash.png`.
   **Não renomear**: a pasta do Drive (`Drive.FOLDER = 'Gestão de Rotina'`, senão a sincronização perde o arquivo), a chave do LocalStorage, o pacote Android e o arquivo `GestaoRotina.apk` (o aviso de atualização das versões instaladas procura esse nome).
 - **Conta FlowFire / Firebase** (`js/fire.js`, `Fire`): login com Google (web: popup; Android: `GooglePlugin.autorizar` com escopos openid/email/profile → `signInWithCredential` com o access token) e sincronização ao vivo no Firestore em `canais/{oficial|teste}/usuarios/{uid}/docs/{id}` (JSON como texto em `v`; documentos por mês para agenda, reuniões, feedbacks e indicadores). SDK carregado sob demanda do gstatic. Regras em `firestore.rules` (cada um só os próprios documentos). Testes usam `window.__fireFake` (`tests/fire.test.js`). Projeto Firebase `gestao-de-rotina-514301` (o mesmo do Drive). As **equipes** na nuvem foram retiradas do app (as regras de `equipes` continuam em `firestore.rules`, sem uso).
@@ -110,6 +118,7 @@ caminho ajustado de `${CLAUDE_PLUGIN_ROOT}` para a raiz do projeto), `stop-slop`
 **As regras deste arquivo valem mais que as das skills**: identidade visual v2 (variáveis de `css/styles.css`, Geist/Bricolage), 393 px, app sem dependências,
 português simples, nada de fotos/efeitos pesados. As skills não entram no site nem no APK (o `pages.yml` e o `build.py` não copiam `.claude/`).
 Para atualizar: copiar de novo a pasta da skill do repositório original.
+Uso: digitar `/impeccable critique …`, `/ui-ux-pro-max …`, `/stop-slop …`. Críticas da impeccable ficam em `.impeccable/` (ignorado pelo Git).
 
 ## Testes (rodar antes de todo commit)
 ```bash
