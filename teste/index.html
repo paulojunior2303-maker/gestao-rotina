@@ -41,10 +41,10 @@
   --accent: #7b3fe4;
   --lilac: #a985f2;
   --link: #6224cf;
-  --green: #1d9a69;
+  --green: #157f56;
   --blue: #7b3fe4;
   --yellow: #c27d10;
-  --red: #d63a51;
+  --red: #c42d45;
   --gray: #8e87a3;
   --cy1: #6b2fd9; --cy2: #8b5cf0; --cy3: #a985f2; --cy4: #c6aff8;
   --t-evento: #a985f2; --t-tarefa: #6b2fd9; --t-projeto: #2f9f93; --t-imprevisto: #d63a51;
@@ -59,7 +59,7 @@
   --shadow: 0 1px 2px rgba(31, 18, 61, .05);
   --shadow-pop: 0 18px 50px rgba(23, 12, 46, .18);
   /* barra lateral e barra inferior: sempre escuras (identidade) */
-  --side-bg: #100d17; --side-text: #b8b0c8; --side-muted: #776f88; --side-line: rgba(255, 255, 255, .06);
+  --side-bg: #100d17; --side-text: #b8b0c8; --side-muted: #8f88a2; --side-line: rgba(255, 255, 255, .06);
   --side-active: rgba(148, 97, 245, .16); --side-hi: #d6c6ff;
 
   --font: "Geist", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
@@ -148,7 +148,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav a.active { background: var(--side-active); color: #fff; font-weight: 550; }
 .nav a.active .ic { color: var(--side-hi); }
 .nav a.active::before { content: ""; position: absolute; left: -12px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: #b28eff; }
-.nav-badge { margin-left: auto; background: #f0566a; color: #fff; font-size: 11px; font-weight: 650; border-radius: 99px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.nav-badge { margin-left: auto; background: #c42d45; color: #fff; font-size: 11px; font-weight: 650; border-radius: 99px; padding: 0 7px; line-height: 18px; font-variant-numeric: tabular-nums; }
 .sidebar-foot { padding: 14px 22px calc(16px + env(safe-area-inset-bottom)); font-size: 11.5px; color: var(--side-muted); border-top: 1px solid var(--side-line); }
 .dot-ok, .dot-err, .dot-wait { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #3dbe8b; margin-right: 6px; }
 .dot-err { background: #f0566a; }
@@ -163,9 +163,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .icon-btn.menu-btn { display: none; position: relative; }
 .bottom-nav { display: none; }
 /* Botão flutuante "+" (cria o item da tela atual) */
-.fab { position: fixed; right: 32px; bottom: 32px; z-index: 31; width: 58px; height: 58px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; color: #fff; background: linear-gradient(145deg, var(--accent), var(--primary)); box-shadow: 0 10px 26px rgba(91, 40, 200, .45), inset 0 1px 0 rgba(255, 255, 255, .2); transition: transform .18s var(--ease), box-shadow .2s; }
+/* O "+" é a ação secundária (o Gravar, no meio da barra, é a principal): superfície com ícone roxo, sem brilho colorido */
+.fab { position: fixed; right: 32px; bottom: 32px; z-index: 31; width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--border-strong); display: grid; place-items: center; cursor: pointer; color: var(--accent); background: var(--surface-3); box-shadow: 0 8px 18px rgba(0, 0, 0, .28); transition: transform .22s var(--ease), opacity .22s, box-shadow .2s; }
 .fab[hidden] { display: none; }
-.fab:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(91, 40, 200, .5), inset 0 1px 0 rgba(255, 255, 255, .2); }
+.fab:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0, 0, 0, .3); }
+body.fab-off .fab { transform: translateY(24px) scale(.7); opacity: 0; pointer-events: none; }
 .fab:active { transform: scale(.92); }
 .fab:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 3px; }
 body.menu-open .fab { display: none; }
@@ -182,8 +184,9 @@ body.canal-teste .topbar { box-shadow: inset 0 3px 0 #e3a043; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px 20px; box-shadow: var(--shadow); min-width: 0; }
 .card.flat { background: transparent; border: 0; border-top: 1px solid var(--border); border-radius: 0; box-shadow: none; padding: 18px 2px 0; }
 .card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-.card-h h3 { display: flex; align-items: center; gap: 9px; }
-.card-h h3 .ic { color: var(--accent); width: 17px; height: 17px; }
+.card-h h3, .card-h .h3 { display: flex; align-items: center; gap: 9px; }
+h2.h3 { font-size: 16px; }
+.card-h h3 .ic, .card-h .h3 .ic { color: var(--accent); width: 17px; height: 17px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .grid-2.tight { gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
@@ -212,7 +215,7 @@ body.canal-teste .topbar { box-shadow: inset 0 3px 0 #e3a043; }
 .chip.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
 .badge { display: inline-block; padding: 1px 8px; border-radius: 7px; font-size: 11px; font-weight: 600; background: var(--track); color: var(--text-2); white-space: nowrap; line-height: 18px; }
 .b-blue { background: var(--blue-bg); color: var(--blue-text); } .b-red { background: var(--red-bg); color: var(--red-text); } .b-green { background: var(--green-bg); color: var(--green-text); } .b-yellow { background: var(--yellow-bg); color: var(--yellow-text); }
-.demo-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .04em; color: #3b2508; background: #f2c77d; vertical-align: 1px; line-height: 16px; }
+.demo-badge { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #3b2508; background: #f2c77d; vertical-align: 1px; line-height: 16px; }
 .bar { height: 6px; background: var(--track); border-radius: 99px; overflow: hidden; flex: 1; }
 .bar span { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .5s var(--ease); }
 .alert { display: flex; align-items: center; gap: 9px; padding: 11px 14px; border-radius: 12px; font-size: 13.5px; flex-wrap: wrap; }
@@ -374,7 +377,7 @@ a.kpi[href]:hover, a.kpi[data-act]:hover { background: var(--hover); }
 .occ.closed { opacity: .7; }
 .occ.closed::before { background: var(--green); }
 .occ-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.occ-h h3 { font-size: 16px; }
+.occ-h h3, .occ-h .occ-t { font-size: 16px; }
 .occ-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); align-items: center; }
 .occ-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .occ-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
@@ -737,7 +740,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 }
 
 /* ---------- Aparência (tema) ---------- */
-.theme-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 560px; }
+.theme-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 720px; }
+@media (max-width: 640px) { .theme-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .theme-opt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 8px; border: 1.5px solid var(--border); border-radius: 14px; background: transparent; cursor: pointer; color: var(--text); transition: border-color .15s, box-shadow .15s; }
 .theme-opt small { color: var(--muted); font-size: 11.5px; text-align: center; }
 .theme-opt.on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
@@ -746,6 +750,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .theme-prev i:first-child { width: 58%; }
 .tp-claro { background: #f5f3f9; } .tp-claro i { background: #ddd5ea; } .tp-claro i:first-child { background: #6b2fd9; }
 .tp-escuro { background: #0e0c13; } .tp-escuro i { background: #2c2538; } .tp-escuro i:first-child { background: #9461f5; }
+.tp-sol { background: #ffffff; outline: 1px solid #8e83a6; } .tp-sol i { background: #bdb3cf; } .tp-sol i:first-child { background: #4a12b0; }
 .tp-auto { background: linear-gradient(135deg, #f5f3f9 50%, #0e0c13 50%); } .tp-auto i { background: #8e87a3; } .tp-auto i:first-child { background: #7b3fe4; }
 
 /* ---------- Transferência de dados ---------- */
@@ -855,7 +860,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-d:hover { border-color: var(--border-strong); }
 .calx-d:active { transform: scale(.97); }
 .calx-d.off { background: transparent; border-color: var(--line); }
-.calx-d.out { opacity: .32; }
+.calx-d.out { opacity: .45; }
 .calx-d.sel { border-color: var(--accent); background: var(--blue-bg); }
 .calx-n { font-family: var(--font-d); font-weight: 600; font-size: 13.5px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .calx-d.today .calx-n { background: var(--primary); color: #fff; }
@@ -880,7 +885,7 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 
 .calx-day { border-left: 1px solid var(--border); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
 .calx-day-h { display: flex; align-items: flex-end; gap: 8px; }
-.calx-day-h h3 { font-size: 21px; letter-spacing: -.02em; }
+.calx-day-h h2 { font-size: 21px; letter-spacing: -.02em; }
 .calx-day-h small { font-size: 12.5px; }
 .calx-list { display: flex; flex-direction: column; gap: 6px; }
 .calx-it { position: relative; display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 11px; background: var(--surface); border: 1px solid var(--line); cursor: pointer; transition: border-color .15s; }
@@ -970,8 +975,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   .calx-week .calx-d { min-height: 64px; }
   .calx-chips, .calx-ag { display: none; }
   .calx-dots { display: flex; }
-  .calx-legend { font-size: 11px; gap: 4px 10px; }
-  .calx-day-h h3 { font-size: 19px; }
+  .calx-legend { font-size: 12px; gap: 4px 10px; }
+  .calx-day-h h2 { font-size: 19px; }
   .mt-tabs { align-self: stretch; display: flex; }
   .mt-tabs .tab { flex: 1; justify-content: center; }
   .fb-people { grid-template-columns: minmax(0, 1fr); }
@@ -1016,7 +1021,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 /* Gravador */
 .ps-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .ps-head h2 { font-size: 21px; }
-:root { --t-gravacao: #f0566a; }
+:root { --t-gravacao: #2a8f84; }
+:root[data-theme="dark"] { --t-gravacao: #3fb5a8; }
 .calx-dots i.t-gravacao, i.t-gravacao, .legend i.t-gravacao { background: var(--t-gravacao); }
 .calx-chip.t-gravacao { border-color: var(--t-gravacao) !important; border-left-style: solid; }
 .calx-it.t-gravacao::before { background: var(--t-gravacao); }
@@ -1132,6 +1138,58 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .pd-add { align-self: flex-start; }
 .pd-colar { align-self: flex-start; }
 
+/* Revisão de design (skill impeccable): no celular, tudo que se toca tem pelo menos 44 px (uso com uma mão, na rua) */
+@media (max-width: 900px) {
+  .icon-btn { width: 44px; height: 44px; }
+  .btn.sm { min-height: 40px; padding: 7px 13px; font-size: 13px; }
+  .calx-legend i { width: 9px; height: 9px; }
+}
+
+/* Tarefas: busca + botão "Filtros"; no celular os filtros ficam escondidos até a pessoa abrir (ou se algum estiver ligado) */
+.tk-busca { display: flex; gap: 8px; align-items: center; }
+.tk-busca input[type=search] { flex: 1; min-width: 0; min-height: 44px; padding: 9px 13px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; }
+.tk-busca input[type=search]::placeholder { color: var(--muted); }
+.tk-busca input[type=search]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); outline: none; }
+.tk-fbtn { min-height: 44px; gap: 6px; flex-shrink: 0; }
+.tk-fbtn.on { border-color: var(--accent); color: var(--text); }
+.tk-fn { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px; background: var(--primary); color: #fff; font-size: 12px; }
+@media (min-width: 901px) { .tk-fbtn { display: none; } }
+@media (max-width: 900px) {
+  .tk-filtros:not(.aberto) { display: none; }
+  .stat-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 2px; }
+  .stat-chips::-webkit-scrollbar { display: none; }
+  .stat-chip { min-width: 0; flex-shrink: 0; flex-direction: row; align-items: baseline; gap: 6px; padding: 10px 14px; min-height: 44px; }
+  .stat-chip strong { font-size: 17px; }
+  .stat-chip span { font-size: 13px; }
+}
+
+/* Tema "Sol forte" (Configurações → Aparência): base clara, texto quase preto, bordas e cores secundárias mais escuras */
+:root[data-contraste="alto"] {
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #f1edf7; --surface-3: #e6dff1;
+  --border: #b9aecb; --line: #cfc6de; --border-strong: #7f7396; --input-border: #7f7396; --hover: #ece6f5; --track: #ddd5ea;
+  --text: #000000; --text-2: #1f1a29; --muted: #3f3850;
+  --primary: #4a12b0; --primary-2: #3d0d96; --accent: #5a1fd0; --lilac: #6c3fd6; --link: #3d0d96;
+  --green: #0b6b45; --yellow: #8a5400; --red: #b0122d; --gray: #4f4862;
+  --t-evento: #6c3fd6; --t-tarefa: #4a12b0; --t-imprevisto: #b0122d; --t-reuniao: #8a2bb0; --t-gravacao: #0b6b62;
+  --red-text: #8a0c22; --yellow-text: #6b4100; --green-text: #0b5236; --blue-text: #3d0d96;
+}
+:root[data-contraste="alto"] .card, :root[data-contraste="alto"] .task, :root[data-contraste="alto"] .blk { border-color: var(--border); }
+:root[data-contraste="alto"] body { font-weight: 450; }
+
+/* Polimento (skill impeccable): abas, "Ver o mês inteiro", atalhos das Configurações e links dentro de avisos com área de toque maior no celular */
+@media (max-width: 900px) {
+  .tab { min-height: 40px; }
+  .calx-exp { min-height: 44px; }
+  .cfg-nav a { padding: 10px 14px; }
+  .alert .link { display: inline-block; padding: 10px 4px; margin: -10px -4px; }
+  .btn:not(.sm) { min-height: 44px; }
+}
+
+/* Revisão ui-ux-pro-max: retorno visual ao tocar nas linhas da lista e foco nunca escondido atrás da barra de baixo */
+.calx-it:active, .blk-it:active, .task .tk-body:active, .tab:active, .gv-card:active { opacity: .72; }
+.calx-it, .blk-it, .task .tk-body, .tab { transition: opacity .12s, border-color .15s, background .15s; }
+@media (max-width: 900px) { html { scroll-padding-bottom: 120px; } }
+
 </style>
 </head>
 <body>
@@ -1211,6 +1269,7 @@ const U = (() => {
 
   const ICONS = {
     dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
     week: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13v5M12 13v5M16 13v5"/>',
@@ -1481,7 +1540,7 @@ const Store = {
     S.tasks.push(
       tk('Revisar pendências da semana', 'pendencias', 'alta', 'pendente', U.addDays(t, 1)),
       tk('Conferir estoque de materiais', 'administrativo', 'media', 'andamento', U.addDays(t, 4)),
-      tk('Enviar relatório semanal', 'indicadores', 'urgente', 'pendente', U.addDays(t, -1)),
+      tk('Enviar relatório semanal', 'administrativo', 'urgente', 'pendente', U.addDays(t, -1)),
       tk('Agendar treinamento da equipe', 'equipe', 'baixa', 'concluida', U.addDays(t, -2)),
     );
     const t1 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo A' }, t2 = { id: U.uid(), demo: true, name: 'Colaborador Exemplo B' };
@@ -3336,7 +3395,9 @@ Object.assign(Actions, {
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
   TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', imprevisto: 'Imprevisto' },
-  WD: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+  /* Gravação pronta e reunião registrada deram certo: não aparecem riscadas (riscado = concluído/cancelado) */
+  feito(i) { return i.done ? (i.type === 'gravacao' || i.type === 'reuniao' ? 'ok' : 'done') : ''; },
+  WD: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
 
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
   itemsOn(k) {
@@ -3359,16 +3420,17 @@ const Cal = {
     const r = this.range(s);
     if (k < r.cells[0] || k > r.cells[r.cells.length - 1] || (s.mode === 'month' && U.monthKey(k) !== r.mk)) s.anchor = k;
   },
-  mondayOf(k) { return U.weekStart(k); },
+  /* A semana do calendário começa no domingo (pedido do usuário) */
+  inicioSemana(k) { return U.addDays(k, -U.weekday(k)); },
   range(s) {
-    if (s.mode === 'week') { const a = this.mondayOf(s.anchor); return { from: a, to: U.addDays(a, 6), cells: [0, 1, 2, 3, 4, 5, 6].map(i => U.addDays(a, i)) }; }
+    if (s.mode === 'week') { const a = this.inicioSemana(s.anchor); return { from: a, to: U.addDays(a, 6), cells: [0, 1, 2, 3, 4, 5, 6].map(i => U.addDays(a, i)) }; }
     const mk = U.monthKey(s.anchor), first = U.monthStart(mk), last = U.monthEnd(mk);
-    const cells = []; for (let k = this.mondayOf(first); cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length % 7 === 0 && k >= last) break; }
+    const cells = []; for (let k = this.inicioSemana(first); cells.length < 42; k = U.addDays(k, 1)) { cells.push(k); if (cells.length % 7 === 0 && k >= last) break; }
     return { from: first, to: last, cells, mk };
   },
   title(s) {
     if (s.mode === 'month') return U.fmtMonth(U.monthKey(s.anchor));
-    const a = this.mondayOf(s.anchor), z = U.addDays(a, 6), da = U.parse(a), dz = U.parse(z);
+    const a = this.inicioSemana(s.anchor), z = U.addDays(a, 6), da = U.parse(a), dz = U.parse(z);
     return da.getMonth() === dz.getMonth() ? `${da.getDate()} a ${dz.getDate()} de ${U.MONTHS[dz.getMonth()].toLowerCase()}` : `${da.getDate()}/${U.pad(da.getMonth() + 1)} a ${dz.getDate()}/${U.pad(dz.getMonth() + 1)}`;
   },
 
@@ -3383,7 +3445,7 @@ const Cal = {
       const max = s.mode === 'week' ? 5 : 3;
       return `<button class="${cls}" data-act="calSel" data-cal="${id}" data-k="${k}" aria-label="${U.fmtLong(k)}${items.length ? `, ${U.plural(items.length, 'item', 'itens')}` : ''}" ${k === s.sel ? 'aria-pressed="true"' : ''}>
         <span class="calx-n">${U.parse(k).getDate()}</span>
-        ${inMonth && items.length ? `<span class="calx-chips">${items.slice(0, max).map(i => `<span class="calx-chip t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}">${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span>`).join('')}${items.length > max ? `<span class="calx-more">+${items.length - max}</span>` : ''}</span>
+        ${inMonth && items.length ? `<span class="calx-chips">${items.slice(0, max).map(i => `<span class="calx-chip t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}">${i.time ? `<b>${i.time}</b> ` : ''}${U.esc(i.label)}</span>`).join('')}${items.length > max ? `<span class="calx-more">+${items.length - max}</span>` : ''}</span>
         <span class="calx-dots">${items.slice(0, 4).map(i => `<i class="t-${i.type} ${i.late ? 'late' : ''}"></i>`).join('')}${items.length > 4 ? '<i class="more"></i>' : ''}</span>` : ''}
         ${inMonth && ag && ag.total && s.mode === 'week' ? `<span class="calx-ag" title="Agenda do dia">${ag.pct}%</span>` : ''}
       </button>`;
@@ -3397,7 +3459,7 @@ const Cal = {
         </div>
         <span class="grow"></span>
         ${showsToday && s.sel === t ? '' : `<button class="btn sm ghost" data-act="calToday" data-cal="${id}">Hoje</button>`}
-        ${id === 'agenda' ? '' : `<div class="tabs calx-mode" role="tablist"><button class="tab ${s.mode === 'week' ? 'active' : ''}" data-act="calMode" data-cal="${id}" data-v="week">Semana</button><button class="tab ${s.mode === 'month' ? 'active' : ''}" data-act="calMode" data-cal="${id}" data-v="month">Mês</button></div>`}
+        ${id === 'agenda' ? '' : `<div class="tabs calx-mode" role="tablist"><button class="tab ${s.mode === 'week' ? 'active' : ''}" role="tab" aria-selected="${s.mode === 'week'}" data-act="calMode" data-cal="${id}" data-v="week">Semana</button><button class="tab ${s.mode === 'month' ? 'active' : ''}" role="tab" aria-selected="${s.mode === 'month'}" data-act="calMode" data-cal="${id}" data-v="month">Mês</button></div>`}
       </div>
       <div class="calx-wd">${this.WD.map(d => `<span>${d}</span>`).join('')}</div>
       <div class="calx-grid" data-swipe="${id}">${r.cells.map(cell).join('')}</div>
@@ -3415,9 +3477,9 @@ const Cal = {
     const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : wd;
     return `<div class="calx-day">
       <div class="calx-day-h">
-        <div><small class="muted">${when}</small><h3>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h3></div>
+        <div><small class="muted">${when}</small><h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2></div>
       </div>
-      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${i.done ? 'done' : ''} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}</span>
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${i.sub ? i.sub : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}`}</small></span>
           ${U.icon('right', 15)}</div>`).join('')}</div>`
@@ -3442,7 +3504,7 @@ Object.assign(Actions, {
   calNav({ cal, n }) {
     const s = Cal.st(cal), t = U.today();
     if (s.mode === 'week') {
-      s.anchor = U.addDays(Cal.mondayOf(s.anchor), Number(n) * 7);
+      s.anchor = U.addDays(Cal.inicioSemana(s.anchor), Number(n) * 7);
       // Na Agenda, mantém o mesmo dia da semana (ou hoje, se a semana for a atual)
       const r = Cal.range(s);
       s.sel = t >= r.from && t <= r.to ? t : cal === 'agenda' ? U.addDays(s.sel, Number(n) * 7) : r.from;
@@ -3497,9 +3559,11 @@ Views.dashboard = {
   title: 'Início', icon: 'dashboard', nav: 'Início',
   fab: () => ({ act: 'quickAdd', label: 'Adicionar', data: { k: Cal.st('home').sel, from: 'home' } }),
   /* Topo da tela inicial: saudação e data no lugar do título (o relógio fica à direita) */
+  /* Bom dia das 5h às 11h59, boa tarde do meio-dia às 17h59 e boa noite das 18h às 4h59 (madrugada é noite) */
+  saudacao(h = new Date().getHours()) { return h >= 5 && h < 12 ? 'Bom dia' : h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite'; },
   hero() {
-    const h = new Date().getHours(), t = U.today(), d = U.parse(t);
-    const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    const t = U.today(), d = U.parse(t);
+    const greet = this.saudacao();
     const eu = (S.settings.usuario || '').trim().split(' ')[0];
     return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
   },
@@ -3517,7 +3581,7 @@ Views.dashboard = {
     </button>
     ${!rec && D.isWorkday(U.today()) && U.nowMin() >= U.toMin(S.settings.workEnd) - 90 && !Gravador.list().some(g => g.tipo === 'relatorio' && g.date === U.today())
       ? `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fim do expediente: fale o que fez e o que vem amanhã.</small></span>${U.icon('right', 16)}</button>` : ''}
-    ${atencao.length ? `<div class="card gv-att"><div class="card-h"><h3>${U.icon('mic')} Gravações para ver</h3><a class="link" href="#gravacoes">Todas</a></div>
+    ${atencao.length ? `<div class="card gv-att"><div class="card-h"><h2 class="h3">${U.icon('mic')} Gravações para ver</h2><a class="link" href="#gravacoes">Todas</a></div>
       ${atencao.map(g => `<button class="gv-att-it" data-act="gvOpen" data-id="${g.id}"><span><strong>${U.esc(Gravador.nome(g))}</strong><small>${U.fmtShort(g.date)} ${g.time} · ${Gravador.fmt(g.dur)}</small></span>${!g.tipo ? '<span class="badge b-blue">Descrever</span>' : Views.gravacoes.chip(g)}</button>`).join('')}</div>` : ''}
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>`;
   },
@@ -3574,10 +3638,10 @@ Views.agenda = {
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
-    const item = i => `<div class="blk blk-it ${i.done ? 'st-concluida' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
-          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
+          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : i.type === 'gravacao' ? ' · pronta' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
         <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
     const list = [
       ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
@@ -3825,13 +3889,13 @@ Views.imprevistos = {
     const nOpen = all.filter(o => OPEN(o.status)).length;
     const tk = U.today();
     const nToday = all.filter(o => o.date === tk).length, minToday = Capture.minutesOn(tk);
-    const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
+    const tab = (v, l, n) => `<button class="tab ${f === v ? 'active' : ''}" aria-pressed="${f === v}" data-act="occFilter" data-v="${v}">${l} <span>${n}</span></button>`;
 
     const card = o => {
       const dl = D.deadline(o.dueDate, o.dueTime, !OPEN(o.status));
       const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
       return `<div class="occ card prio-border-${o.priority} ${D.occLate(o) ? 'late' : ''} ${OPEN(o.status) ? '' : 'closed'}">
-        <div class="occ-h"><h3>${U.esc(o.title)}</h3>${H.demo(o)}<span class="grow"></span>${H.prio(o.priority)} ${H.status(o.status)}</div>
+        <div class="occ-h"><h2 class="occ-t">${U.esc(o.title)}</h2>${H.demo(o)}<span class="grow"></span>${H.prio(o.priority)} ${H.status(o.status)}</div>
         <div class="occ-meta">
           <span>${U.icon('clock', 14)} Registrado ${U.fmtDate(o.date)} ${o.time || ''}</span>
           ${o.responsible ? `<span>${U.icon('user', 14)} ${U.esc(o.responsible)}</span>` : ''}
@@ -3847,8 +3911,8 @@ Views.imprevistos = {
           <button class="btn sm ghost ok-text" data-act="occStatus" data-id="${o.id}" data-s="concluida">${U.icon('check', 15)} Resolver</button>`
           : `<button class="btn sm ghost" data-act="occStatus" data-id="${o.id}" data-s="pendente">${U.icon('undo', 15)} Reabrir</button>`}
           <span class="grow"></span>
-          <button class="icon-btn" data-act="occEdit" data-id="${o.id}" title="Editar">${U.icon('edit', 16)}</button>
-          <button class="icon-btn" data-act="occDelete" data-id="${o.id}" title="Excluir">${U.icon('trash', 16)}</button>
+          <button class="icon-btn" data-act="occEdit" data-id="${o.id}" title="Editar" aria-label="Editar imprevisto">${U.icon('edit', 16)}</button>
+          <button class="icon-btn" data-act="occDelete" data-id="${o.id}" title="Excluir" aria-label="Excluir imprevisto">${U.icon('trash', 16)}</button>
         </div>
       </div>`;
     };
@@ -5024,7 +5088,7 @@ Views.tarefas = {
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
-    const t = U.today(), ws = U.weekStart(t), we = U.addDays(ws, 6);
+    const t = U.today(), ws = Cal.inicioSemana(t), we = U.addDays(ws, 6);
     const all = S.tasks;
     const counts = {
       abertas: all.filter(x => OPEN(x.status)).length,
@@ -5050,9 +5114,10 @@ Views.tarefas = {
     });
     list.sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.taskLate(b) - D.taskLate(a)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
 
-    const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
+    const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" aria-pressed="${f.status === k}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
     const sel = (name, opts, label) => `<select data-change="tkFilter" data-k="${name}" aria-label="${label}"><option value="">${label}</option>${UI.opts(opts, f[name])}</select>`;
     const filtersOn = f.priority || f.category || f.period || f.from || f.to || f.q;
+    const nFiltros = [f.priority, f.category, f.period, f.from || f.to].filter(Boolean).length;
 
     const row = x => {
       const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
@@ -5082,8 +5147,11 @@ Views.tarefas = {
     <div class="toolbar">
       <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
-    <div class="filters card">
-      <input type="search" placeholder="Buscar tarefa, descrição ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+    <div class="tk-busca">
+      <input type="search" placeholder="Buscar tarefa ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      <button class="btn ghost tk-fbtn ${App.ui.taskFOpen ? 'on' : ''}" data-act="tkFiltros" aria-expanded="${App.ui.taskFOpen || nFiltros ? 'true' : 'false'}">${U.icon('filter', 16)} Filtros${nFiltros ? ` <b class="tk-fn">${nFiltros}</b>` : ''}</button>
+    </div>
+    <div class="filters card tk-filtros ${App.ui.taskFOpen || nFiltros ? 'aberto' : ''}">
       ${sel('category', H.catOptions(), 'Todas as categorias')}
       ${sel('priority', H.prioOptions(), 'Todas as prioridades')}
       ${sel('period', [['hoje', 'Prazo hoje'], ['semana', 'Prazo nesta semana'], ['proximos', 'Próximos 7 dias'], ['semprazo', 'Sem prazo']], 'Qualquer prazo')}
@@ -5091,7 +5159,7 @@ Views.tarefas = {
       <label class="inline">Até <input type="date" value="${f.to}" data-change="tkFilter" data-k="to"></label>
       ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
     </div>
-    <p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>
+    ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
     <div class="task-list">${list.length ? list.map(row).join('') : H.empty(all.length ? 'Nenhuma tarefa com esses filtros.' : 'Nenhuma tarefa cadastrada ainda.', all.length ? '' : '<button class="btn sm primary" data-act="tkNew">Criar primeira tarefa</button>')}</div>`;
   },
 };
@@ -5195,6 +5263,7 @@ Object.assign(Actions, {
   tkStatusF({ v }) { App.ui.taskF.status = v; App.render(); },
   tkFilter({ k }, el) { App.ui.taskF[k] = el.value; App.render(); },
   tkSearch(_, el) { App.ui.taskF.q = el.value; App.render({ keepFocus: true }); },
+  tkFiltros() { App.ui.taskFOpen = !App.ui.taskFOpen; App.render(); },
   tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });
 
@@ -5227,6 +5296,7 @@ Views.config = {
         ['escuro', 'Escuro', 'Grafite e roxo'],
         ['claro', 'Claro', 'Fundo claro'],
         ['auto', 'Automático', 'Segue o aparelho'],
+        ['sol', 'Sol forte', 'Contraste alto, para a rua'],
       ].map(([v, l, d]) => `<button class="theme-opt ${(st.theme || 'escuro') === v ? 'on' : ''}" role="radio" aria-checked="${(st.theme || 'escuro') === v}" data-act="themeSet" data-v="${v}">
           <span class="theme-prev tp-${v}"><i></i><i></i><i></i></span><strong>${l}</strong><small>${d}</small></button>`).join('')}</div>
       <label class="field cfg-empresa"><span class="lbl">Nome da empresa ou equipe <small class="muted">(opcional, aparece no menu)</small></span><input type="text" value="${U.esc(st.empresa || '')}" placeholder="Ex.: Equipe de manutenção" data-change="cfgEmpresa" maxlength="40"></label>`)}
@@ -5254,7 +5324,7 @@ Views.config = {
         <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
         <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
         <li>Copie a chave e cole no campo acima.</li></ol></details>
-      <p class="muted small mt">A chave fica guardada nos seus dados (e nos backups). Nada é enviado para a IA sem você tocar em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para melhorar os modelos; ative o faturamento no AI Studio para evitar isso.</p>`)}
+      <p class="muted small mt">A chave fica guardada nos seus dados e nos backups. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
@@ -5419,7 +5489,7 @@ Object.assign(Actions, {
   cfgUsuario(_, el) { S.settings.usuario = el.value.trim().replace(/\s+/g, ' '); commit(); UI.toast(S.settings.usuario ? `Pronto, ${S.settings.usuario.split(' ')[0]}! Seu nome vai nos relatórios e atas.` : 'Nome apagado.'); },
   cfgEmpresa(_, el) { S.settings.empresa = el.value.trim(); commit(); },
   cfgMetricName({ k }, el) { S.settings.metricNames = { ...(S.settings.metricNames || {}), [k]: el.value.trim() }; commit(); UI.toast('Nome do indicador atualizado.'); },
-  themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : 'Modo claro ativado.'); },
+  themeSet({ v }) { S.settings.theme = v; commit(); UI.toast(v === 'escuro' ? 'Modo escuro ativado.' : v === 'auto' ? 'O tema agora segue o aparelho.' : v === 'sol' ? 'Sol forte ativado: cores mais fortes para ler na rua.' : 'Modo claro ativado.'); },
   xferOut() { Transfer.openExport(); },
   xferIn() { Transfer.openImport(); },
   demoLoad() { Store.loadDemo(); commit(); UI.toast('Dados de demonstração carregados (marcados como EXEMPLO).'); },
@@ -5454,30 +5524,44 @@ Views.guia = {
   renderEnxuto() {
     const sec = (id, icon, title, html, open) => `<details class="guide-sec card" ${open ? 'open' : ''} id="g-${id}"><summary>${U.icon(icon)}<span>${title}</span>${U.icon('right', 16)}</summary><div class="guide-body">${html}</div></details>`;
     const li = arr => `<ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul>`;
-    return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Calendário do mês e um botão para gravar reuniões e feedbacks. Só isso, bem feito.</p></div></div>
+    return `<div class="card guide-hero"><div><h2>${CANAL_ENXUTO ? 'FlowFire Enxuto' : 'FlowFire'}</h2><p class="muted">Você grava ou cola o que aconteceu, e o app põe na agenda: tarefas, compromissos e imprevistos do seu dia.</p></div></div>
     ${sec('gravar', 'mic', 'Gravar uma reunião ou feedback', li([
-      'Toque em <strong>Gravar</strong> (no meio da barra de baixo) e escolha: <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora: não precisa criar a reunião antes.',
-      'Pode deixar o celular na mesa: a tela fica acesa. Dá para gravar <strong>horas</strong>.',
-      'Quer usar o app enquanto grava? Toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar.',
-      '<strong>Áudio ou texto</strong> (no Gravar): envie um ou vários áudios (por exemplo, do WhatsApp) e/ou cole um texto. A IA transcreve, faz o resumo e mostra o que pode ir para a agenda; você confere e toca em <strong>Anotar no app</strong>. No app instalado dá para mandar direto do WhatsApp: selecione os áudios → <strong>Compartilhar</strong> → <strong>FlowFire</strong>.',
-      'No fim, toque em <strong>Encerrar gravação</strong> e complete os detalhes: o assunto da reunião ou com quem foi o feedback. Pode deixar para depois.',
+      'Toque em <strong>Gravar</strong>, no meio da barra de baixo, e escolha <strong>Reunião</strong>, <strong>Feedback</strong> ou <strong>Relatório do dia</strong>. A gravação começa na hora, sem você criar a reunião antes.',
+      'Pode deixar o celular na mesa. A tela fica acesa e você grava por horas.',
+      'Para usar o app enquanto grava, toque em <strong>Continuar gravando e usar o app</strong>. A barra vermelha mostra o tempo; toque nela para voltar à gravação.',
+      'No fim, toque em <strong>Encerrar gravação</strong> e diga o assunto da reunião ou com quem foi o feedback. Se estiver com pressa, complete depois.',
     ]), true)}
-    ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
-      'A gravação é dividida em <strong>partes de 10 minutos</strong>. Cada parte é transcrita assim que fecha, mesmo com a gravação ainda rolando.',
-      'Quando todas as partes estão prontas, a IA faz o <strong>resumo</strong> (ata da reunião ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>, que viram tarefas com um toque.',
-      'Precisa da chave da IA em <strong>Configurações → IA</strong>. Sem ela, as gravações ficam guardadas esperando.',
-      'Diga ao app <strong>o seu nome</strong> (no Calendário, na primeira vez, ou em <strong>Configurações → Você</strong>). Ele entra no cabeçalho do relatório e nas atas, e o que você disser que vai fazer ("eu vou…") entra na <strong>sua agenda</strong>; o que for de outra pessoa da equipe vai com ela de responsável.',
+    ${sec('audio', 'upload', 'Áudio ou texto do WhatsApp', li([
+      'Em <strong>Gravar → Áudio ou texto</strong>, escolha um ou vários áudios, cole um texto, ou os dois.',
+      'A IA transcreve, resume e separa o que é tarefa, compromisso ou imprevisto. Você confere e toca em <strong>Anotar no app</strong>.',
+      'No app instalado, você manda direto do WhatsApp: segure o áudio, toque em <strong>Compartilhar</strong> e escolha <strong>FlowFire</strong>.',
     ]))}
-    ${sec('seguro', 'check', 'O áudio nunca se perde', li([
-      'O áudio vai para o celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, ao abrir de novo a gravação é <strong>recuperada</strong>.',
-      'Sem internet? As partes esperam e são transcritas <strong>sozinhas</strong> quando a conexão voltar.',
-      'O áudio fica guardado até você apagar (em Gravações → abra a gravação → <strong>Apagar o áudio</strong>). A transcrição e o resumo continuam.',
-      'Dá para ouvir e baixar cada parte do áudio.',
+    ${sec('transcricao', 'spark', 'Transcrição e resumo', li([
+      'O app corta a gravação em <strong>partes de 10 minutos</strong> e transcreve cada parte assim que ela fecha.',
+      'Com todas as partes prontas, a IA escreve o <strong>resumo</strong> (ata ou registro do feedback, no padrão do seu agente) e lista os <strong>combinados</strong>. Um toque transforma cada combinado em tarefa.',
+      'A IA precisa da sua chave em <strong>Configurações → IA</strong>. Enquanto você não cadastra, o app guarda as gravações.',
+      'Cadastre <strong>o seu nome</strong> em <strong>Configurações → Você</strong>. Quando você disser "eu vou…", o item entra na <strong>sua agenda</strong>; quando falar de alguém da equipe, o item vai com essa pessoa de responsável.',
+    ]))}
+    ${sec('seguro', 'check', 'Se o app fechar no meio', li([
+      'O app salva o áudio no celular a cada 5 segundos. Se o app fechar, a bateria acabar ou o celular travar, você abre o app de novo e recupera a gravação.',
+      'Sem internet, o app guarda as partes e transcreve quando a conexão voltar.',
+      'O áudio fica no celular até você apagar: abra a gravação e toque em <strong>Apagar o áudio</strong>. O resumo e a transcrição continuam.',
+      'Você pode ouvir e baixar cada parte.',
     ]))}
     ${sec('calendario', 'calendar', 'Calendário', li([
-      'O mês inteiro na tela inicial. Toque num dia para ver o que tem nele: gravações, reuniões, compromissos e prazos.',
-      'O <strong>+</strong> adiciona tarefa, compromisso ou atividade no dia escolhido.',
-      CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para os dados irem para a nuvem. O áudio e a transcrição completa ficam no aparelho.',
+      'A tela inicial mostra o mês inteiro. Toque num dia para ver gravações, reuniões, compromissos e prazos.',
+      'O <strong>+</strong> anota uma tarefa, um compromisso ou uma atividade no dia que você escolheu.',
+      CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para guardar os dados na nuvem. O áudio e a transcrição completa ficam no aparelho.',
+    ]))}
+    ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
+      'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário.',
+      'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
+      'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
+    ]))}
+    ${sec('tarefas', 'tasks', 'Tarefas', li([
+      'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
+      'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
+      'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
     ]))}`;
   },
   render() { return this.renderEnxuto(); },
@@ -5901,11 +5985,12 @@ const App = {
       : Cloud.state === 'on' ? '<span class="dot-ok"></span> Dados salvos na sua conta (privados)'
       : Cloud.state === 'connecting' ? '<span class="dot-wait"></span> Conectando…'
       : Store.persistent ? `<span class="dot-ok"></span> Dados salvos neste ${Native.available() ? 'aparelho' : 'navegador'}`
-      : '<span class="dot-err"></span> Armazenamento indisponível — os dados serão perdidos ao fechar';
+      : '<span class="dot-err"></span> Sem onde salvar: você perde os dados ao fechar';
   },
 
   render(opts = {}) {
     Theme.apply();
+    if (opts.resetScroll) document.body.classList.remove('fab-off');
     const view = Views[this.route];
     const root = document.getElementById('view');
     let focus = null;
@@ -5920,8 +6005,8 @@ const App = {
     if (opts.resetScroll) { root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); }
     document.title = `${view.title} · FlowFire${CANAL_ENXUTO ? ' Enxuto' : ''}${CANAL_TESTE ? ' (TESTE)' : ''}`;
     const demo = Store.hasDemo() ? `<div class="alert a-yellow demo-banner">${U.icon('info')} <span>Há <strong>dados de demonstração</strong> carregados (marcados como EXEMPLO). Eles não representam sua operação.</span> <button class="btn sm ghost" data-act="demoRemove">Remover</button></div>` : '';
-    const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>Não foi possível conectar à sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'As alterações não serão preservadas.'} Recarregue a página para tentar de novo.</span></div>`
-      : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para que os dados fiquem salvos.' : 'Abra o aplicativo em um navegador comum (Chrome, Edge, Firefox, Safari).'} Use Configurações → Exportar backup para não perder informações.</span></div>`;
+    const warn = Cloud.state === 'error' ? `<div class="alert a-red">${U.icon('alert')} <span>O app não conseguiu entrar na sua conta para salvar os dados. ${Store.persistent ? 'Por enquanto eles ficam só neste navegador.' : 'Você perde o que mudar até conseguir.'} Recarregue a página para tentar de novo.</span></div>`
+      : Store.isPersistent() ? '' : `<div class="alert a-red">${U.icon('alert')} <span>Não há onde salvar os dados nesta visualização. ${Cloud.available() ? 'Entre na sua conta Claude para guardar os dados.' : 'Abra o app num navegador comum (Chrome, Edge, Firefox, Safari).'} Enquanto isso, faça um backup em Configurações → Exportar backup.</span></div>`;
     try {
       root.innerHTML = warn + Drive.banner() + demo + Gravador.barHtml() + view.render(this.params);
       if (view.mount) view.mount(root);
@@ -5950,6 +6035,15 @@ const App = {
     }
     this.parseHash();
     window.addEventListener('hashchange', () => { this.parseHash(); this.closeMenu(); this.render({ resetScroll: true }); });
+    // O "+" sai da frente enquanto a pessoa rola para baixo (não cobre os botões da lista);
+    // volta ao rolar para cima, no fim da página ou ao trocar de tela
+    let lastY = 0;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY, fim = y + innerHeight >= document.documentElement.scrollHeight - 40;
+      if (y > lastY + 4 && y > 60 && !fim) document.body.classList.add('fab-off');
+      else if (y < lastY - 4 || fim || y <= 60) document.body.classList.remove('fab-off');
+      lastY = y;
+    }, { passive: true });
     // Tocar de novo na tela atual (menu ou barra de baixo) volta para a lista dela
     document.addEventListener('click', e => {
       const l = e.target.closest && e.target.closest('#nav a, #bottom-nav a');
@@ -6038,8 +6132,11 @@ const Theme = {
   apply() {
     const t = this.current();
     if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
+    // "Sol forte": tema claro com contraste alto, para ler na rua (pedido do usuário)
+    const sol = ((S && S.settings && S.settings.theme) || '') === 'sol';
+    if ((document.documentElement.dataset.contraste === 'alto') !== sol) { if (sol) document.documentElement.dataset.contraste = 'alto'; else delete document.documentElement.dataset.contraste; }
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : '#f5f3f9');
+    if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : sol ? '#ffffff' : '#f5f3f9');
   },
   init() {
     this.apply();
