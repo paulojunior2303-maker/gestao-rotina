@@ -1190,6 +1190,23 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-it, .blk-it, .task .tk-body, .tab { transition: opacity .12s, border-color .15s, background .15s; }
 @media (max-width: 900px) { html { scroll-padding-bottom: 120px; } }
 
+/* Tarefa = uma coisa só (Tarefas + Agenda): fim do horário embaixo do início e ✓ direto no calendário */
+.calx-it-time { display: flex; flex-direction: column; line-height: 1.25; }
+.calx-it-time small { font-weight: 500; color: var(--muted); font-size: 11.5px; }
+.calx-it .icon-btn { flex: none; margin: -6px -6px -6px 0; }
+.cap-nodate { margin: 2px 0 0; }
+.ag-head .ag-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+/* Formulário de tarefa enxuto: dois campos por linha também no celular */
+.form-grid:has(.tk-form-dica) { grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+.tk-form-dica { margin: 0; }
+/* Anotação rápida: campos lado a lado (horário + duração, prioridade + repetir) */
+.cap-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cap-2 > label { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cap-2 .cap-in, .cap-sel { width: 100%; min-width: 0; }
+.cap-sel { min-height: 44px; padding: 9px 11px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; }
+.cap-sel:disabled { opacity: .5; }
+.cap-obs { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; resize: vertical; }
+
 </style>
 </head>
 <body>
@@ -2665,7 +2682,7 @@ Responda em JSON com:
   itensNorm(lista, eu = this.usuario()) {
     const ok = (re, v) => re.test(String(v || '')) ? String(v) : '';
     return (lista || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
-      id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
+      id: U.uid(), tipo: i.tipo !== 'agenda' && this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),   // "agenda" virou tarefa com horário
       data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
       responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma|voce|você)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(),
       situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',
@@ -3394,18 +3411,26 @@ Object.assign(Actions, {
    e a lista do dia escolhido embaixo. Encolhe para uma semana, arrasta para trocar de mês/semana e tem "Hoje".
    Na Agenda começa na semana; "Ver mês" abre o mês inteiro. O dia escolhido é o dia da agenda. */
 const Cal = {
-  TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Prazo de tarefa', imprevisto: 'Imprevisto' },
+  TYPES: { gravacao: 'Gravação', reuniao: 'Reunião', evento: 'Compromisso', tarefa: 'Tarefa', imprevisto: 'Imprevisto' },
   /* Gravação pronta e reunião registrada deram certo: não aparecem riscadas (riscado = concluído/cancelado) */
   feito(i) { return i.done ? (i.type === 'gravacao' || i.type === 'reuniao' ? 'ok' : 'done') : ''; },
   WD: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
 
-  /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda) */
+  /* Fim de uma tarefa com horário e duração ("14:00" + 30 min → "14:30") */
+  fimTarefa(x) { return x.dueTime && x.dur ? U.fromMin(Math.min(1439, U.toMin(x.dueTime) + Number(x.dur))) : ''; },
+  /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda).
+     Hoje também mostra as tarefas abertas sem data e as atrasadas, para nada ficar esquecido fora do calendário. */
   itemsOn(k) {
     const out = [];
     // Gravações (reunião/feedback gravado): a reunião ligada a ela não aparece de novo
     (S.gravacoes || []).filter(g => g.date === k).forEach(g => out.push({ type: 'gravacao', label: Gravador.nome(g), time: g.time, id: g.id, done: g.status === 'pronta', act: 'gvOpen', sub: g.status === 'pronta' ? (g.tipo === 'feedback' ? 'Feedback · resumo pronto' : g.tipo === 'relatorio' ? 'Relatório do dia · pronto' : g.tipo === 'audio' ? (g.origem === 'texto' ? 'Mensagem recebida · analisada' : 'Áudio recebido · transcrito') : 'Reunião · resumo pronto') : g.status === 'gravando' ? 'Gravando agora' : 'Gravação · transcrevendo' }));
     S.events.filter(e => e.date === k && !e.gravacaoId).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
-    S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => out.push({ type: 'tarefa', label: x.title, time: x.dueTime, done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit' }));
+    const tk = (x, extra) => out.push({ type: 'tarefa', label: x.title, time: extra ? '' : x.dueTime, end: extra ? '' : this.fimTarefa(x), done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit', task: true, who: x.responsible || '', ...extra });
+    S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => tk(x));
+    if (k === U.today()) {
+      S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueDate < k).forEach(x => tk(x, { semData: 'atrasada', era: U.fmtShort(x.dueDate), sub: `Tarefa atrasada · era para ${U.fmtShort(x.dueDate)}` }));
+      S.tasks.filter(x => OPEN(x.status) && !x.dueDate).forEach(x => tk(x, { semData: 'sem', sub: 'Tarefa sem data' }));
+    }
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
     return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
   },
@@ -3468,6 +3493,19 @@ const Cal = {
     </div>`;
   },
 
+  /* Linha de baixo de um item (tipo, situação e responsável). Na Agenda, gravação mostra só "Gravação · pronta" */
+  sub(i, agenda) {
+    const base = i.sub && (!agenda || i.semData) ? (i.late && i.semData === 'atrasada' ? `<span class="c-red">${i.sub}</span>` : i.sub)
+      : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : i.type === 'gravacao' ? ' · pronta' : ' · concluída') : i.late ? ' · <span class="c-red">atrasada</span>' : ''}`;
+    return base + (i.who ? ` · ${U.esc(i.who)}` : '');
+  },
+  /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
+  check(i) {
+    return i.done
+      ? `<button class="icon-btn" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('undo', 16)}</button>`
+      : `<button class="icon-btn ok" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa">${U.icon('check', 16)}</button>`;
+  },
+
   /* Lista do dia escolhido */
   day(id) {
     const s = this.st(id), k = s.sel, t = U.today();
@@ -3480,9 +3518,9 @@ const Cal = {
         <div><small class="muted">${when}</small><h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2></div>
       </div>
       ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
-          <span class="calx-it-time">${i.time || '—'}</span>
-          <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${i.sub ? i.sub : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}`}</small></span>
-          ${U.icon('right', 15)}</div>`).join('')}</div>`
+          <span class="calx-it-time">${i.time || '—'}${i.end ? `<small>${i.end}</small>` : ''}</span>
+          <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.sub(i)}</small></span>
+          ${i.task ? this.check(i) : U.icon('right', 15)}</div>`).join('')}</div>`
         : `<p class="calx-empty muted small">Nada marcado para este dia.</p>`}
       <button class="calx-agenda" data-act="goAgenda" data-d="${k}">
         ${U.icon('clock', 16)}<span><strong>Agenda do dia</strong><small class="muted">${ag.length ? `${U.plural(prog.total, 'atividade')}${prog.pct !== null ? ` · ${prog.pct}% concluído` : ''}` : D.isWorkday(k) ? 'Sem atividades' : 'Dia de folga'}</small></span>
@@ -3518,21 +3556,9 @@ Object.assign(Actions, {
   },
   calToday({ cal }) { const s = Cal.st(cal); s.anchor = s.sel = U.today(); if (cal === 'agenda') App.ui.agendaDate = s.sel; App.render(); },
   calMode({ cal, v }) { const s = Cal.st(cal); s.mode = v; s.anchor = s.sel; App.render(); },
-  /* Botão flutuante "+" no Início e na Agenda: escolhe o que criar (no dia escolhido) */
-  quickAdd({ k, from }) {
-    const t = U.today(); k = k || t;
-    const onAgenda = from === 'agenda';
-    const breakOk = onAgenda && (S.settings.breakMode || 'fixo') === 'flexivel' && !D.dayBlocks(k).some(b => D.isBreak(b) && b.status !== 'cancelada');
-    const activity = { label: 'Atividade na agenda', hint: 'Formulário completo, com categoria e prioridade', icon: 'clock', onClick: () => { App.ui.agendaDate = k; if (onAgenda) Actions.agNew(); else { App.go('agenda'); setTimeout(() => Actions.agNew(), 150); } } };
-    const items = [
-      { label: 'Reunião', hint: 'Com pauta, gravação e ata', icon: 'users', onClick: () => Events.form(null, k, { reuniao: true }) },
-      { label: 'Feedback', hint: 'Conversa individual com o colaborador', icon: 'chat', onClick: () => FB.form(null) },
-      { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, k) },
-    ];
-    items.push(activity);
-    if (breakOk) items.unshift({ label: k === t ? 'Intervalo agora' : 'Intervalo', hint: 'Marca o almoço e empurra o que vem depois', icon: 'pause', onClick: () => Actions.agBreak() });
-    Capture.open({ k, type: k > t ? 'tarefa' : 'imprevisto', others: items });
-  },
+  /* Botão flutuante "+" no Início e na Agenda: anotação rápida no dia escolhido (tarefa ou imprevisto).
+     Reunião, feedback e relatório ficam em Gravações; o intervalo, no topo da Agenda. */
+  quickAdd({ k }) { Capture.open({ k: k || U.today() }); },
 });
 
 /* Arrastar o dedo no calendário troca de mês/semana */
@@ -3638,19 +3664,23 @@ Views.agenda = {
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
+    const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
     const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
-        <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
+        <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
-          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : i.type === 'gravacao' ? ' · pronta' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
-        <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
+          <small class="blk-kind">${Cal.sub(i, true)}</small></div>
+        <div class="blk-actions">${i.task ? Cal.check(i) : U.icon('right', 16)}</div></div>`;
     const list = [
       ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
       ...blocks.map(b => ({ t: b.start, h: row(b) })),
       ...items.filter(i => i.time).map(i => ({ t: i.time, h: item(i) })),
     ].map((x, n) => ({ ...x, n })).sort((a, b) => a.t.localeCompare(b.t) || a.n - b.n);
 
+    const breakOk = (S.settings.breakMode || 'fixo') === 'flexivel' && k >= t && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada');
     const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
-      : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`;
+      : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`
+    const abertas = items.filter(i => i.task && !i.done).length;
+    const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
@@ -3660,10 +3690,13 @@ Views.agenda = {
         <div class="ag-head-t">
           <small class="muted">${when ? `${when} · ` : ''}${wd}</small>
           <h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2>
-          <p class="muted small">${summary}</p>
+          <p class="muted small">${resumo}</p>
         </div>
         <span class="grow"></span>
-        ${blocks.length ? `<button class="btn sm ghost" data-act="agMenu" aria-label="Reorganizar o dia">${U.icon('more', 16)} Reorganizar</button>` : ''}
+        <div class="ag-btns">
+          ${breakOk ? `<button class="btn sm ghost" data-act="agBreak">${U.icon('pause', 16)} ${k === t ? 'Intervalo agora' : 'Intervalo'}</button>` : ''}
+          ${blocks.length ? `<button class="btn sm ghost" data-act="agMenu" aria-label="Reorganizar o dia">${U.icon('more', 16)} Reorganizar</button>` : ''}
+        </div>
       </div>
       ${blocks.length ? H.dayRail(k, { link: false }) : ''}
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
@@ -3931,27 +3964,28 @@ const Occ = {
   form(o, { scheduleAfter = false, defaults = {} } = {}) {
     const isNew = !o;
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime(), ...defaults };
+    // Enxuto (pedido do usuário): tudo numa tela só, dois campos por linha. O status muda pelos botões do cartão (Iniciar, Resolver, Reabrir).
+    const obs = [o.description, o.notes].filter(Boolean).join('\n');
     const fields = [
-      { name: 'title', label: 'Título', required: true, value: o.title },
-      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou alguém da equipe', half: true },
+      { name: 'title', label: 'O que aconteceu?', required: true, value: o.title },
+      { name: 'responsible', label: 'Quem resolve?', value: o.responsible, list: D.techNames(), placeholder: 'Você', half: true },
       { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: o.priority, half: true },
-      { name: 'description', label: 'Descrição', type: 'textarea', value: o.description, more: true },
-      { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: o.status, half: true, more: true },
-      { name: 'date', label: 'Data da ocorrência', type: 'date', required: true, value: o.date, half: true, more: true },
-      { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true, more: true },
-      { name: 'dueDate', label: 'Prazo', type: 'date', value: o.dueDate, half: true, more: true },
-      { name: 'dueTime', label: 'Horário limite', type: 'time', value: o.dueTime, half: true, more: true },
-      { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: o.notes, more: true },
+      { name: 'date', label: 'Aconteceu em', type: 'date', required: true, value: o.date, half: true },
+      { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
+      { name: 'dueDate', label: 'Prazo para resolver', type: 'date', value: o.dueDate, half: true },
+      { name: 'dueTime', label: 'Até que horas', type: 'time', value: o.dueTime, half: true },
+      { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
+      { type: 'html', html: '<span class="tk-form-dica" hidden></span>' },
     ];
-    if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda após salvar', type: 'checkbox', value: scheduleAfter });
+    if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda depois de salvar', type: 'checkbox', value: scheduleAfter });
     UI.form({
       title: isNew ? 'Registrar imprevisto' : 'Editar imprevisto',
       fields,
-      moreOpen: !isNew && !!(o.description || o.notes || o.dueDate),
       onSubmit(v) {
         const { schedule, ...data } = v;
+        data.notes = '';
         let target = o;
-        if (isNew) { target = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, ...data }; S.occurrences.push(target); }
+        if (isNew) { target = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, status: o.status || 'pendente', ...data }; S.occurrences.push(target); }
         else Object.assign(target, data);
         Occ.syncBlock(target);
         commit();
@@ -4813,19 +4847,15 @@ const Gravador = {
       const d = i.data || (feito ? g.date : D.nextWorkday(g.date));
       const nota = `Do relatório do dia ${U.fmtShort(g.date)}.`;
       let kind = i.tipo, id = U.uid();
-      if (i.tipo === 'agenda' && !i.hora) kind = 'tarefa';   // sem horário não dá para pôr na agenda: vira tarefa com prazo
-      if (kind === 'tarefa') S.tasks.push({ id, title: i.titulo, description: nota, category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', responsible: i.responsavel || '', createdAt: now, completedAt: feito ? now : null, startDate: t, dueDate: d, dueTime: i.hora || '', notes: '' });
+      if (kind === 'agenda') kind = 'tarefa';   // "Na agenda" e Tarefa viraram uma coisa só: tarefa com dia, horário e duração
+      if (kind === 'tarefa') S.tasks.push({ id, title: i.titulo, description: nota, category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', responsible: i.responsavel || '', createdAt: now, completedAt: feito ? now : null, startDate: t, dueDate: d, dueTime: i.hora || '', dur: i.hora ? i.duracao || 0 : 0, notes: '' });
       else if (kind === 'imprevisto') S.occurrences.push({ id, createdAt: now, scheduled: null, title: i.titulo, description: nota, priority: 'alta', status: feito ? 'concluida' : 'pendente', ...(feito ? { resolvedAt: now } : {}), date: feito ? (i.data || g.date) : g.date, time: i.hora || '', dueDate: feito ? '' : (i.data || ''), dueTime: '', responsible: i.responsavel || '', notes: '' });
       else if (kind === 'compromisso') S.events.push({ id, title: i.titulo, date: d, time: i.hora || '', pautas: [], notes: nota, ...(i.responsavel ? { participantes: i.responsavel } : {}) });
-      else {
-        const s = U.toMin(i.hora), e = Math.min(1439, s + (i.duracao || 30));
-        D.ensureDay(d).push({ id, title: i.titulo, start: i.hora, end: U.fromMin(e), category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', fixed: false, notes: nota });
-      }
       i.aplicado = { kind, id, date: d }; n++;
     });
     return n;
   },
-  ITEM_TIPOS: { tarefa: 'Tarefa', imprevisto: 'Imprevisto', compromisso: 'Compromisso', agenda: 'Na agenda' },
+  ITEM_TIPOS: { tarefa: 'Tarefa', imprevisto: 'Imprevisto', compromisso: 'Compromisso' },
   quando(i, g) {
     const d = i.data || (i.situacao === 'feito' ? g.date : D.nextWorkday(g.date));
     const dia = !d ? '' : d === g.date ? 'hoje' : d === U.addDays(g.date, 1) ? 'amanhã' : `${U.WD_SHORT[U.weekday(d)]} ${U.fmtShort(d)}`;
@@ -5006,10 +5036,10 @@ Views.gravacoes = {
     const pend = itens.filter(i => i.sel && !i.aplicado).length;
     const row = i => {
       const quando = Gravador.quando(i, g);
-      if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind]}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
+      if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind] || 'Agenda'}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
       return `<li class="rl-it ${i.sel ? '' : 'off'}"><label class="rl-ck"><input type="checkbox" ${i.sel ? 'checked' : ''} data-change="gvItSel" data-id="${g.id}" data-it="${i.id}" aria-label="Anotar ${U.esc(i.titulo)}"></label>
-        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
-        <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${i.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
+        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}</small></span>
+        <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${(i.tipo === 'agenda' ? 'tarefa' : i.tipo) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
     };
     const aud = g.tipo === 'audio';
     return `<div class="card"><div class="card-h"><h3>${U.icon(aud ? 'upload' : 'list')} ${aud ? 'Resumo' : 'Relatório do dia'}</h3></div>
@@ -5126,7 +5156,7 @@ Views.tarefas = {
           <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
           <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
-            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : '<span class="muted">Sem prazo</span>'}
+            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : ''}</span>` : '<span class="muted">Sem data</span>'}
             ${x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''}
             ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
         </div>
@@ -5165,33 +5195,33 @@ Views.tarefas = {
 };
 
 const Tasks = {
+  /* Formulário enxuto (pedido do usuário): tudo numa tela só, sem "Mais opções".
+     Categoria, status e data de início saem do formulário (ficam como estão; o status muda pelos botões ▶ ✓ ✕ da lista).
+     Descrição e observações antigas viram um campo só, "Observação". */
   form(x, defaults = {}) {
     const isNew = !x;
     x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
+    const obs = [x.description, x.notes].filter(Boolean).join('\n');
     UI.form({
       title: isNew ? 'Nova tarefa' : 'Editar tarefa',
-      wide: true,
       fields: [
-        { name: 'title', label: 'Nome', required: true, value: x.title },
-        { name: 'dueDate', label: 'Prazo', type: 'date', value: x.dueDate, half: true },
-        { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime, half: true },
-        { name: 'responsible', label: 'Responsável (se delegada)', value: x.responsible, list: D.techNames(), half: true },
+        { name: 'title', label: 'O que precisa fazer?', required: true, value: x.title },
+        { name: 'dueDate', label: 'Dia', type: 'date', value: x.dueDate, half: true },
+        { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, half: true },
+        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS, value: String(x.dur || ''), half: true },
+        { name: 'responsible', label: 'Quem faz?', value: x.responsible, list: D.techNames(), placeholder: 'Você', half: true },
         { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
-        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', hint: 'Ao concluir, a próxima é criada sozinha.' },
-        { name: 'description', label: 'Descrição', type: 'textarea', value: x.description, more: true },
-        { name: 'category', label: 'Categoria', type: 'select', options: H.catOptions(), value: x.category, half: true, more: true },
-        { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: x.status, half: true, more: true },
-        { name: 'startDate', label: 'Data de início', type: 'date', value: x.startDate, half: true, more: true },
-        { type: 'html', html: isNew ? '' : `<p class="muted small">Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · Concluída em ${U.fmtDateTime(x.completedAt)}` : ''}</p>`, half: true, more: true },
-        { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: x.notes, more: true },
+        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true },
+        { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
+        { type: 'html', html: `<p class="muted small tk-form-dica">Sem dia, a tarefa aparece hoje na Agenda até você concluir.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
       ],
-      moreOpen: !isNew && !!(x.description || x.notes),
-      validate: v => v.startDate && v.dueDate && v.dueDate < v.startDate ? 'O prazo não pode ser anterior à data de início.' : null,
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); Actions.tkDelete({ id: x.id }); } }],
       onSubmit(v) {
         if (v.repeat && !v.dueDate) v.dueDate = U.today();
-        if (isNew) S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: v.status === 'concluida' ? new Date().toISOString() : null, ...v });
-        else { const st = v.status; Object.assign(x, { ...v, status: x.status }); Tasks.setStatus(x, st); }
+        v.dur = v.dueDate && v.dueTime ? Number(v.dur) || 0 : 0;
+        v.notes = '';
+        if (isNew) S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, category: x.category, status: 'pendente', startDate: x.startDate || U.today(), ...v });
+        else Object.assign(x, v);
         commit(); UI.toast(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.');
       },
     });
@@ -5214,6 +5244,7 @@ const Tasks = {
     }
     return null;
   },
+  DURS: [['', 'Não sei'], ['15', '15 min'], ['30', '30 min'], ['45', '45 min'], ['60', '1 hora'], ['90', '1h30'], ['120', '2 horas'], ['180', '3 horas'], ['240', '4 horas']],
   REPEAT: [['', 'Não repete'], ['diaria', 'Todo dia útil'], ['semanal', 'Toda semana'], ['quinzenal', 'A cada 2 semanas'], ['mensal', 'Todo mês']],
   repeatLabel: r => (Tasks.REPEAT.find(x => x[0] === r) || [, ''])[1],
   /* Próximo prazo de uma tarefa que se repete (nunca no passado) */
@@ -5331,7 +5362,7 @@ Views.config = {
         <div class="field"><label>Entrada</label><input type="time" name="workStart" value="${st.workStart}" required></div>
         <div class="field"><label>Saída</label><input type="time" name="workEnd" value="${st.workEnd}" required></div>
         <div class="field full"><label for="cfg-break">Intervalo de almoço</label><select id="cfg-break" name="breakMode" data-change="cfgBreakMode">${UI.opts([['flexivel', 'Flexível: marco na hora, pela Agenda'], ['fixo', 'Horário fixo todos os dias'], ['nenhum', 'Sem intervalo']], st.breakMode || 'fixo')}</select>
-          <small class="hint">${(st.breakMode || 'fixo') === 'flexivel' ? 'Na Agenda, toque em <strong>Intervalo agora</strong> quando for almoçar: as atividades seguintes são empurradas.' : (st.breakMode || 'fixo') === 'fixo' ? 'O intervalo entra na agenda de todos os dias úteis, no horário abaixo.' : 'Nenhum intervalo é colocado na agenda.'}</small></div>
+          <small class="hint">${(st.breakMode || 'fixo') === 'flexivel' ? 'Na Agenda, toque em <strong>Intervalo agora</strong> (no topo do dia) quando for almoçar: as atividades seguintes são empurradas.' : (st.breakMode || 'fixo') === 'fixo' ? 'O intervalo entra na agenda de todos os dias úteis, no horário abaixo.' : 'Nenhum intervalo é colocado na agenda.'}</small></div>
         ${(st.breakMode || 'fixo') === 'fixo' ? `<div class="field"><label>Início do intervalo</label><input type="time" name="breakStart" value="${st.breakStart}"></div>
         <div class="field"><label>Fim do intervalo</label><input type="time" name="breakEnd" value="${st.breakEnd}"></div>` : (st.breakMode || 'fixo') === 'flexivel' ? `<div class="field"><label>Duração do intervalo</label><select name="breakDur">${UI.opts([[30, '30 min'], [45, '45 min'], [60, '1 hora'], [90, '1h30'], [120, '2 horas']], st.breakDur || 60)}</select></div>` : ''}
         <div class="field full"><span class="lbl">Dias de trabalho</span><div class="wd-pick">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label><input type="checkbox" name="workDays" value="${d}" ${st.workDays.includes(d) ? 'checked' : ''}><span>${U.WD_SHORT[d]}</span></label>`).join('')}</div></div>
@@ -5549,16 +5580,18 @@ Views.guia = {
       'Você pode ouvir e baixar cada parte.',
     ]))}
     ${sec('calendario', 'calendar', 'Calendário', li([
-      'A tela inicial mostra o mês inteiro. Toque num dia para ver gravações, reuniões, compromissos e prazos.',
-      'O <strong>+</strong> anota uma tarefa, um compromisso ou uma atividade no dia que você escolheu.',
+      'A tela inicial mostra o mês inteiro. Toque num dia para ver as tarefas, gravações, reuniões e compromissos dele. Conclua uma tarefa ali mesmo, no ✓.',
+      'O <strong>+</strong> anota uma <strong>tarefa</strong> no dia que você escolheu: diga ou escolha o horário e quanto tempo leva, se quiser. Tarefa sem data e tarefa atrasada aparecem no dia de hoje até você concluir.',
+      'Reunião, feedback e relatório do dia ficam em <strong>Gravações</strong>.',
       CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para guardar os dados na nuvem. O áudio e a transcrição completa ficam no aparelho.',
     ]))}
     ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
-      'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário.',
+      'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário: sua rotina e as tarefas, tudo junto.',
       'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
+      'A tela Tarefas é a lista de tudo. As mesmas tarefas aparecem na Agenda e no Calendário, no dia delas.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
       'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
       'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
@@ -5580,7 +5613,9 @@ Object.assign(Actions, {
    duração ("30 min", "1h") e nomes da equipe. Imprevisto com tempo é encaixado AGORA na agenda
    e empurra o resto do dia (a atividade que estava em andamento continua depois). */
 const Capture = {
-  TYPES: [['imprevisto', 'Imprevisto', 'alert'], ['tarefa', 'Tarefa', 'tasks'], ['agenda', 'Na agenda', 'clock']],
+  /* Tarefa e "Na agenda" viraram uma coisa só (pedido do usuário): a tarefa tem dia, horário e duração opcionais
+     e aparece na Agenda e no Calendário. Tipo 'agenda' antigo é tratado como tarefa. */
+  TYPES: [['tarefa', 'Tarefa', 'tasks'], ['imprevisto', 'Imprevisto', 'alert']],
   DURS: [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
   WD: ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
 
@@ -5638,52 +5673,57 @@ const Capture = {
     return out;
   },
 
-  /* Abre a anotação rápida. type: imprevisto | tarefa | agenda. k: dia (Agenda). others: outras opções (lista do "+") */
-  open({ type, k, others = [] } = {}) {
+  /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
+  open({ type, k } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type || (k > t ? 'tarefa' : 'imprevisto'), dur: 0, due: k > t ? k : '', time: '', who: '', start: '', agDur: 30, repeat: '', touched: {} };
+    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
-    st.start = k === t ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
     const techs = D.techNames();
     const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
     const whoField = label => `<label class="cap-l" for="cap-who">${label}</label><input id="cap-who" class="cap-in" value="${U.esc(st.who)}" placeholder="Você ou alguém da equipe" list="cap-dl" autocomplete="off"><datalist id="cap-dl">${techs.map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>`;
 
     const optsHtml = () => {
+      const sel = (id, name, opts, v, dis) => `<select id="${id}" name="${name}" class="cap-sel" ${dis ? 'disabled' : ''}>${opts.map(([a, l]) => `<option value="${a}" ${String(v) === String(a) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+      const obsField = `<label class="cap-l" for="cap-obs">Observação</label><textarea id="cap-obs" class="cap-obs" rows="1" placeholder="Opcional">${U.esc(st.obs)}</textarea>`;
       if (st.type === 'imprevisto') {
-        if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${whoField('Quem resolve?')}`;
+        // Imprevisto: tudo numa tela só também (pedido do usuário), sem "Mais detalhes"
+        const resto = `${whoField('Quem resolve?')}
+          <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-oprio', 'priority', H.prioOptions(), st.oprio)}</label>
+            <label><span class="cap-l">Prazo para resolver</span><input type="date" id="cap-odue" class="cap-in" value="${st.odue}"></label></div>
+          ${obsField}`;
+        if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${resto}`;
         const cur = Capture.current();
         const s = nowStart(), e = U.fromMin(U.toMin(s) + st.dur);
         return `<span class="cap-l">Vai tomar quanto tempo agora?</span>
           <div class="cap-chips">${btn('dur', 0, 'Só registrar', !st.dur)}${Capture.DURS.map(([v, l]) => btn('dur', v, l, st.dur === v)).join('')}</div>
           ${st.dur ? `<p class="cap-prev">${U.icon('clock', 14)} <span>Entra na agenda agora, das <strong>${s}</strong> às <strong>${e}</strong>, e o resto do dia é empurrado.${cur ? ` “${U.esc(cur.title)}” continua depois.` : ''}</span></p>` : ''}
-          ${whoField('Quem resolve?')}`;
+          ${resto}`;
       }
-      if (st.type === 'tarefa') {
-        const tm = U.addDays(t, 1);
-        const other = st.due && st.due !== t && st.due !== tm;
-        return `<span class="cap-l">Prazo</span>
-          <div class="cap-chips">${btn('due', '', 'Sem prazo', !st.due)}${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
-          <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
-          ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>. Ao concluir, a próxima é criada sozinha.</span><button type="button" class="link" data-norep>tirar</button></p>` : ''}
-          ${st.due ? `<div class="cap-row"><label class="cap-l" for="cap-time">Horário (opcional)</label><input type="time" id="cap-time" class="cap-in" value="${st.time}"></div>` : ''}
-          ${whoField('Quem faz?')}`;
-      }
-      return `<div class="cap-row"><label class="cap-l" for="cap-start">${k === t ? 'Hoje' : U.fmtShort(k)}, começa às</label><input type="time" id="cap-start" class="cap-in" value="${st.start}"></div>
-        <span class="cap-l">Duração</span>
-        <div class="cap-chips">${Capture.DURS.map(([v, l]) => btn('agdur', v, l, st.agDur === v)).join('')}</div>`;
+      // Tarefa: tudo numa tela só (pedido do usuário), sem "Mais detalhes"
+      const tm = U.addDays(t, 1);
+      const other = st.due && st.due !== t && st.due !== tm;
+      return `<span class="cap-l">Quando?</span>
+        <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
+        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label>${btn('due', '', 'Sem data', !st.due)}</div>
+        ${st.due ? `<div class="cap-2"><label><span class="cap-l">Horário</span><input type="time" id="cap-time" class="cap-in" value="${st.time}"></label>
+          <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS, st.tdur || '', !st.time)}</label></div>`
+          : `<p class="muted small cap-nodate">Sem data, ela fica no dia de hoje da Agenda e do Calendário até você concluir.</p>`}
+        ${whoField('Quem faz?')}
+        <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
+          <label><span class="cap-l">Repetir</span>${sel('cap-rep', 'repeat', Tasks.REPEAT, st.repeat)}</label></div>
+        ${obsField}`;
     };
-    const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : st.type === 'tarefa' ? 'Criar tarefa' : 'Pôr na agenda';
+    const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : 'Criar tarefa';
+    const ph = () => st.type === 'imprevisto' ? 'O que aconteceu? Ex.: câmeras offline no cliente X' : 'O que precisa fazer? Ex.: ligar para o cliente amanhã às 10h';
 
     const m = UI.modal({
       title: k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`,
       body: `<div class="cap">
-        <textarea id="cap-t" class="cap-text" rows="2" placeholder="O que aconteceu? Ex.: câmeras offline no cliente X" aria-label="Descreva em poucas palavras"></textarea>
+        <textarea id="cap-t" class="cap-text" rows="2" placeholder="${ph()}" aria-label="Descreva em poucas palavras"></textarea>
         <p class="hint cap-tip">${U.icon('chat', 13)} Dica: toque no microfone do teclado para falar em vez de digitar.</p>
         <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
         <div class="cap-opts"></div>
         <div class="form-error" hidden></div>
-        <button type="button" class="link cap-more" data-more>Mais detalhes…</button>
-        ${others.length ? `<div class="cap-others"><span class="cap-l">Ou escolha</span><div class="sheet">${others.map((a, i) => `<button type="button" class="sheet-item" data-i="${i}">${a.icon ? U.icon(a.icon) : ''}<span>${a.label}${a.hint ? `<small>${a.hint}</small>` : ''}</span></button>`).join('')}</div></div>` : ''}
       </div>`,
       footer: `<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-save>${saveLabel()}</button>`,
     });
@@ -5692,6 +5732,7 @@ const Capture = {
     const paint = () => {
       $('.cap-opts').innerHTML = optsHtml();
       $('[data-save]').textContent = saveLabel();
+      ta.placeholder = ph();
       m.el.querySelectorAll('[data-type]').forEach(b => { const on = b.dataset.type === st.type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
     };
     const err = msg => { const e = $('.form-error'); e.textContent = msg || ''; e.hidden = !msg; };
@@ -5706,29 +5747,32 @@ const Capture = {
       if ((p.repeat || (p.date && p.date !== t)) && !T.type && st.type === 'imprevisto') { st.type = 'tarefa'; ch = true; }
       if (!T.repeat && (p.repeat || '') !== st.repeat) { st.repeat = p.repeat || ''; ch = true; }
       set('due', p.date); set('time', p.time); set('who', p.who);
-      if (p.time) set('start', p.time);
-      if (p.dur) { set('dur', p.dur); set('agDur', p.dur); }
+      if (p.dur) { set('dur', p.dur); set('tdur', p.dur); }
       if (ch) { const f = document.activeElement; paint(); if (f === ta) ta.focus(); }
     });
     m.el.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
-      if (b.dataset.agdur !== undefined) { st.agDur = +b.dataset.agdur; st.touched.agDur = true; paint(); return; }
-      if (b.hasAttribute('data-norep')) { st.repeat = ''; st.touched.repeat = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
-      if (b.hasAttribute('data-more')) { const d = Capture.read(st, ta); m.close(); setTimeout(() => Capture.details(st.type, d, k), 160); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
-      if (b.dataset.i !== undefined) { m.close(); others[+b.dataset.i].onClick(); }
     });
     m.el.addEventListener('input', e => {
       const id = e.target.id;
       if (id === 'cap-who') { st.who = e.target.value.trim(); st.touched.who = true; }
-      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; }
-      if (id === 'cap-start') { st.start = e.target.value; st.touched.start = true; }
+      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; const d = $('#cap-dur'); if (d) d.disabled = !st.time; }
+      if (id === 'cap-obs') st.obs = e.target.value;
     });
-    m.el.addEventListener('change', e => { if (e.target.id === 'cap-date' && e.target.value) { st.due = e.target.value; st.touched.due = true; paint(); } });
+    m.el.addEventListener('change', e => {
+      const id = e.target.id, v = e.target.value;
+      if (id === 'cap-date' && v) { st.due = v; st.touched.due = true; paint(); }
+      if (id === 'cap-dur') { st.tdur = +v || 0; st.touched.tdur = true; }
+      if (id === 'cap-prio') st.prio = v;
+      if (id === 'cap-oprio') st.oprio = v;
+      if (id === 'cap-odue') st.odue = v;
+      if (id === 'cap-rep') { st.repeat = v; st.touched.repeat = true; }
+    });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('[data-save]').click(); } });
     setTimeout(() => ta.focus(), 80);
     return m;
@@ -5737,14 +5781,7 @@ const Capture = {
   read(st, ta) {
     const who = (document.getElementById('cap-who') || {}).value;
     if (who !== undefined) st.who = who.trim();
-    return { title: ta.value.trim().replace(/\s+/g, ' '), who: st.who, due: st.due };
-  },
-
-  /* Abre o formulário completo de cada tipo, já com o que foi escrito */
-  details(type, d, k) {
-    if (type === 'imprevisto') Occ.form(null, { defaults: { title: d.title, responsible: d.who } });
-    else if (type === 'tarefa') Tasks.form(null, { title: d.title, responsible: d.who, dueDate: d.due || undefined });
-    else { App.ui.agendaDate = k; const go = () => Actions.agNew({ title: d.title }); if (App.route === 'agenda') go(); else { App.go('agenda'); setTimeout(go, 150); } }
+    return { title: ta.value.trim().replace(/\s+/g, ' '), who: st.who, due: st.due, time: st.due ? st.time : '', dur: st.due && st.time ? st.tdur : 0, repeat: st.repeat };
   },
 
   /* Grava. Devolve uma mensagem de erro (string) ou nada */
@@ -5754,7 +5791,7 @@ const Capture = {
     const t = U.today();
     if (st.type === 'imprevisto') {
       const now = !!st.dur && k === t;
-      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: '', priority: 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: '', dueTime: '', responsible: d.who, notes: '' };
+      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: (st.obs || '').trim(), priority: st.oprio || 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: st.odue || '', dueTime: '', responsible: d.who, notes: '' };
       S.occurrences.push(o);
       if (!now) { commit(); UI.toast('Imprevisto registrado.', 'ok', { label: 'Encaixar na agenda', onClick: () => Agenda.scheduleDialog(o) }); return; }
       const r = Capture.encaixarAgora(o, st.dur);
@@ -5763,21 +5800,11 @@ const Capture = {
       UI.toast(`Encaixado das ${r.start} às ${r.end}.${r.moved ? ` ${U.plural(r.moved, 'atividade empurrada', 'atividades empurradas')}.` : ''}${over ? ` ${U.plural(over, 'atividade passou', 'atividades passaram')} do fim do expediente.` : ''}`, over ? 'warn' : 'ok', { label: 'Desfazer', onClick: () => { r.undo(); commit(); UI.toast('Desfeito.'); } });
       return;
     }
-    if (st.type === 'tarefa') {
-      S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: st.due || (st.repeat ? t : ''), dueTime: st.due ? st.time || '' : '', notes: '', repeat: st.repeat || '' });
-      commit();
-      UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : st.due ? `Tarefa criada, prazo ${st.due === t ? 'hoje' : U.fmtShort(st.due)}${st.due && st.time ? ' às ' + st.time : ''}.` : 'Tarefa criada.');
-      return;
-    }
-    if (!st.start) return 'Informe o horário de início.';
-    const s = U.toMin(st.start), e = Math.min(1439, s + (st.agDur || 30));
-    if (e <= s) return 'Esse horário passa do fim do dia.';
-    const day = D.ensureDay(k);
-    const b = { id: U.uid(), title: d.title, start: st.start, end: U.fromMin(e), category: 'administrativo', priority: 'media', status: 'pendente', fixed: false, notes: '' };
-    day.push(b);
-    const moved = D.reflow(k, b.id);
+    const due = d.due || (st.repeat ? t : '');
+    S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, category: 'administrativo', responsible: d.who, priority: st.prio || 'media', status: 'pendente', startDate: t, dueDate: due, dueTime: due ? d.time || '' : '', dur: due && d.time ? d.dur || 0 : 0, notes: '', repeat: st.repeat || '', description: (st.obs || '').trim() });
     commit();
-    UI.toast(`Na agenda: ${k === t ? 'hoje' : U.fmtShort(k)}, ${b.start}–${b.end}.${moved ? ` ${U.plural(moved, 'atividade empurrada', 'atividades empurradas')}.` : ''}`);
+    const quando = !due ? 'sem data (aparece hoje na Agenda)' : `${due === t ? 'hoje' : due === U.addDays(t, 1) ? 'amanhã' : U.fmtShort(due)}${d.time ? ' às ' + d.time : ''}`;
+    UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : `Tarefa criada: ${quando}.`, 'ok', App.route === 'agenda' && App.ui.agendaDate === (due || t) ? undefined : { label: 'Ver na agenda', onClick: () => Actions.goAgenda({ d: due || t }) });
   },
 
   /* Atividade em andamento agora (a que o imprevisto interrompe) */
