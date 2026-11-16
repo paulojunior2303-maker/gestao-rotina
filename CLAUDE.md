@@ -113,8 +113,8 @@ e diga o que mudou e como testar no celular.
 ## Skills de design e escrita (`.claude/skills/`, pedido do usuário)
 Cópias das skills abertas (cada pasta tem a LICENSE/NOTICE original): `impeccable` (pbakaus/impeccable, Apache-2.0: criar, criticar, auditar e polir a interface),
 `ui-ux-pro-max` (nextlevelbuilder/ui-ux-pro-max-skill, MIT: busca local de estilos, paletas e regras de UX; `python3 .claude/skills/ui-ux-pro-max/scripts/search.py`,
-caminho ajustado de `${CLAUDE_PLUGIN_ROOT}` para a raiz do projeto), `stop-slop` (hardikpandya/stop-slop, MIT: tirar o jeito de texto de IA) e
-`taste-skill` (Leonxlnx/taste-skill, MIT, nome interno `design-taste-frontend`: feita para sites e landing pages).
+caminho ajustado de `${CLAUDE_PLUGIN_ROOT}` para a raiz do projeto) e `stop-slop` (hardikpandya/stop-slop, MIT: tirar o jeito de texto de IA).
+A `taste-skill` foi removida (feita para landing pages, 35 MB; não serve a este app).
 **As regras deste arquivo valem mais que as das skills**: identidade visual v2 (variáveis de `css/styles.css`, Geist/Bricolage), 393 px, app sem dependências,
 português simples, nada de fotos/efeitos pesados. As skills não entram no site nem no APK (o `pages.yml` e o `build.py` não copiam `.claude/`).
 Para atualizar: copiar de novo a pasta da skill do repositório original.
@@ -143,3 +143,14 @@ bash tests/run.sh android  # só um arquivo
   Precisa dos secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
   **Nunca** versionar `*.jks`/`keystore.properties`: a mesma chave é obrigatória para atualizar sem perder dados.
 - **Link do claude.ai**: republicar `dist/gestao-rotina.html` no artifact acima (ferramentas de artifact), quando disponíveis na sessão.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- When graphify-out/graph.json exists, run `graphify query "<question>"` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.

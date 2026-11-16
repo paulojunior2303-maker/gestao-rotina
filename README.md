@@ -1,4 +1,4 @@
-# Gestão de Rotina — Liderança Operacional (Wi-bicam · CFTV IP)
+# Gestão de Rotina
 
 Aplicativo web de gestão pessoal: agenda por horário, planejamento semanal e mensal, tarefas,
 projetos, imprevistos e indicadores. Ele funciona inteiramente no navegador, sem servidor nem internet,

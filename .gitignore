@@ -9,3 +9,6 @@ tests/output/
 
 # Arquivos locais da skill impeccable (críticas e servidor temporário)
 .impeccable/
+
+# Mapa do graphify: gerado em cada sessao (tools/graphify-sessao.sh)
+graphify-out/
