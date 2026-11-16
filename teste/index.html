@@ -3964,27 +3964,28 @@ const Occ = {
   form(o, { scheduleAfter = false, defaults = {} } = {}) {
     const isNew = !o;
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime(), ...defaults };
+    // Enxuto (pedido do usuário): tudo numa tela só, dois campos por linha. O status muda pelos botões do cartão (Iniciar, Resolver, Reabrir).
+    const obs = [o.description, o.notes].filter(Boolean).join('\n');
     const fields = [
-      { name: 'title', label: 'Título', required: true, value: o.title },
-      { name: 'responsible', label: 'Responsável', value: o.responsible, list: D.techNames(), placeholder: 'Você ou alguém da equipe', half: true },
+      { name: 'title', label: 'O que aconteceu?', required: true, value: o.title },
+      { name: 'responsible', label: 'Quem resolve?', value: o.responsible, list: D.techNames(), placeholder: 'Você', half: true },
       { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: o.priority, half: true },
-      { name: 'description', label: 'Descrição', type: 'textarea', value: o.description, more: true },
-      { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: o.status, half: true, more: true },
-      { name: 'date', label: 'Data da ocorrência', type: 'date', required: true, value: o.date, half: true, more: true },
-      { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true, more: true },
-      { name: 'dueDate', label: 'Prazo', type: 'date', value: o.dueDate, half: true, more: true },
-      { name: 'dueTime', label: 'Horário limite', type: 'time', value: o.dueTime, half: true, more: true },
-      { name: 'notes', label: 'Observações', type: 'textarea', rows: 2, value: o.notes, more: true },
+      { name: 'date', label: 'Aconteceu em', type: 'date', required: true, value: o.date, half: true },
+      { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
+      { name: 'dueDate', label: 'Prazo para resolver', type: 'date', value: o.dueDate, half: true },
+      { name: 'dueTime', label: 'Até que horas', type: 'time', value: o.dueTime, half: true },
+      { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
+      { type: 'html', html: '<span class="tk-form-dica" hidden></span>' },
     ];
-    if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda após salvar', type: 'checkbox', value: scheduleAfter });
+    if (isNew) fields.push({ name: 'schedule', label: 'Encaixar na agenda depois de salvar', type: 'checkbox', value: scheduleAfter });
     UI.form({
       title: isNew ? 'Registrar imprevisto' : 'Editar imprevisto',
       fields,
-      moreOpen: !isNew && !!(o.description || o.notes || o.dueDate),
       onSubmit(v) {
         const { schedule, ...data } = v;
+        data.notes = '';
         let target = o;
-        if (isNew) { target = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, ...data }; S.occurrences.push(target); }
+        if (isNew) { target = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, status: o.status || 'pendente', ...data }; S.occurrences.push(target); }
         else Object.assign(target, data);
         Occ.syncBlock(target);
         commit();
@@ -5675,26 +5676,32 @@ const Capture = {
   /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
   open({ type, k } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', prio: 'media', obs: '', touched: {} };
+    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
     const techs = D.techNames();
     const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
     const whoField = label => `<label class="cap-l" for="cap-who">${label}</label><input id="cap-who" class="cap-in" value="${U.esc(st.who)}" placeholder="Você ou alguém da equipe" list="cap-dl" autocomplete="off"><datalist id="cap-dl">${techs.map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>`;
 
     const optsHtml = () => {
+      const sel = (id, name, opts, v, dis) => `<select id="${id}" name="${name}" class="cap-sel" ${dis ? 'disabled' : ''}>${opts.map(([a, l]) => `<option value="${a}" ${String(v) === String(a) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+      const obsField = `<label class="cap-l" for="cap-obs">Observação</label><textarea id="cap-obs" class="cap-obs" rows="1" placeholder="Opcional">${U.esc(st.obs)}</textarea>`;
       if (st.type === 'imprevisto') {
-        if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${whoField('Quem resolve?')}`;
+        // Imprevisto: tudo numa tela só também (pedido do usuário), sem "Mais detalhes"
+        const resto = `${whoField('Quem resolve?')}
+          <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-oprio', 'priority', H.prioOptions(), st.oprio)}</label>
+            <label><span class="cap-l">Prazo para resolver</span><input type="date" id="cap-odue" class="cap-in" value="${st.odue}"></label></div>
+          ${obsField}`;
+        if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${resto}`;
         const cur = Capture.current();
         const s = nowStart(), e = U.fromMin(U.toMin(s) + st.dur);
         return `<span class="cap-l">Vai tomar quanto tempo agora?</span>
           <div class="cap-chips">${btn('dur', 0, 'Só registrar', !st.dur)}${Capture.DURS.map(([v, l]) => btn('dur', v, l, st.dur === v)).join('')}</div>
           ${st.dur ? `<p class="cap-prev">${U.icon('clock', 14)} <span>Entra na agenda agora, das <strong>${s}</strong> às <strong>${e}</strong>, e o resto do dia é empurrado.${cur ? ` “${U.esc(cur.title)}” continua depois.` : ''}</span></p>` : ''}
-          ${whoField('Quem resolve?')}`;
+          ${resto}`;
       }
       // Tarefa: tudo numa tela só (pedido do usuário), sem "Mais detalhes"
       const tm = U.addDays(t, 1);
       const other = st.due && st.due !== t && st.due !== tm;
-      const sel = (id, name, opts, v, dis) => `<select id="${id}" name="${name}" class="cap-sel" ${dis ? 'disabled' : ''}>${opts.map(([a, l]) => `<option value="${a}" ${String(v) === String(a) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
       return `<span class="cap-l">Quando?</span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
         <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label>${btn('due', '', 'Sem data', !st.due)}</div>
@@ -5704,7 +5711,7 @@ const Capture = {
         ${whoField('Quem faz?')}
         <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
           <label><span class="cap-l">Repetir</span>${sel('cap-rep', 'repeat', Tasks.REPEAT, st.repeat)}</label></div>
-        <label class="cap-l" for="cap-obs">Observação</label><textarea id="cap-obs" class="cap-obs" rows="1" placeholder="Opcional">${U.esc(st.obs)}</textarea>`;
+        ${obsField}`;
     };
     const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : 'Criar tarefa';
     const ph = () => st.type === 'imprevisto' ? 'O que aconteceu? Ex.: câmeras offline no cliente X' : 'O que precisa fazer? Ex.: ligar para o cliente amanhã às 10h';
@@ -5717,7 +5724,6 @@ const Capture = {
         <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
         <div class="cap-opts"></div>
         <div class="form-error" hidden></div>
-        <button type="button" class="link cap-more" data-more ${st.type === 'imprevisto' ? '' : 'hidden'}>Mais detalhes…</button>
       </div>`,
       footer: `<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-save>${saveLabel()}</button>`,
     });
@@ -5727,7 +5733,6 @@ const Capture = {
       $('.cap-opts').innerHTML = optsHtml();
       $('[data-save]').textContent = saveLabel();
       ta.placeholder = ph();
-      $('[data-more]').hidden = st.type !== 'imprevisto';
       m.el.querySelectorAll('[data-type]').forEach(b => { const on = b.dataset.type === st.type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
     };
     const err = msg => { const e = $('.form-error'); e.textContent = msg || ''; e.hidden = !msg; };
@@ -5751,7 +5756,6 @@ const Capture = {
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
-      if (b.hasAttribute('data-more')) { const d = Capture.read(st, ta); m.close(); setTimeout(() => Capture.details(st.type, d, k), 160); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
     });
     m.el.addEventListener('input', e => {
@@ -5765,6 +5769,8 @@ const Capture = {
       if (id === 'cap-date' && v) { st.due = v; st.touched.due = true; paint(); }
       if (id === 'cap-dur') { st.tdur = +v || 0; st.touched.tdur = true; }
       if (id === 'cap-prio') st.prio = v;
+      if (id === 'cap-oprio') st.oprio = v;
+      if (id === 'cap-odue') st.odue = v;
       if (id === 'cap-rep') { st.repeat = v; st.touched.repeat = true; }
     });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('[data-save]').click(); } });
@@ -5778,12 +5784,6 @@ const Capture = {
     return { title: ta.value.trim().replace(/\s+/g, ' '), who: st.who, due: st.due, time: st.due ? st.time : '', dur: st.due && st.time ? st.tdur : 0, repeat: st.repeat };
   },
 
-  /* Abre o formulário completo de cada tipo, já com o que foi escrito */
-  details(type, d, k) {
-    if (type === 'imprevisto') Occ.form(null, { defaults: { title: d.title, responsible: d.who } });
-    else Tasks.form(null, { title: d.title, responsible: d.who, dueDate: d.due || undefined, dueTime: d.time || undefined, dur: d.dur || undefined, repeat: d.repeat || undefined });
-  },
-
   /* Grava. Devolve uma mensagem de erro (string) ou nada */
   save(st, ta, k) {
     const d = Capture.read(st, ta);
@@ -5791,7 +5791,7 @@ const Capture = {
     const t = U.today();
     if (st.type === 'imprevisto') {
       const now = !!st.dur && k === t;
-      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: '', priority: 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: '', dueTime: '', responsible: d.who, notes: '' };
+      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: (st.obs || '').trim(), priority: st.oprio || 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: st.odue || '', dueTime: '', responsible: d.who, notes: '' };
       S.occurrences.push(o);
       if (!now) { commit(); UI.toast('Imprevisto registrado.', 'ok', { label: 'Encaixar na agenda', onClick: () => Agenda.scheduleDialog(o) }); return; }
       const r = Capture.encaixarAgora(o, st.dur);
