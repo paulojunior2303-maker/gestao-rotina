@@ -36,11 +36,15 @@ e diga o que mudou e como testar no celular.
   Menu lateral (☰ ou arrastar da borda): no celular mostra só o que **não** está na barra de baixo (Imprevistos, Configurações, Guia; classe `in-bottom`);
   no computador (sem barra de baixo) mostra tudo e o Calendário tem o botão grande de gravar (`.gv-rec-big`, escondido no celular).
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Calendário e Agenda usam `quickAdd`
-  (anotação rápida + "Ou escolha": reunião, feedback, compromisso, intervalo, atividade). Tarefas usa o formulário de tarefa.
+  (só a anotação rápida, **sem** a lista "Ou escolha": reunião/feedback/relatório ficam em Gravações, a pedido do usuário). Tarefas usa o formulário de tarefa.
+- **Tarefa e agenda são uma coisa só (pedido do usuário, v1.1.23)**: o "+" tem só **Tarefa** (padrão, já no dia escolhido) e **Imprevisto**; o antigo "Na agenda" virou
+  tarefa com `dueDate` + `dueTime` + `dur` (minutos, opcional; `Cal.fimTarefa`). Não criar bloco em `S.days` a partir do "+" nem do relatório/áudio (`Gravador.aplicar`
+  e `IA.itensNorm` convertem `tipo: 'agenda'` em tarefa). `Cal.itemsOn(hoje)` também traz as tarefas abertas **sem data** e as **atrasadas** (`semData`), para tudo aparecer
+  no Calendário e na Agenda; nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
+  Blocos da rotina (`S.days`) continuam: vêm da rotina padrão e o `Actions.agNew` segue existindo (formulário completo), mas sem botão no "+".
 - **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo
-  (Imprevisto · Tarefa · Na agenda). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
-  (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer".
-  As demais opções do antigo menu do "+" ficam embaixo ("Ou escolha"). Testes: `tests/captura.test.js`.
+  (Tarefa · Imprevisto). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
+  (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer". Testes: `tests/captura.test.js`.
 - **Recursos do dia a dia que ficaram**: `js/replan.js` (`Replan`, "Reorganizar meu dia" no menu da Agenda; `Replan.fromNow` adianta a agenda quando um imprevisto
   termina antes); tarefas que se repetem (`task.repeat` diaria|semanal|quinzenal|mensal, `repeatDay`; `Tasks.setStatus` cria a próxima e a apaga ao reabrir);
   `UI.form` com campos `more: true` em "Mais opções" (`moreOpen`). Testes: `tests/recursos.test.js`.

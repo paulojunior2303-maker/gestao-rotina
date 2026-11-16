@@ -5,7 +5,9 @@
    duração ("30 min", "1h") e nomes da equipe. Imprevisto com tempo é encaixado AGORA na agenda
    e empurra o resto do dia (a atividade que estava em andamento continua depois). */
 const Capture = {
-  TYPES: [['imprevisto', 'Imprevisto', 'alert'], ['tarefa', 'Tarefa', 'tasks'], ['agenda', 'Na agenda', 'clock']],
+  /* Tarefa e "Na agenda" viraram uma coisa só (pedido do usuário): a tarefa tem dia, horário e duração opcionais
+     e aparece na Agenda e no Calendário. Tipo 'agenda' antigo é tratado como tarefa. */
+  TYPES: [['tarefa', 'Tarefa', 'tasks'], ['imprevisto', 'Imprevisto', 'alert']],
   DURS: [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
   WD: ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
 
@@ -63,12 +65,11 @@ const Capture = {
     return out;
   },
 
-  /* Abre a anotação rápida. type: imprevisto | tarefa | agenda. k: dia (Agenda). others: outras opções (lista do "+") */
-  open({ type, k, others = [] } = {}) {
+  /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
+  open({ type, k } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type || (k > t ? 'tarefa' : 'imprevisto'), dur: 0, due: k > t ? k : '', time: '', who: '', start: '', agDur: 30, repeat: '', touched: {} };
+    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
-    st.start = k === t ? U.fromMin(Math.ceil(U.nowMin() / 15) * 15) : S.settings.workStart;
     const techs = D.techNames();
     const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
     const whoField = label => `<label class="cap-l" for="cap-who">${label}</label><input id="cap-who" class="cap-in" value="${U.esc(st.who)}" placeholder="Você ou alguém da equipe" list="cap-dl" autocomplete="off"><datalist id="cap-dl">${techs.map(n => `<option value="${U.esc(n)}">`).join('')}</datalist>`;
@@ -83,32 +84,28 @@ const Capture = {
           ${st.dur ? `<p class="cap-prev">${U.icon('clock', 14)} <span>Entra na agenda agora, das <strong>${s}</strong> às <strong>${e}</strong>, e o resto do dia é empurrado.${cur ? ` “${U.esc(cur.title)}” continua depois.` : ''}</span></p>` : ''}
           ${whoField('Quem resolve?')}`;
       }
-      if (st.type === 'tarefa') {
-        const tm = U.addDays(t, 1);
-        const other = st.due && st.due !== t && st.due !== tm;
-        return `<span class="cap-l">Prazo</span>
-          <div class="cap-chips">${btn('due', '', 'Sem prazo', !st.due)}${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
-          <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
-          ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>. Ao concluir, a próxima é criada sozinha.</span><button type="button" class="link" data-norep>tirar</button></p>` : ''}
-          ${st.due ? `<div class="cap-row"><label class="cap-l" for="cap-time">Horário (opcional)</label><input type="time" id="cap-time" class="cap-in" value="${st.time}"></div>` : ''}
-          ${whoField('Quem faz?')}`;
-      }
-      return `<div class="cap-row"><label class="cap-l" for="cap-start">${k === t ? 'Hoje' : U.fmtShort(k)}, começa às</label><input type="time" id="cap-start" class="cap-in" value="${st.start}"></div>
-        <span class="cap-l">Duração</span>
-        <div class="cap-chips">${Capture.DURS.map(([v, l]) => btn('agdur', v, l, st.agDur === v)).join('')}</div>`;
+      const tm = U.addDays(t, 1);
+      const other = st.due && st.due !== t && st.due !== tm;
+      return `<span class="cap-l">Quando?</span>
+        <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
+        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label>${btn('due', '', 'Sem data', !st.due)}</div>
+        ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>. Ao concluir, a próxima é criada sozinha.</span><button type="button" class="link" data-norep>tirar</button></p>` : ''}
+        ${st.due ? `<div class="cap-row"><label class="cap-l" for="cap-time">Horário (opcional)</label><input type="time" id="cap-time" class="cap-in" value="${st.time}"></div>` : `<p class="muted small cap-nodate">Sem data, ela fica no dia de hoje da Agenda e do Calendário até você concluir.</p>`}
+        ${st.due && st.time ? `<span class="cap-l">Quanto tempo?</span><div class="cap-chips">${btn('tdur', 0, 'Não sei', !st.tdur)}${Capture.DURS.map(([v, l]) => btn('tdur', v, l, st.tdur === v)).join('')}</div>` : ''}
+        ${whoField('Quem faz?')}`;
     };
-    const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : st.type === 'tarefa' ? 'Criar tarefa' : 'Pôr na agenda';
+    const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : 'Criar tarefa';
+    const ph = () => st.type === 'imprevisto' ? 'O que aconteceu? Ex.: câmeras offline no cliente X' : 'O que precisa fazer? Ex.: ligar para o cliente amanhã às 10h';
 
     const m = UI.modal({
       title: k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`,
       body: `<div class="cap">
-        <textarea id="cap-t" class="cap-text" rows="2" placeholder="O que aconteceu? Ex.: câmeras offline no cliente X" aria-label="Descreva em poucas palavras"></textarea>
+        <textarea id="cap-t" class="cap-text" rows="2" placeholder="${ph()}" aria-label="Descreva em poucas palavras"></textarea>
         <p class="hint cap-tip">${U.icon('chat', 13)} Dica: toque no microfone do teclado para falar em vez de digitar.</p>
         <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
         <div class="cap-opts"></div>
         <div class="form-error" hidden></div>
         <button type="button" class="link cap-more" data-more>Mais detalhes…</button>
-        ${others.length ? `<div class="cap-others"><span class="cap-l">Ou escolha</span><div class="sheet">${others.map((a, i) => `<button type="button" class="sheet-item" data-i="${i}">${a.icon ? U.icon(a.icon) : ''}<span>${a.label}${a.hint ? `<small>${a.hint}</small>` : ''}</span></button>`).join('')}</div></div>` : ''}
       </div>`,
       footer: `<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Cancelar</button><button type="button" class="btn primary" data-save>${saveLabel()}</button>`,
     });
@@ -117,6 +114,7 @@ const Capture = {
     const paint = () => {
       $('.cap-opts').innerHTML = optsHtml();
       $('[data-save]').textContent = saveLabel();
+      ta.placeholder = ph();
       m.el.querySelectorAll('[data-type]').forEach(b => { const on = b.dataset.type === st.type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
     };
     const err = msg => { const e = $('.form-error'); e.textContent = msg || ''; e.hidden = !msg; };
@@ -131,27 +129,24 @@ const Capture = {
       if ((p.repeat || (p.date && p.date !== t)) && !T.type && st.type === 'imprevisto') { st.type = 'tarefa'; ch = true; }
       if (!T.repeat && (p.repeat || '') !== st.repeat) { st.repeat = p.repeat || ''; ch = true; }
       set('due', p.date); set('time', p.time); set('who', p.who);
-      if (p.time) set('start', p.time);
-      if (p.dur) { set('dur', p.dur); set('agDur', p.dur); }
+      if (p.dur) { set('dur', p.dur); set('tdur', p.dur); }
       if (ch) { const f = document.activeElement; paint(); if (f === ta) ta.focus(); }
     });
     m.el.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
-      if (b.dataset.agdur !== undefined) { st.agDur = +b.dataset.agdur; st.touched.agDur = true; paint(); return; }
+      if (b.dataset.tdur !== undefined) { st.tdur = +b.dataset.tdur; st.touched.tdur = true; paint(); return; }
       if (b.hasAttribute('data-norep')) { st.repeat = ''; st.touched.repeat = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-more')) { const d = Capture.read(st, ta); m.close(); setTimeout(() => Capture.details(st.type, d, k), 160); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
-      if (b.dataset.i !== undefined) { m.close(); others[+b.dataset.i].onClick(); }
     });
     m.el.addEventListener('input', e => {
       const id = e.target.id;
       if (id === 'cap-who') { st.who = e.target.value.trim(); st.touched.who = true; }
-      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; }
-      if (id === 'cap-start') { st.start = e.target.value; st.touched.start = true; }
+      if (id === 'cap-time') { const had = !!st.time; st.time = e.target.value; st.touched.time = true; if (had !== !!st.time) { paint(); $('#cap-time').focus(); } }
     });
     m.el.addEventListener('change', e => { if (e.target.id === 'cap-date' && e.target.value) { st.due = e.target.value; st.touched.due = true; paint(); } });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('[data-save]').click(); } });
@@ -162,14 +157,13 @@ const Capture = {
   read(st, ta) {
     const who = (document.getElementById('cap-who') || {}).value;
     if (who !== undefined) st.who = who.trim();
-    return { title: ta.value.trim().replace(/\s+/g, ' '), who: st.who, due: st.due };
+    return { title: ta.value.trim().replace(/\s+/g, ' '), who: st.who, due: st.due, time: st.due ? st.time : '', dur: st.due && st.time ? st.tdur : 0, repeat: st.repeat };
   },
 
   /* Abre o formulário completo de cada tipo, já com o que foi escrito */
   details(type, d, k) {
     if (type === 'imprevisto') Occ.form(null, { defaults: { title: d.title, responsible: d.who } });
-    else if (type === 'tarefa') Tasks.form(null, { title: d.title, responsible: d.who, dueDate: d.due || undefined });
-    else { App.ui.agendaDate = k; const go = () => Actions.agNew({ title: d.title }); if (App.route === 'agenda') go(); else { App.go('agenda'); setTimeout(go, 150); } }
+    else Tasks.form(null, { title: d.title, responsible: d.who, dueDate: d.due || undefined, dueTime: d.time || undefined, dur: d.dur || undefined, repeat: d.repeat || undefined });
   },
 
   /* Grava. Devolve uma mensagem de erro (string) ou nada */
@@ -188,21 +182,11 @@ const Capture = {
       UI.toast(`Encaixado das ${r.start} às ${r.end}.${r.moved ? ` ${U.plural(r.moved, 'atividade empurrada', 'atividades empurradas')}.` : ''}${over ? ` ${U.plural(over, 'atividade passou', 'atividades passaram')} do fim do expediente.` : ''}`, over ? 'warn' : 'ok', { label: 'Desfazer', onClick: () => { r.undo(); commit(); UI.toast('Desfeito.'); } });
       return;
     }
-    if (st.type === 'tarefa') {
-      S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: st.due || (st.repeat ? t : ''), dueTime: st.due ? st.time || '' : '', notes: '', repeat: st.repeat || '' });
-      commit();
-      UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : st.due ? `Tarefa criada, prazo ${st.due === t ? 'hoje' : U.fmtShort(st.due)}${st.due && st.time ? ' às ' + st.time : ''}.` : 'Tarefa criada.');
-      return;
-    }
-    if (!st.start) return 'Informe o horário de início.';
-    const s = U.toMin(st.start), e = Math.min(1439, s + (st.agDur || 30));
-    if (e <= s) return 'Esse horário passa do fim do dia.';
-    const day = D.ensureDay(k);
-    const b = { id: U.uid(), title: d.title, start: st.start, end: U.fromMin(e), category: 'administrativo', priority: 'media', status: 'pendente', fixed: false, notes: '' };
-    day.push(b);
-    const moved = D.reflow(k, b.id);
+    const due = d.due || (st.repeat ? t : '');
+    S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, description: '', category: 'administrativo', responsible: d.who, priority: 'media', status: 'pendente', startDate: t, dueDate: due, dueTime: due ? d.time || '' : '', dur: due && d.time ? d.dur || 0 : 0, notes: '', repeat: st.repeat || '' });
     commit();
-    UI.toast(`Na agenda: ${k === t ? 'hoje' : U.fmtShort(k)}, ${b.start}–${b.end}.${moved ? ` ${U.plural(moved, 'atividade empurrada', 'atividades empurradas')}.` : ''}`);
+    const quando = !due ? 'sem data (aparece hoje na Agenda)' : `${due === t ? 'hoje' : due === U.addDays(t, 1) ? 'amanhã' : U.fmtShort(due)}${d.time ? ' às ' + d.time : ''}`;
+    UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : `Tarefa criada: ${quando}.`, 'ok', App.route === 'agenda' && App.ui.agendaDate === (due || t) ? undefined : { label: 'Ver na agenda', onClick: () => Actions.goAgenda({ d: due || t }) });
   },
 
   /* Atividade em andamento agora (a que o imprevisto interrompe) */

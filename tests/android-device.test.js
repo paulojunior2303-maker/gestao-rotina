@@ -157,7 +157,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await tap('.sheet-item:has-text("Mover para o próximo dia útil")');
   check(await p.locator('.blk', { hasText: 'Fechamento do expediente' }).count() === 0, 'mover para o próximo dia útil');
   // nova atividade + excluir + desfazer
-  await fab('Atividade na agenda'); await fill('title', 'Visita técnica'); await fill('start', '07:00'); await fill('end', '07:40'); await save();
+  await p.evaluate(() => Actions.agNew()); await W(300); await fill('title', 'Visita técnica'); await fill('start', '07:00'); await fill('end', '07:40'); await save();
   check(await p.locator('.blk', { hasText: 'Visita técnica' }).count() === 1, 'criar atividade');
   await p.locator('.blk', { hasText: 'Visita técnica' }).locator('[data-act=agMore]').tap(); await W(300);
   await tap('.sheet-item.danger:has-text("Excluir")'); await tap(`${M} [data-yes]`);
@@ -211,9 +211,9 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await go('dashboard');
   await p.locator('.calx-d.today').first().tap(); await W(300);
   check(await p.locator('.calx-day h2').count() === 1, 'tocar no dia mostra a lista do dia');
-  await fab('Compromisso');
-  await fill('title', 'Reunião com fornecedor'); await fill('time', '10:00'); await save();
-  check((await st()).events.length === 1 && await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'novo compromisso pelo + do Início aparece na lista do dia');
+  await p.evaluate(() => window.scrollTo(0, 0)); await W(300);   // o + sai da frente ao rolar para baixo
+  await fab(); await p.locator(`${M} #cap-t`).fill('Reunião com fornecedor às 10h'); await tap(`${M} [data-save]`);
+  check((await st()).tasks.some(x => x.title === 'Reunião com fornecedor às 10h' && x.dueTime === '10:00') && await p.locator('.calx-day .calx-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'o + do Início cria tarefa com horário e ela aparece na lista do dia');
   await overflow('07-inicio-calendario');
   await go('agenda');
   check(await p.locator('.timeline .blk-it', { hasText: 'Reunião com fornecedor' }).count() === 1, 'Agenda: o compromisso entra na lista do dia, junto com a rotina');
@@ -231,7 +231,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await st()).settings.technicians.length === 1, 'cadastrar técnico');
   await tap('[data-act=demoLoad]'); check(await p.locator('.demo-banner').count() === 1, 'carregar demonstração');
   await tap('.demo-banner [data-act=demoRemove]'); await tap(`${M} [data-yes]`);
-  check(!(await st()).tasks.some(t => t.demo) && (await st()).tasks.length === 1, 'remover demonstração mantém seus dados');
+  check(!(await st()).tasks.some(t => t.demo) && (await st()).tasks.length === 2, 'remover demonstração mantém seus dados');
   await tap('[data-act=dataExport]'); await W(400);
   check(calls.some(c => c[0] === 'share' && c[1].files[0].endsWith('.json')), 'backup → menu Compartilhar');
 
@@ -267,7 +267,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await p.evaluate(() => { S.settings.ia.key = 'CHAVE-DE-TESTE-1234'; S.settings.ia.agente = 'MEU AGENTE DE TESTE: escreva atas no padrão Wi-Bicam.'; S.settings.ia.nivel = 'detalhada'; commit(); });
   await go('feedbacks');
   check(await p.textContent('#page-title') === 'Gravações', 'endereço antigo #feedbacks abre Gravações');
-  await go('dashboard'); await fab('Feedback');
+  await go('dashboard'); await p.evaluate(() => FB.form(null)); await W(300);   // feedback: fica em Gravações (o + não tem mais a lista)
   await fill('pessoa', 'Natan Krainer'); await p.locator(`${M} [name=tom][value=positivo]`).check();
   await p.evaluate(() => { Recorder.SEG_MS = 1500; });
   await tap(`${M} [data-rec]`); await W(3800);

@@ -58,13 +58,13 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   s = await state();
   assert(!s.days[tk].find(b => b.title === 'Fechamento do expediente'), 'bloco removido do dia atual');
   assert(Object.values(s.days).some(d => d.some(b => b.title === 'Fechamento do expediente' && b.notes.includes('Remanejada'))), 'bloco movido para o próximo dia útil com nota');
-  // nova atividade (pelo +)
-  await fab('Atividade na agenda');
+  // nova atividade da rotina (formulário completo; o + agora cria tarefa)
+  await p.evaluate(() => Actions.agNew()); await p.waitForTimeout(250);
   await fill('title', 'Visita técnica cliente X'); await fill('start', '07:00'); await fill('end', '07:30');
   await p.selectOption('.modal-wrap.open [name=category]', 'campo'); await submit();
   assert(await p.locator('.blk', { hasText: 'Visita técnica cliente X' }).count() === 1, 'nova atividade criada');
   // validação horário inválido
-  await fab('Atividade na agenda');
+  await p.evaluate(() => Actions.agNew()); await p.waitForTimeout(250);
   await fill('title', 'x'); await fill('start', '10:00'); await fill('end', '09:00'); await submit();
   assert(await p.locator('.modal-wrap.open .form-error:not([hidden])').count() === 1, 'validação de horário fim < início');
   await p.click('.modal-wrap.open [data-cancel]'); await p.waitForTimeout(200);
@@ -74,13 +74,12 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await go('agenda');
   const nextDay = await p.evaluate(() => { let k = U.addDays(U.today(), 7); while (!D.isWorkday(k)) k = U.addDays(k, 1); App.ui.agendaDate = k; App.render(); return k; });
   assert(await p.locator('.blk').count() === 11 && await p.locator('.blk-break').count() === 0, 'intervalo flexível: dia começa sem o bloco de intervalo');
-  await fab('Intervalo');
+  await p.click('.ag-head [data-act=agBreak]'); await p.waitForTimeout(250);
   await fill('start', '11:30'); await p.selectOption('.modal-wrap.open [name=dur]', '60'); await submit();
   s = await state(); const dfx = s.days[nextDay]; const g = t => dfx.find(b => b.title === t);
   assert(g('Intervalo').start === '11:30' && g('Intervalo').end === '12:30' && g('Intervalo').category === 'intervalo', '"Intervalo agora" marca o almoço no horário escolhido');
   assert(g('Resolução de pendências').start === '12:30', 'atividade que caía no almoço vai para depois dele');
-  await fab(); assert(await p.locator('.sheet-item:has-text("Intervalo")').count() === 0, '"Intervalo" some do + depois de marcar o intervalo do dia');
-  await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+  assert(await p.locator('[data-act=agBreak]').count() === 0, '"Intervalo" some do topo da Agenda depois de marcar o intervalo do dia');
   await go('config');
   assert(await p.inputValue('#cfg-break') === 'flexivel', 'Configurações → Jornada: intervalo flexível, fixo ou sem intervalo');
 
@@ -131,7 +130,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await go('jornada');
   assert(await p.locator('.cal-home').count() === 1, 'telas retiradas (Jornada etc.) voltam para o Calendário');
   await go('dashboard');
-  await fab('Compromisso');
+  await p.evaluate(() => Events.form(null, U.today())); await p.waitForTimeout(250);   // compromisso: o + agora só cria tarefa/imprevisto
   await fill('title', 'Reunião com fornecedor'); await fill('date', '2026-11-20'); await fill('time', '10:00'); await submit();
   assert(await p.locator('.cal-home .calx-chip.t-evento', { hasText: 'Reunião com fornecedor' }).count() === 1, 'compromisso aparece no calendário (com título no computador)');
   await p.click('.cal-home .calx-d[data-k="2026-11-20"]'); await p.waitForTimeout(200);

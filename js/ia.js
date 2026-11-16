@@ -173,7 +173,7 @@ Responda em JSON com:
   itensNorm(lista, eu = this.usuario()) {
     const ok = (re, v) => re.test(String(v || '')) ? String(v) : '';
     return (lista || []).filter(i => i && String(i.titulo || '').trim()).map(i => ({
-      id: U.uid(), tipo: this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),
+      id: U.uid(), tipo: i.tipo !== 'agenda' && this.RELATORIO_TIPOS.includes(i.tipo) ? i.tipo : 'tarefa', titulo: String(i.titulo).trim(),   // "agenda" virou tarefa com horário
       data: ok(/^\d{4}-\d{2}-\d{2}$/, i.data), hora: ok(/^\d{2}:\d{2}$/, i.hora), duracao: Math.max(0, Math.min(600, +i.duracao || 0)),
       responsavel: Capture.norm(String(i.responsavel || '').trim()) === Capture.norm(eu) || /^(eu|eu mesmo|eu mesma|voce|você)$/i.test(String(i.responsavel || '').trim()) ? '' : String(i.responsavel || '').trim(),
       situacao: ['feito', 'pendente', 'futuro'].includes(i.situacao) ? i.situacao : 'futuro',

@@ -43,7 +43,7 @@ Views.tarefas = {
           <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
           <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
-            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime : ''}</span>` : '<span class="muted">Sem prazo</span>'}
+            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : ''}</span>` : '<span class="muted">Sem data</span>'}
             ${x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''}
             ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
         </div>
@@ -90,11 +90,12 @@ const Tasks = {
       wide: true,
       fields: [
         { name: 'title', label: 'Nome', required: true, value: x.title },
-        { name: 'dueDate', label: 'Prazo', type: 'date', value: x.dueDate, half: true },
+        { name: 'dueDate', label: 'Dia', type: 'date', value: x.dueDate, half: true, hint: 'Sem dia, ela aparece hoje na Agenda.' },
         { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime, half: true },
+        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS, value: String(x.dur || ''), half: true },
         { name: 'responsible', label: 'Responsável (se delegada)', value: x.responsible, list: D.techNames(), half: true },
         { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
-        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', hint: 'Ao concluir, a próxima é criada sozinha.' },
+        { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true, hint: 'Ao concluir, a próxima é criada sozinha.' },
         { name: 'description', label: 'Descrição', type: 'textarea', value: x.description, more: true },
         { name: 'category', label: 'Categoria', type: 'select', options: H.catOptions(), value: x.category, half: true, more: true },
         { name: 'status', label: 'Status', type: 'select', options: H.statusOptions(), value: x.status, half: true, more: true },
@@ -107,6 +108,7 @@ const Tasks = {
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); Actions.tkDelete({ id: x.id }); } }],
       onSubmit(v) {
         if (v.repeat && !v.dueDate) v.dueDate = U.today();
+        v.dur = v.dueDate && v.dueTime ? Number(v.dur) || 0 : 0;
         if (isNew) S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: v.status === 'concluida' ? new Date().toISOString() : null, ...v });
         else { const st = v.status; Object.assign(x, { ...v, status: x.status }); Tasks.setStatus(x, st); }
         commit(); UI.toast(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.');
@@ -131,6 +133,7 @@ const Tasks = {
     }
     return null;
   },
+  DURS: [['', 'Não sei'], ['15', '15 min'], ['30', '30 min'], ['45', '45 min'], ['60', '1 hora'], ['90', '1h30'], ['120', '2 horas'], ['180', '3 horas'], ['240', '4 horas']],
   REPEAT: [['', 'Não repete'], ['diaria', 'Todo dia útil'], ['semanal', 'Toda semana'], ['quinzenal', 'A cada 2 semanas'], ['mensal', 'Todo mês']],
   repeatLabel: r => (Tasks.REPEAT.find(x => x[0] === r) || [, ''])[1],
   /* Próximo prazo de uma tarefa que se repete (nunca no passado) */

@@ -170,7 +170,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check((await p.textContent('.ata.pre')).includes('RELATÓRIO DIÁRIO') && await p.locator('a[href^="https://wa.me/?text=REL"]').count() === 1, 'relatório pronto para enviar pelo WhatsApp ou copiar');
   check(await p.locator('.rl-it').count() === 6 && await p.locator('.rl-it input:checked').count() === 5, '6 itens identificados; o que já foi feito (menos imprevisto) fica desmarcado');
   const alm = await p.locator('.rl-it', { hasText: 'Organizar o almoxarifado' }).textContent();
-  check(alm.includes('sem horário, vira tarefa') && (alm.includes(amanha.slice(8, 10) + '/' + amanha.slice(5, 7)) || alm.includes('amanhã')), 'item sem horário avisa que vira tarefa e mostra o dia para onde vai');
+  check((alm.includes(amanha.slice(8, 10) + '/' + amanha.slice(5, 7)) || alm.includes('amanhã')), 'item sem horário mostra o dia para onde vai');
   await p.screenshot({ path: OUT + '/enxuto-6-relatorio.png', fullPage: true }); await fits('Relatório');
   await p.locator('.rl-it', { hasText: 'Visita ao cliente Jardins' }).locator('select').selectOption('compromisso'); await W(200);
   await tap('[data-act=gvItApply]');
@@ -178,7 +178,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   const tf = s.tasks.find(x => x.title === 'Trocar a fonte da câmera 12');
   check(tf && tf.dueDate === amanha && tf.responsible === 'Carlos Souza' && tf.status === 'pendente', 'tarefa criada para amanhã, com o responsável');
   check(s.events.some(e => e.title === 'Visita ao cliente Jardins' && e.date === amanha && e.time === '09:00'), 'compromisso no calendário de amanhã às 09:00');
-  check((s.days[amanha] || []).some(b => b.title === 'Revisar o orçamento' && b.start === '14:00' && b.end === '15:00'), 'bloco na agenda de amanhã (14:00–15:00)');
+  check(s.tasks.some(x => x.title === 'Revisar o orçamento' && x.dueDate === amanha && x.dueTime === '14:00' && x.dur === 60) && !(s.days[amanha] || []).some(b => b.title === 'Revisar o orçamento'), '"agenda" com horário vira tarefa de amanhã 14:00 (1 h), sem bloco duplicado');
   check(s.occurrences.some(o => o.title === 'Câmera 4 do bloco B parou' && o.status === 'concluida'), 'imprevisto do dia registrado como resolvido');
   check(s.tasks.some(x => x.title === 'Organizar o almoxarifado' && x.dueDate === amanha), 'pendência sem horário vira tarefa para o próximo dia útil');
   check(!s.tasks.some(x => x.title === 'Ajustar o NVR do cliente X'), 'o que já foi feito (desmarcado) fica só no relatório');

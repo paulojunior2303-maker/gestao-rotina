@@ -42,19 +42,23 @@ Views.agenda = {
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
+    const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
     const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
-        <div class="blk-time"><strong>${i.time || (i.type === 'reuniao' || i.type === 'evento' ? 'Dia' : 'Prazo')}</strong>${i.time ? '' : `<span>${i.type === 'reuniao' || i.type === 'evento' ? 'todo' : 'do dia'}</span>`}</div>
+        <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
-          <small class="blk-kind">${Cal.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : i.type === 'gravacao' ? ' · pronta' : ' · concluído') : i.late ? ' · <span class="c-red">atrasado</span>' : ''}</small></div>
-        <div class="blk-actions">${U.icon('right', 16)}</div></div>`;
+          <small class="blk-kind">${Cal.sub(i, true)}</small></div>
+        <div class="blk-actions">${i.task ? Cal.check(i) : U.icon('right', 16)}</div></div>`;
     const list = [
       ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
       ...blocks.map(b => ({ t: b.start, h: row(b) })),
       ...items.filter(i => i.time).map(i => ({ t: i.time, h: item(i) })),
     ].map((x, n) => ({ ...x, n })).sort((a, b) => a.t.localeCompare(b.t) || a.n - b.n);
 
+    const breakOk = (S.settings.breakMode || 'fixo') === 'flexivel' && k >= t && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada');
     const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
-      : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`;
+      : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`
+    const abertas = items.filter(i => i.task && !i.done).length;
+    const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
@@ -64,10 +68,13 @@ Views.agenda = {
         <div class="ag-head-t">
           <small class="muted">${when ? `${when} · ` : ''}${wd}</small>
           <h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2>
-          <p class="muted small">${summary}</p>
+          <p class="muted small">${resumo}</p>
         </div>
         <span class="grow"></span>
-        ${blocks.length ? `<button class="btn sm ghost" data-act="agMenu" aria-label="Reorganizar o dia">${U.icon('more', 16)} Reorganizar</button>` : ''}
+        <div class="ag-btns">
+          ${breakOk ? `<button class="btn sm ghost" data-act="agBreak">${U.icon('pause', 16)} ${k === t ? 'Intervalo agora' : 'Intervalo'}</button>` : ''}
+          ${blocks.length ? `<button class="btn sm ghost" data-act="agMenu" aria-label="Reorganizar o dia">${U.icon('more', 16)} Reorganizar</button>` : ''}
+        </div>
       </div>
       ${blocks.length ? H.dayRail(k, { link: false }) : ''}
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}

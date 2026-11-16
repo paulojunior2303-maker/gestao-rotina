@@ -410,19 +410,15 @@ const Gravador = {
       const d = i.data || (feito ? g.date : D.nextWorkday(g.date));
       const nota = `Do relatório do dia ${U.fmtShort(g.date)}.`;
       let kind = i.tipo, id = U.uid();
-      if (i.tipo === 'agenda' && !i.hora) kind = 'tarefa';   // sem horário não dá para pôr na agenda: vira tarefa com prazo
-      if (kind === 'tarefa') S.tasks.push({ id, title: i.titulo, description: nota, category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', responsible: i.responsavel || '', createdAt: now, completedAt: feito ? now : null, startDate: t, dueDate: d, dueTime: i.hora || '', notes: '' });
+      if (kind === 'agenda') kind = 'tarefa';   // "Na agenda" e Tarefa viraram uma coisa só: tarefa com dia, horário e duração
+      if (kind === 'tarefa') S.tasks.push({ id, title: i.titulo, description: nota, category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', responsible: i.responsavel || '', createdAt: now, completedAt: feito ? now : null, startDate: t, dueDate: d, dueTime: i.hora || '', dur: i.hora ? i.duracao || 0 : 0, notes: '' });
       else if (kind === 'imprevisto') S.occurrences.push({ id, createdAt: now, scheduled: null, title: i.titulo, description: nota, priority: 'alta', status: feito ? 'concluida' : 'pendente', ...(feito ? { resolvedAt: now } : {}), date: feito ? (i.data || g.date) : g.date, time: i.hora || '', dueDate: feito ? '' : (i.data || ''), dueTime: '', responsible: i.responsavel || '', notes: '' });
       else if (kind === 'compromisso') S.events.push({ id, title: i.titulo, date: d, time: i.hora || '', pautas: [], notes: nota, ...(i.responsavel ? { participantes: i.responsavel } : {}) });
-      else {
-        const s = U.toMin(i.hora), e = Math.min(1439, s + (i.duracao || 30));
-        D.ensureDay(d).push({ id, title: i.titulo, start: i.hora, end: U.fromMin(e), category: 'administrativo', priority: 'media', status: feito ? 'concluida' : 'pendente', fixed: false, notes: nota });
-      }
       i.aplicado = { kind, id, date: d }; n++;
     });
     return n;
   },
-  ITEM_TIPOS: { tarefa: 'Tarefa', imprevisto: 'Imprevisto', compromisso: 'Compromisso', agenda: 'Na agenda' },
+  ITEM_TIPOS: { tarefa: 'Tarefa', imprevisto: 'Imprevisto', compromisso: 'Compromisso' },
   quando(i, g) {
     const d = i.data || (i.situacao === 'feito' ? g.date : D.nextWorkday(g.date));
     const dia = !d ? '' : d === g.date ? 'hoje' : d === U.addDays(g.date, 1) ? 'amanhã' : `${U.WD_SHORT[U.weekday(d)]} ${U.fmtShort(d)}`;
@@ -603,10 +599,10 @@ Views.gravacoes = {
     const pend = itens.filter(i => i.sel && !i.aplicado).length;
     const row = i => {
       const quando = Gravador.quando(i, g);
-      if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind]}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
+      if (i.aplicado) return `<li class="rl-it done"><span class="rl-ok">${U.icon('check', 15)}</span><span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${Gravador.ITEM_TIPOS[i.aplicado.kind] || 'Agenda'}${quando ? ' · ' + quando : ''} · anotado</small></span></li>`;
       return `<li class="rl-it ${i.sel ? '' : 'off'}"><label class="rl-ck"><input type="checkbox" ${i.sel ? 'checked' : ''} data-change="gvItSel" data-id="${g.id}" data-it="${i.id}" aria-label="Anotar ${U.esc(i.titulo)}"></label>
-        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}${i.tipo === 'agenda' && !i.hora ? ' · sem horário, vira tarefa' : ''}</small></span>
-        <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${i.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
+        <span class="rl-main"><strong>${U.esc(i.titulo)}</strong><small>${i.situacao === 'feito' ? 'feito hoje' : i.situacao === 'pendente' ? 'ficou pendente' : 'planejado'}${quando ? ' · ' + quando : ''}${i.responsavel ? ' · ' + U.esc(i.responsavel) : i.situacao !== 'feito' ? ' · com você' : ''}</small></span>
+        <select class="rl-tipo" data-change="gvItTipo" data-id="${g.id}" data-it="${i.id}" aria-label="Tipo">${Object.entries(Gravador.ITEM_TIPOS).map(([v, l]) => `<option value="${v}" ${(i.tipo === 'agenda' ? 'tarefa' : i.tipo) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></li>`;
     };
     const aud = g.tipo === 'audio';
     return `<div class="card"><div class="card-h"><h3>${U.icon(aud ? 'upload' : 'list')} ${aud ? 'Resumo' : 'Relatório do dia'}</h3></div>

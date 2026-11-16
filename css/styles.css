@@ -1178,3 +1178,10 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-it:active, .blk-it:active, .task .tk-body:active, .tab:active, .gv-card:active { opacity: .72; }
 .calx-it, .blk-it, .task .tk-body, .tab { transition: opacity .12s, border-color .15s, background .15s; }
 @media (max-width: 900px) { html { scroll-padding-bottom: 120px; } }
+
+/* Tarefa = uma coisa só (Tarefas + Agenda): fim do horário embaixo do início e ✓ direto no calendário */
+.calx-it-time { display: flex; flex-direction: column; line-height: 1.25; }
+.calx-it-time small { font-weight: 500; color: var(--muted); font-size: 11.5px; }
+.calx-it .icon-btn { flex: none; margin: -6px -6px -6px 0; }
+.cap-nodate { margin: 2px 0 0; }
+.ag-head .ag-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }

@@ -48,16 +48,18 @@ Views.guia = {
       'Você pode ouvir e baixar cada parte.',
     ]))}
     ${sec('calendario', 'calendar', 'Calendário', li([
-      'A tela inicial mostra o mês inteiro. Toque num dia para ver gravações, reuniões, compromissos e prazos.',
-      'O <strong>+</strong> anota uma tarefa, um compromisso ou uma atividade no dia que você escolheu.',
+      'A tela inicial mostra o mês inteiro. Toque num dia para ver as tarefas, gravações, reuniões e compromissos dele. Conclua uma tarefa ali mesmo, no ✓.',
+      'O <strong>+</strong> anota uma <strong>tarefa</strong> no dia que você escolheu: diga ou escolha o horário e quanto tempo leva, se quiser. Tarefa sem data e tarefa atrasada aparecem no dia de hoje até você concluir.',
+      'Reunião, feedback e relatório do dia ficam em <strong>Gravações</strong>.',
       CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para guardar os dados na nuvem. O áudio e a transcrição completa ficam no aparelho.',
     ]))}
     ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
-      'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário.',
+      'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário: sua rotina e as tarefas, tudo junto.',
       'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
+      'A tela Tarefas é a lista de tudo. As mesmas tarefas aparecem na Agenda e no Calendário, no dia delas.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
       'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
       'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
