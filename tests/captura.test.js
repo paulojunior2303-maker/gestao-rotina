@@ -92,11 +92,16 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await p.tap(`${M} [data-dur="60"]`); await p.tap(`${M} [data-save]`); await W();
   await go('dashboard'); await go('imprevistos');
   check((await p.textContent('.occ-today')).includes('2 imprevistos') && (await p.textContent('.occ-today')).includes('1h tomados da agenda'), 'resumo de hoje: quantos imprevistos e quanto tempo tomaram');
-  // Mais detalhes → formulário completo com o texto
+  // Tudo numa tela só, sem "Mais detalhes"
   await p.tap('#fab'); await W();
+  check(await p.locator(`${M} [data-more]`).count() === 0 && await p.locator(`${M} #cap-oprio`).isVisible() && await p.locator(`${M} #cap-odue`).isVisible() && await p.locator(`${M} #cap-obs`).isVisible(), 'imprevisto: prioridade, prazo e observação já à vista, sem "Mais detalhes"');
   await p.locator(`${M} #cap-t`).fill('Falta de energia no cliente Z');
-  await p.tap(`${M} [data-more]`); await W(400);
-  check(await p.inputValue(`${M} [name=title]`) === 'Falta de energia no cliente Z', '"Mais detalhes" abre o formulário completo já preenchido');
+  await p.selectOption(`${M} #cap-oprio`, 'alta'); await p.fill(`${M} #cap-odue`, '2026-11-13'); await p.locator(`${M} #cap-obs`).fill('Aguardando a concessionária');
+  await p.tap(`${M} [data-save]`); await W();
+  const oz = (await st()).occurrences.find(x => x.title === 'Falta de energia no cliente Z');
+  check(oz && oz.priority === 'alta' && oz.dueDate === '2026-11-13' && oz.description === 'Aguardando a concessionária', 'imprevisto gravado com prioridade, prazo e observação');
+  await p.locator('.occ', { hasText: 'Falta de energia' }).locator('[data-act=occEdit]').tap(); await W(400);
+  check(await p.locator(`${M} [data-more-tg]`).count() === 0 && await p.locator(`${M} [name=status]`).count() === 0 && await p.locator(`${M} [name=dueDate]`).isVisible() && await p.inputValue(`${M} [name=description]`) === 'Aguardando a concessionária', 'Editar imprevisto: tudo à vista, sem "Mais opções"');
   await p.tap(`${M} [data-cancel]`); await W();
 
   // ---- Tarefa com data do texto
@@ -117,7 +122,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await p.locator(`${M} #cap-t`).fill('Ligar para fornecedor às 16:15');
   await W(150);
   check(await p.inputValue(`${M} #cap-time`) === '16:15' && !(await p.locator(`${M} #cap-dur`).isDisabled()), 'horário do texto preenchido e a duração fica liberada');
-  check(await p.locator(`${M} #cap-prio`).isVisible() && await p.locator(`${M} #cap-rep`).isVisible() && await p.locator(`${M} #cap-obs`).isVisible() && !(await p.locator(`${M} [data-more]`).isVisible()), 'tarefa: prioridade, repetir e observação já à vista, sem "Mais detalhes"');
+  check(await p.locator(`${M} #cap-prio`).isVisible() && await p.locator(`${M} #cap-rep`).isVisible() && await p.locator(`${M} #cap-obs`).isVisible() && await p.locator(`${M} [data-more]`).count() === 0, 'tarefa: prioridade, repetir e observação já à vista, sem "Mais detalhes"');
   await p.selectOption(`${M} #cap-dur`, '15'); await p.selectOption(`${M} #cap-prio`, 'alta'); await p.locator(`${M} #cap-obs`).fill('Pedir prazo de entrega');
   await p.tap(`${M} [data-save]`); await W();
   s = await st();

@@ -43,7 +43,9 @@ e diga o que mudou e como testar no celular.
   no Calendário e na Agenda; nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
   Blocos da rotina (`S.days`) continuam: vêm da rotina padrão e o `Actions.agNew` segue existindo (formulário completo), mas sem botão no "+".
 - **Formulário de tarefa enxuto (pedido do usuário)**: tudo numa tela só, sem "Mais detalhes"/"Mais opções". No "+" (`Capture`, aba Tarefa): Quando, Horário + Duração
-  (`#cap-dur`, `Tasks.DURS`), Quem faz, Prioridade + Repetir (`#cap-prio`, `#cap-rep`) e Observação (`#cap-obs` → `description`). "Mais detalhes" só no Imprevisto.
+  (`#cap-dur`, `Tasks.DURS`), Quem faz, Prioridade + Repetir (`#cap-prio`, `#cap-rep`) e Observação (`#cap-obs` → `description`). Aba Imprevisto: tempo agora,
+  Quem resolve, Prioridade + Prazo para resolver (`#cap-oprio`, `#cap-odue`) e Observação. **Não há mais "Mais detalhes"** (nem `Capture.details`).
+  `Occ.form` (Registrar/Editar imprevisto) também é uma tela só, dois campos por linha, sem status (botões Iniciar/Resolver/Reabrir do cartão).
   `Tasks.form` (Nova tarefa da tela Tarefas e Editar): os mesmos campos, dois por linha também no celular (`.form-grid:has(.tk-form-dica)`); **sem** categoria,
   status e data de início (ficam como estão; status pelos botões da lista). Ao editar, `description` + `notes` antigas viram um campo só ("Observação").
 - **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo

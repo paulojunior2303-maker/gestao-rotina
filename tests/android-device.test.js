@@ -176,7 +176,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[3] Imprevistos');
   await go('imprevistos');
-  await tap('#fab'); await p.locator(`${M} #cap-t`).fill('x'); await tap(`${M} [data-more]`); await W(300); await fill('title', 'Câmeras offline no cliente'); await fill('responsible', 'Carlos');
+  await p.evaluate(() => Actions.occNew()); await W(300); await fill('title', 'Câmeras offline no cliente'); await fill('responsible', 'Carlos');
   await p.locator(`${M} [name=schedule]`).check(); await save(); await W(400);
   await fill('start', '16:00'); await fill('duration', '30'); await save(); await W(300);
   s = await st(); const occ = s.occurrences[0];
