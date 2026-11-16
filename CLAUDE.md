@@ -105,8 +105,8 @@ e diga o que mudou e como testar no celular.
 ## Skills de design e escrita (`.claude/skills/`, pedido do usuário)
 Cópias das skills abertas (cada pasta tem a LICENSE/NOTICE original): `impeccable` (pbakaus/impeccable, Apache-2.0: criar, criticar, auditar e polir a interface),
 `ui-ux-pro-max` (nextlevelbuilder/ui-ux-pro-max-skill, MIT: busca local de estilos, paletas e regras de UX; `python3 .claude/skills/ui-ux-pro-max/scripts/search.py`,
-caminho ajustado de `${CLAUDE_PLUGIN_ROOT}` para a raiz do projeto), `stop-slop` (hardikpandya/stop-slop, MIT: tirar o jeito de texto de IA) e
-`taste-skill` (Leonxlnx/taste-skill, MIT, nome interno `design-taste-frontend`: feita para sites e landing pages).
+caminho ajustado de `${CLAUDE_PLUGIN_ROOT}` para a raiz do projeto) e `stop-slop` (hardikpandya/stop-slop, MIT: tirar o jeito de texto de IA).
+A `taste-skill` foi removida (feita para landing pages, 35 MB; não serve a este app).
 **As regras deste arquivo valem mais que as das skills**: identidade visual v2 (variáveis de `css/styles.css`, Geist/Bricolage), 393 px, app sem dependências,
 português simples, nada de fotos/efeitos pesados. As skills não entram no site nem no APK (o `pages.yml` e o `build.py` não copiam `.claude/`).
 Para atualizar: copiar de novo a pasta da skill do repositório original.
