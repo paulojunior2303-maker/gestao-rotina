@@ -1195,3 +1195,15 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .cap-sel { min-height: 44px; padding: 9px 11px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; }
 .cap-sel:disabled { opacity: .5; }
 .cap-obs { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; resize: vertical; }
+
+/* iPhone (Safari e app na Tela de Início) */
+@supports (-webkit-touch-callout: none) {
+  /* Campo com letra menor que 16 px faz o iPhone dar zoom ao tocar e a tela fica torta */
+  input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
+  /* Sem o "flash" cinza ao tocar e sem o menu de copiar ao segurar botões */
+  button, a, [role=button], .calx-d { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+}
+/* Aberto pela Tela de Início (tela cheia): o fundo vai até atrás da barra de status e da barra de gestos */
+@media (display-mode: standalone) {
+  html, body { background: var(--bg); overscroll-behavior-y: none; }
+}

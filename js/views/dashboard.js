@@ -17,6 +17,7 @@ Views.dashboard = {
     const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
     return `
     ${Updater.banner()}
+    ${Views.dashboard.iphoneCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">
       <div><strong>Como você se chama?</strong><small>Seu nome vai no relatório do dia, nas atas e na saudação. O que você disser que vai fazer entra na sua agenda.</small></div>
       <div class="eu-row"><input name="nome" placeholder="Seu nome" maxlength="40" autocomplete="name" required><button class="btn primary">Salvar</button></div></form>`}
@@ -31,8 +32,19 @@ Views.dashboard = {
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>`;
   },
   render() { return this.renderEnxuto(); },
+  /* iPhone no Safari (ainda não instalado): ensina a pôr na Tela de Início. Some ao tocar em "Entendi" (vale por aparelho). */
+  ehIphone() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); },
+  instalado() { return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches); },
+  iphoneCard() {
+    if (!this.ehIphone() || this.instalado() || Native.available() || Cloud.available()) return '';
+    try { if (localStorage.getItem('ff-iphone-ok')) return ''; } catch (e) { /* sem LocalStorage: mostra */ }
+    return `<div class="card eu-card ios-card"><div><strong>Use como app no iPhone</strong>
+      <small>No Safari, toque em ${U.icon('upload', 14)} <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. O FlowFire abre em tela cheia, com ícone próprio, e seus dados ficam guardados.</small></div>
+      <div><button class="btn sm ghost" data-act="iosOk">Entendi</button></div></div>`;
+  },
 };
 Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });
 Object.assign(Actions, {
+  iosOk() { try { localStorage.setItem('ff-iphone-ok', '1'); } catch (e) { /* ignora */ } App.render(); },
   euNome(_, form) { const v = form.elements.nome.value.trim().replace(/\s+/g, ' '); if (!v) return; S.settings.usuario = v; commit(); UI.toast(`Prazer, ${v.split(' ')[0]}! Dá para mudar em Configurações → Você.`); },
 });

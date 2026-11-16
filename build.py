@@ -13,6 +13,9 @@ html = html.replace('<link rel="stylesheet" href="css/styles.css">', f'<style>\n
 html = html.replace('<link rel="manifest" href="manifest.webmanifest">\n', '')
 icon = base64.b64encode((root / 'icon.svg').read_bytes()).decode()
 html = html.replace('href="icon.svg"', f'href="data:image/svg+xml;base64,{icon}"')
+# Ícone do iPhone (Adicionar à Tela de Início). Site de teste: cópia em teste/icon-180.png (tools/publicar-teste.sh); os outros: endereço completo do site oficial
+if not TESTE:
+    html = html.replace('href="icon-180.png"', 'href="https://paulojunior2303-maker.github.io/gestao-rotina/icon-180.png"')
 def inline(m):
     js = (root / m.group(1)).read_text(encoding='utf-8').replace('</script', '<\\/script')
     return f'<script>/* {m.group(1)} */\n{js}\n</script>'

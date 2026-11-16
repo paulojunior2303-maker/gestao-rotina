@@ -111,6 +111,11 @@ e diga o que mudou e como testar no celular.
   Android: `GooglePlugin.java` (AuthorizationClient do play-services-auth; cliente OAuth Android = pacote + SHA-1 da chave de release).
   Site: Google Identity Services com o cliente Web (token ~1 h em sessionStorage; depois aparece "Sincronizar"). Projeto Google Cloud do usuário.
   `tests/drive.test.js` simula a API do Drive. A conexão (e-mail, ids) fica em `localStorage['gr-drive']`, por aparelho.
+- **iPhone (PWA na Tela de Início; não há app iOS)**: metas `apple-mobile-web-app-*`, `viewport-fit=cover`, `apple-touch-icon` = `icon-180.png`
+  (gerado por `node tools/icone-iphone.js`, junto com `icon-512.png`; o `build.py` troca por endereço completo, menos no teste, que usa `teste/icon-180.png`).
+  `Theme.apply` troca a barra de status (escuro: `black-translucent`; claro: `default`). Campos com 16 px só no iOS (`@supports (-webkit-touch-callout: none)`, evita zoom).
+  Cartão "Use como app no iPhone" no Calendário (`Views.dashboard.iphoneCard`, some com "Entendi" → `localStorage['ff-iphone-ok']`). Áudio do Safari é MP4: `IA.mimeIA`.
+  `sw.js`: a lista `FILES` precisa bater com os `<script>` do `index.html` (`tests/iphone.test.js` confere; antes listava arquivos apagados e o cache offline falhava).
 - **Aviso de versão nova** (`Updater`): o APK compara `App.getInfo().version` com a última Release do GitHub.
 - **Reuniões** são `S.events` com `reuniao: true` e/ou `pautas`; `registro` = tratadas + combinados + resumo (as gravadas ficam ligadas por `gravacaoId`).
 - **IA** (`js/ia.js`): Google Gemini direto do app, com a chave do usuário em `settings.ia.key` (Configurações → IA). Modelos em `IA.MODELS`

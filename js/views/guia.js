@@ -58,6 +58,11 @@ Views.guia = {
       'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
+    ${sec('iphone', 'info', 'No iPhone', li([
+      'Abra o link do FlowFire no <strong>Safari</strong>, toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>. Ele abre como app, em tela cheia.',
+      'Entre com a mesma <strong>conta FlowFire</strong> do Android para ver as mesmas tarefas nos dois aparelhos.',
+      'No iPhone, os lembretes só aparecem com o app aberto, e o compartilhar áudio do WhatsApp direto para o FlowFire não existe: use <strong>Gravar → Áudio ou texto</strong>.',
+    ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
       'A tela Tarefas é a lista de tudo. As mesmas tarefas aparecem na Agenda e no Calendário, no dia delas.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',

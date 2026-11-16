@@ -50,10 +50,12 @@ const IA = {
   },
 
   /* Transcrição de um trecho de áudio (rápida: usa primeiro o modelo leve) */
+  /* O iPhone (Safari) grava em MP4/AAC e às vezes manda "audio/mp4;codecs=…": a IA quer o tipo sem os parâmetros */
+  mimeIA(m) { m = String(m || ''); return /^audio\/(mp4|x-m4a|aac)/.test(m) ? 'audio/mp4' : m; },
   async transcribe(audio, { timeout = 45000 } = {}) {
     const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout,
       system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
-      parts: [{ inlineData: { mimeType: audio.mime, data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
+      parts: [{ inlineData: { mimeType: IA.mimeIA(audio.mime), data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
     return /^\[sil[eê]ncio\]$/i.test(t.trim()) ? '' : t.trim();
   },
 
@@ -89,7 +91,7 @@ Responda em JSON com:
 - "tratados": números (1, 2, 3…) dos itens da pauta que foram de fato discutidos (item adiado ou só citado não conta).
 - "combinados": decisões confirmadas e compromissos assumidos, um por item, começando pelo responsável quando citado e com o prazo quando houver. Não inclua sugestões nem pendências.`);
     const parts = [];
-    if (audio) parts.push({ inlineData: { mimeType: audio.mime, data: audio.b64 } });
+    if (audio) parts.push({ inlineData: { mimeType: IA.mimeIA(audio.mime), data: audio.b64 } });
     parts.push({ text: `Reunião: ${e.title}
 Data: ${U.fmtDate(e.date)}${e.time ? ', ' + e.time : ''}
 Pauta numerada:

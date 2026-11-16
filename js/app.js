@@ -209,6 +209,9 @@ const Theme = {
     if ((document.documentElement.dataset.contraste === 'alto') !== sol) { if (sol) document.documentElement.dataset.contraste = 'alto'; else delete document.documentElement.dataset.contraste; }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : sol ? '#ffffff' : '#f5f3f9');
+    // iPhone na Tela de Início: letras brancas na barra de status só no tema escuro (no claro, letras escuras)
+    const ios = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (ios) ios.setAttribute('content', t === 'dark' ? 'black-translucent' : 'default');
   },
   init() {
     this.apply();
