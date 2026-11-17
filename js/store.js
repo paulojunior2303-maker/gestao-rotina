@@ -52,7 +52,7 @@ const Store = {
         usuario: '',             // nome de quem usa o app (quem fala nas gravações e no relatório do dia)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
-        lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
+        lembretes: { on: true, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
           { id: 'demandas', name: 'Demandas', color: '#8e87a3' },
@@ -104,7 +104,7 @@ const Store = {
       gravacoes: [],   // gravações de reuniões/feedbacks (js/gravador.js); o áudio e a transcrição ficam no aparelho
       diario: {},      // por dia: { abertoEm, fechadoEm, nota } (Abrir/Fechar o dia)
       missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
-      meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
+      meta: { v2: true, v3: true, v4: true, v5: true, v6: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -118,6 +118,7 @@ const Store = {
       this.state = this.defaults();
     }
     S = this.state;
+    this._ids = this.idsAtuais();
   },
 
   migrate(s) {
@@ -130,6 +131,8 @@ const Store = {
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
     if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
     if (!s.meta.v5) { if (s.settings && s.settings.empresa === 'Wi-bicam, CFTV IP') s.settings.empresa = ''; s.meta.v5 = true; }
+    // v6: lembretes ligados por padrão (pedido do usuário); quem já usava também passa a receber (dá para desligar em Configurações)
+    if (!s.meta.v6) { if (s.settings.lembretes) s.settings.lembretes.on = true; s.meta.v6 = true; }
     return this.sanear(s);
   },
 
@@ -201,8 +204,25 @@ const Store = {
   },
 
   /* touch = alteração feita aqui (marca o horário e envia ao Google Drive). Dados vindos de fora usam touch: false. */
+  /* Itens apagados ("lápides"): guarda o id e quando foi apagado, para a sincronização não trazer de volta
+     um item que um aparelho apagou enquanto o outro mexia na mesma lista sem internet. Esquecidos depois de 60 dias. */
+  LISTAS: ['tasks', 'occurrences', 'events', 'feedbacks', 'gravacoes', 'projects', 'indicators', 'checks'],
+  idsAtuais() { const o = {}; for (const k of this.LISTAS) o[k] = new Set((this.state[k] || []).map(x => x && x.id).filter(Boolean)); return o; },
+  marcarApagados() {
+    if (!this.state) return;
+    const agora = this.idsAtuais(), antes = this._ids;
+    this._ids = agora;
+    if (!antes) return;
+    const ap = (this.state.meta = this.state.meta || {}).apagados = this.state.meta.apagados || {};
+    const t = Date.now();
+    for (const k of this.LISTAS) for (const id of antes[k] || []) if (!agora[k].has(id)) ap[id] = t;
+    for (const k of this.LISTAS) for (const id of agora[k]) if (ap[id]) delete ap[id];   // desfazer: o item voltou
+    const velho = t - 60 * 86400000;
+    for (const [id, at] of Object.entries(ap)) if (at < velho) delete ap[id];
+  },
   save({ cloud = true, touch = true } = {}) {
     this.rev++;
+    if (touch) this.marcarApagados(); else if (this.state) this._ids = this.idsAtuais();
     if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }
@@ -229,6 +249,7 @@ const Store = {
   replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
+    this._ids = this.idsAtuais();   // trocar os dados inteiros (backup, nuvem) não conta como "apagar" os itens que saíram
     this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 

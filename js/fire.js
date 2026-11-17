@@ -148,19 +148,29 @@ const Fire = {
   loadBase() { try { const b = JSON.parse(localStorage.getItem(this.baseKey()) || 'null'); return b && this.user && b.uid === this.user.uid ? b.h || {} : null; } catch (e) { return null; } },
   saveBase() { try { if (this.user) localStorage.setItem(this.baseKey(), JSON.stringify({ uid: this.user.uid, h: Object.fromEntries(Object.entries(this.last).map(([id, v]) => [id, this.hash(v)])) })); } catch (e) { /* sem armazenamento */ } },
   /* Junta duas versões (texto JSON) do mesmo documento. novo = 'l' (este aparelho) ou 'r' (nuvem): quem foi alterado por último */
-  mergeDoc(id, l, r, novo) {
+  /* apagados = ids apagados em qualquer um dos aparelhos (meta.apagados dos dois lados): não voltam na junção */
+  mergeDoc(id, l, r, novo, apagados = {}) {
     let L, R; try { L = JSON.parse(l); R = JSON.parse(r); } catch (e) { return novo === 'l' ? l : r; }
     const A = novo === 'l' ? L : R, B = novo === 'l' ? R : L;   // A vence nos empates
     if (id.startsWith('days-')) return JSON.stringify({ days: { ...(B.days || {}), ...(A.days || {}) } });
     if (Array.isArray(L.items) && Array.isArray(R.items)) {
       const ids = new Set((A.items || []).map(x => x && x.id));
-      return JSON.stringify({ items: [...A.items, ...(B.items || []).filter(x => x && !ids.has(x.id))] });
+      return JSON.stringify({ items: [...A.items, ...(B.items || []).filter(x => x && !ids.has(x.id))].filter(x => !(x && apagados[x.id])) });
     }
-    return JSON.stringify(A);   // core (configurações): vale o lado mais novo
+    if (id === 'core') {   // configurações: vale o lado mais novo, mas as listas de apagados se somam
+      A.meta = { ...(A.meta || {}), apagados: { ...((B.meta || {}).apagados || {}), ...((A.meta || {}).apagados || {}) } };
+    }
+    return JSON.stringify(A);
+  },
+  apagadosDe(...txts) {
+    const o = {};
+    for (const t of txts) { try { Object.assign(o, ((JSON.parse(t) || {}).meta || {}).apagados || {}); } catch (e) { /* sem core */ } }
+    return o;
   },
   /* Decide documento por documento. Devolve os textos finais; conflitos = quantos precisaram de junção */
   tresVias(local, remote, base, novo) {
     const next = {}; let conflitos = 0;
+    const apagados = this.apagadosDe(local.core, remote.core);
     for (const id of new Set([...Object.keys(local), ...Object.keys(remote), ...Object.keys(base)])) {
       const l = local[id], r = remote[id], b = base[id];
       const mudouAqui = (l === undefined ? undefined : this.hash(l)) !== b, mudouLa = (r === undefined ? undefined : this.hash(r)) !== b;
@@ -168,7 +178,7 @@ const Fire = {
       if (!mudouAqui) v = r; else if (!mudouLa) v = l;
       else if (l === undefined || r === undefined) v = l === undefined ? r : l;   // apagado de um lado e alterado do outro: fica
       else if (l === r) v = l;
-      else { v = this.mergeDoc(id, l, r, novo); conflitos++; }
+      else { v = this.mergeDoc(id, l, r, novo, apagados); conflitos++; }
       if (v !== undefined) next[id] = v;
     }
     return { next, conflitos };
@@ -257,7 +267,7 @@ const Fire = {
         const mudouAqui = local[id] !== this.last[id];          // alterado neste aparelho e ainda não enviado
         if (id in remote && remote[id] !== this.last[id] && !mudouAqui) { next[id] = remote[id]; this.last[id] = remote[id]; changed = true; }
         else if (id in remote && id in local && remote[id] !== this.last[id] && mudouAqui && remote[id] !== local[id]) {   // mudou nos dois ao mesmo tempo: junta (o daqui vence empates) em vez de apagar o do outro aparelho
-          next[id] = this.mergeDoc(id, local[id], remote[id], 'l'); this.last[id] = remote[id]; changed = true; }
+          next[id] = this.mergeDoc(id, local[id], remote[id], 'l', this.apagadosDe(local.core, remote.core)); this.last[id] = remote[id]; changed = true; }
         else if (!(id in remote) && id in this.last && !mudouAqui) { delete this.last[id]; changed = true; continue; }   // apagado em outro aparelho
         else if (id in local) next[id] = local[id];
       }
