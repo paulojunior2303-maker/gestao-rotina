@@ -31,8 +31,8 @@ const Reminders = {
       const base = this.at(date, time), k = this.key(kind, x, date, time);
       if (this.ciente(k)) return;
       const lbl = kind === 'tarefa' ? 'Tarefa' : 'Imprevisto';
-      push({ k, kind, id: x.id, when: base - antes * 60000, title: `${lbl} vence ${fmtAntes}`, body: `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
-      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: `${lbl} atrasada`, body: `${x.title} · venceu às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
+      push({ k, kind, id: x.id, when: base - antes * 60000, title: kind === 'tarefa' ? `Tarefa ${fmtAntes}` : `${lbl} vence ${fmtAntes}`, body: kind === 'tarefa' ? `${x.title} · às ${time}${x.dur ? ' (' + U.fmtDur(x.dur) + ')' : ''}` : `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
+      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: kind === 'tarefa' ? 'Tarefa atrasada' : 'Imprevisto atrasado', body: `${x.title} · ${kind === 'tarefa' ? 'era' : 'venceu'} às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
     };
     S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueTime).forEach(x => prazo('tarefa', x, x.title, x.dueDate, x.dueTime));
     S.occurrences.filter(o => OPEN(o.status) && o.dueDate && o.dueTime).forEach(o => prazo('imprevisto', o, o.title, o.dueDate, o.dueTime));
@@ -50,7 +50,7 @@ const Reminders = {
       const evs = S.events.filter(e => e.date === k).length;
       const occ = S.occurrences.filter(o => OPEN(o.status) && o.dueDate === k).length;
       const late = S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueDate < k).length;
-      const parts = [tasks && U.plural(tasks, 'prazo de tarefa', 'prazos de tarefa'), evs && U.plural(evs, 'compromisso'), occ && U.plural(occ, 'imprevisto') + ' com prazo', late && U.plural(late, 'tarefa atrasada', 'tarefas atrasadas')].filter(Boolean);
+      const parts = [tasks && U.plural(tasks, 'tarefa'), evs && U.plural(evs, 'compromisso'), occ && U.plural(occ, 'imprevisto') + ' com prazo', late && U.plural(late, 'tarefa atrasada', 'tarefas atrasadas')].filter(Boolean);
       if (parts.length) push({ k: 'resumo:' + k, kind: 'resumo', id: k, when: this.at(k, S.settings.workStart), title: 'Seu dia', body: parts.join(', ') + '.', type: '' });
     }
     return out.sort((a, b) => a.when - b.when).slice(0, this.MAX);
@@ -99,7 +99,7 @@ const Reminders = {
   onAction(actionId, x) {
     if (actionId === 'feito' && x.kind === 'tarefa') {
       const t = S.tasks.find(t => t.id === x.id);
-      if (t && OPEN(t.status)) { t.status = 'concluida'; t.completedAt = new Date().toISOString(); commit(); UI.toast('Tarefa concluída pelo aviso.'); }
+      if (t && OPEN(t.status)) { const nx = Tasks.setStatus(t, 'concluida'); commit(); UI.toast(nx ? `Tarefa concluída pelo aviso. A próxima fica para ${U.fmtShort(nx.dueDate)}.` : 'Tarefa concluída pelo aviso.'); }   // setStatus: tarefa que se repete cria a próxima
       return;
     }
     if (actionId === 'ciente' || actionId === 'feito') {

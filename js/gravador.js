@@ -516,7 +516,7 @@ const Gravador = {
   },
   init() {
     window.addEventListener('online', () => this.processar());
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.processar(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { this.processar(); if (this.cur) this.acordado(true); } });   // o navegador solta a "tela acesa" ao sair do app: pede de novo ao voltar
     // Tenta de novo: a cada 10 s quando estava sem internet e ela voltou; a cada minuto nos outros casos
     let n = 0;
     setInterval(() => {
