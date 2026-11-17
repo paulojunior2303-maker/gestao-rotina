@@ -75,6 +75,16 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   const md = await B.evaluate(() => [Fire.mergeDoc('tasks', JSON.stringify({ items: [{ id: '1', t: 'aqui' }, { id: '2' }] }), JSON.stringify({ items: [{ id: '1', t: 'nuvem' }, { id: '3' }] }), 'r'), Fire.mergeDoc('days-2026-11', JSON.stringify({ days: { '2026-11-01': [1] } }), JSON.stringify({ days: { '2026-11-02': [2] } }), 'l')]);
   check(JSON.parse(md[0]).items.map(x => x.id + (x.t || '')).join() === '1nuvem,3,2' && Object.keys(JSON.parse(md[1]).days).length === 2, 'junção item por item: no empate vale o lado mais novo; dias diferentes ficam os dois');
 
+  console.log('\n[7] Apagado num aparelho não volta');
+  await B.evaluate(() => Fire.detach());
+  await B.evaluate(() => { S.tasks = S.tasks.filter(x => x.id !== 'a9'); commit(); });   // B apaga sem internet
+  await A.evaluate(t => { S.tasks.push(t); commit(); }, mk('a10', 'Outra do A')); await W(A, 1800);   // A mexe na mesma lista
+  await B.reload(); await W(B, 2000);
+  const t7 = await titles(B);
+  check(!t7.includes('Feita no A enquanto isso') && t7.includes('Outra do A'), 'tarefa apagada no B não volta, e a nova do A chega');
+  await W(A, 800);
+  check(!(await titles(A)).includes('Feita no A enquanto isso'), 'o outro aparelho também apaga');
+
   const errs = pages.flatMap(p => p.errs);
   check(!errs.length, 'nenhum erro de JavaScript' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   console.log(`\nRESULTADO: ${pass} ok, ${fail} falhas`);

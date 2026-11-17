@@ -95,7 +95,8 @@ e diga o que mudou e como testar no celular.
 - **Conta FlowFire / Firebase** (`js/fire.js`, `Fire`): login com Google (web: popup; Android: `GooglePlugin.autorizar` com escopos openid/email/profile → `signInWithCredential` com o access token) e sincronização ao vivo no Firestore em `canais/{oficial|teste}/usuarios/{uid}/docs/{id}` (JSON como texto em `v`; documentos por mês para agenda, reuniões, feedbacks e indicadores). SDK carregado sob demanda do gstatic. Regras em `firestore.rules` (cada um só os próprios documentos). Testes usam `window.__fireFake` (`tests/fire.test.js`). Projeto Firebase `gestao-de-rotina-514301` (o mesmo do Drive). As **equipes** na nuvem foram retiradas do app (as regras de `equipes` continuam em `firestore.rules`, sem uso).
 - **Sincronização sem perguntar** (`Fire.tresVias`, `mergeDoc`, `saveBase`): o aparelho guarda em `localStorage['ff-fire-base:<canal>']` o resumo (`Fire.hash`) de cada
   documento no último ponto igual à nuvem. Ao abrir: só a nuvem mudou → recebe; só aqui → envia; os dois → junta item por item por `id` (empate: lado mais novo; dias: por data).
-  A pergunta "Juntar os dados" só aparece na primeira vez de um aparelho que já tem dados. Limite conhecido: item apagado num aparelho pode voltar se o outro mexeu no mesmo documento sem internet.
+  A pergunta "Juntar os dados" só aparece na primeira vez de um aparelho que já tem dados. **Itens apagados** viram "lápides" em `S.meta.apagados` (`Store.marcarApagados`, só em
+  alterações feitas aqui; `Store.replace` não conta como apagar; somem após 60 dias): `mergeDoc` não traz de volta o que um aparelho apagou, e o `core` soma as lápides dos dois lados.
 - **Segurança (auditoria)**: `UI.toast` é sempre texto puro; `Transfer.semChave` tira `settings.ia.key` do backup e do código de transferência (importar mantém a chave do aparelho);
   `Store.sanear` (no `migrate`) limpa campos "de máquina" (`CAMPOS_MAQUINA`: ids, cores, datas, status…) de dados vindos de fora; `CompartilharPlugin` só lê `content://`.
   Texto livre continua sendo escapado com `U.esc` na hora de mostrar. Testes: `tests/seguranca.test.js`.
@@ -110,6 +111,14 @@ e diga o que mudou e como testar no celular.
   "Técnicos" virou "Equipe" na interface (a chave continua `settings.technicians`). `Store.migrateV4` (marca `meta.v4`) mantém, para quem já usava,
   "Pontos de câmera instalados"; `meta.v5` tira o "Wi-bicam, CFTV IP" (pedido do usuário: nenhum nome de empresa no app). A chave do LocalStorage (`gestao-rotina-wibicam:v1`) e o pacote Android **não mudam** (perderia dados/atualizações).
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
+- **Lembretes ligados por padrão** (pedido do usuário; `meta.v6` liga uma vez para quem já usava; instalação nova já nasce com `v6`): no Android, `initNative` pede a permissão
+  uma vez (`localStorage['ff-lem-pedido']`); no navegador, cartão "Quer ser avisado no horário?" no Calendário (`Reminders.webCard`, "Agora não" → `ff-lem-web`).
+- **Marcar reunião/compromisso/feedback sem gravar**: botão em Gravações (`gvMarcar` → `Events.form` / `FB.form`).
+- **Gravação com tela bloqueada (Android)**: `GravacaoService.java` (serviço em primeiro plano tipo microfone + wake lock parcial, aviso fixo "FlowFire está gravando"),
+  ligado por `Sistema.gravando({ ligada })` a partir de `Recorder.keepScreen` (vale para o `Gravador` e o `Recorder`). Só liga com a permissão do microfone já dada.
+- **Tarefa com horário x rotina**: tarefa aberta com `dueTime` + `dur` ocupa o horário (`Cal.ocupados`, `Cal.batem`): a Agenda mostra "Conflito" e o aviso `.ag-bate`,
+  o "+" avisa com "Reorganizar", e `Replan.plan` trata essas tarefas como horário fixo (a rotina desvia). Testes: `tests/melhorias.test.js`.
+- **Testes antes do APK**: o `android-apk.yml` tem o job `testes` (Playwright 1.63 + `tests/run.sh`); o job `apk` só roda se ele passar.
 - **Lembretes** (`js/lembretes.js`, `Reminders`): calculados de novo a cada gravação (`Store.save`). Android: `@capacitor/local-notifications`
   (botões Feito/Ciente; até 60 agendados); navegador: só com o site aberto. Plugin próprio `SistemaPlugin.java` abre bateria/inicialização automática (Xiaomi).
 - **Google Drive** (`js/drive.js`, `Drive`): arquivo `gestao-rotina-dados.json` na pasta "Gestão de Rotina" do Drive do usuário (escopo `drive.file`).

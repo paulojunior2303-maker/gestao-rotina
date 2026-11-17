@@ -31,7 +31,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
         checkExactNotificationSetting: async () => ({ exact_alarm: 'denied' }),
         changeExactNotificationSetting: async () => window.__call('exact'),
       },
-      Sistema: { status: async () => ({ bateriaLiberada: false, fabricante: 'xiaomi' }), abrir: async (o) => window.__call('abrir', o), manterTela: async (o) => window.__call('tela', o) },
+      Sistema: { status: async () => ({ bateriaLiberada: false, fabricante: 'xiaomi' }), abrir: async (o) => window.__call('abrir', o), manterTela: async (o) => window.__call('tela', o), gravando: async (o) => window.__call('gravando', o) },
       Filesystem: {
         writeFile: async (o) => { files[o.directory + '/' + o.path] = o.data; sessionStorage.setItem('__files', JSON.stringify(files)); window.__call('writeFile', { path: o.path, dir: o.directory }); return { uri: 'file:///cache/' + o.path }; },
         readFile: async (o) => { const d = files[o.directory + '/' + o.path]; if (!d) throw new Error('not found'); return { data: d }; },
@@ -242,8 +242,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await tap('.update-banner [data-act=updLater]'); check(await p.locator('.update-banner').count() === 0, '"Depois" esconde o aviso desta versão');
   await go('config');
   check(await p.locator('#cfg-lembretes [data-change=lemOn]').count() === 1, 'Configurações → Lembretes');
-  await p.locator('#cfg-lembretes .switch').first().tap(); await W(600);
-  check(calls.some(c => c[0] === 'reqPerm') && (await st()).settings.lembretes.on, 'ligar lembretes pede a permissão de notificações');
+  check(calls.some(c => c[0] === 'reqPerm') && (await st()).settings.lembretes.on && await p.locator('#cfg-lembretes .switch').first().isChecked(), 'lembretes já vêm ligados e o app pede a permissão de notificações sozinho');
   await W(400);
   const stTxt = await p.locator('#lem-status').textContent();
   check(stTxt.includes('Alarmes exatos desligados') && stTxt.includes('Inicialização automática'), 'mostra alarmes exatos, bateria e inicialização automática (Xiaomi)');
@@ -274,6 +273,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check((await p.textContent(`${M} .live-txt`)).length > 10, 'feedback: transcrição ao vivo durante a conversa');
   await p.screenshot({ path: OUT + '/19-feedback-ao-vivo.png' });
   await tap(`${M} [data-rec]`); await W(2500);
+  check(calls.some(c => c[0] === 'gravando' && c[1].ligada === true) && calls.filter(c => c[0] === 'gravando').pop()[1].ligada === false, 'gravando: liga o serviço "Gravando" do Android (tela bloqueada) e desliga ao encerrar');
   const fbReq = iaReqs.filter(r => JSON.stringify(r.body).includes('Tarefa: /feedback')).pop();
   check(!!fbReq && JSON.stringify(fbReq.body).includes('Natan Krainer') && JSON.stringify(fbReq.body).includes('Positivo') && JSON.stringify(fbReq.body).includes('MEU AGENTE'), 'ao encerrar, a IA escreve o feedback no padrão do agente (nome e tom)');
   check((await p.inputValue(`${M} [name=resumo]`)).includes('Natan manteve') && (await p.inputValue(`${M} [name=acordos]`)).includes('novo técnico'), 'registro e acordos preenchidos');
