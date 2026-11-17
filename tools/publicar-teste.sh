@@ -16,7 +16,7 @@ cp icon-180.png "$wt/teste/icon-180.png"   # ícone do iPhone (Adicionar à Tela
   if git diff --cached --quiet; then echo "Nada mudou no site de teste."; exit 0; fi
   git commit -q -m "${1:-Site de teste atualizado}
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01Jb4fcfohob92MitdZgDnCs"
   git push -q origin HEAD:main
   echo "Site de teste enviado: $(git rev-parse --short HEAD)"
