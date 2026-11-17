@@ -93,7 +93,22 @@ const Reminders = {
       ] });
       LN.addListener('localNotificationActionPerformed', ev => this.onAction(ev.actionId, (ev.notification && ev.notification.extra) || {}));
     } catch (e) { console.warn('lembretes', e); }
+    // Lembretes ligados por padrão: pede a permissão de notificações uma vez (o Android mostra a pergunta dele)
+    try {
+      if (this.on() && !localStorage.getItem('ff-lem-pedido')) {
+        localStorage.setItem('ff-lem-pedido', '1');
+        const p = await LN.checkPermissions();
+        if (p.display !== 'granted') await LN.requestPermissions();
+      }
+    } catch (e) { /* segue sem permissão: Configurações → Lembretes mostra como liberar */ }
     this.schedule();
+  },
+  /* Navegador: os lembretes estão ligados, mas falta o navegador permitir (ele só deixa pedir depois de um toque) */
+  webCard() {
+    if (!this.on() || !this.webSupported() || Notification.permission !== 'default') return '';
+    try { if (localStorage.getItem('ff-lem-web')) return ''; } catch (e) { /* mostra */ }
+    return `<div class="card eu-card lem-card"><div><strong>Quer ser avisado no horário?</strong><small>Tarefas com horário e compromissos avisam enquanto o FlowFire estiver aberto neste navegador.</small></div>
+      <div class="eu-row"><button class="btn primary" data-act="lemWebOn">Permitir avisos</button><button class="btn ghost" data-act="lemWebNao">Agora não</button></div></div>`;
   },
 
   onAction(actionId, x) {
@@ -196,6 +211,8 @@ Object.assign(Actions, {
     S.settings.lembretes.on = el.checked; commit();
     UI.toast(el.checked ? 'Lembretes ligados.' : 'Lembretes desligados.');
   },
+  async lemWebOn() { const ok = await Reminders.enable(); if (ok) { Reminders.webLoop(); UI.toast('Avisos ligados.'); } App.render(); },
+  lemWebNao() { try { localStorage.setItem('ff-lem-web', '1'); } catch (e) { /* ignora */ } App.render(); },
   lemAntes(_, el) { S.settings.lembretes.antes = Number(el.value); commit(); },
   lemRepetir(_, el) { S.settings.lembretes.repetir = el.checked; commit(); },
   lemResumo(_, el) { S.settings.lembretes.resumo = el.checked; commit(); },
