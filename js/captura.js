@@ -196,6 +196,9 @@ const Capture = {
     S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, category: 'administrativo', responsible: d.who, priority: st.prio || 'media', status: 'pendente', startDate: t, dueDate: due, dueTime: due ? d.time || '' : '', dur: due && d.time ? d.dur || 0 : 0, notes: '', repeat: st.repeat || '', description: (st.obs || '').trim() });
     commit();
     const quando = !due ? 'sem data (aparece hoje na Agenda)' : `${due === t ? 'hoje' : due === U.addDays(t, 1) ? 'amanhã' : U.fmtShort(due)}${d.time ? ' às ' + d.time : ''}`;
+    // Tarefa com horário e duração ocupa o horário: avisa se bate com a rotina e oferece reorganizar
+    const nb = due && d.time && d.dur && due >= t ? Cal.batem(due, { start: d.time, end: U.fromMin(Math.min(1439, U.toMin(d.time) + d.dur)) }).length : 0;
+    if (nb) { UI.toast(`Tarefa criada: ${quando}. Bate com ${U.plural(nb, 'atividade', 'atividades')} da rotina.`, 'warn', { label: 'Reorganizar', onClick: () => { App.ui.agendaDate = due; if (App.route !== 'agenda') App.go('agenda'); setTimeout(() => Replan.open(due), 200); } }); return; }
     UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : `Tarefa criada: ${quando}.`, 'ok', App.route === 'agenda' && App.ui.agendaDate === (due || t) ? undefined : { label: 'Ver na agenda', onClick: () => Actions.goAgenda({ d: due || t }) });
   },
 

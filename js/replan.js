@@ -11,7 +11,8 @@ const Replan = {
     let cursor = from ?? (k === t ? nowR : U.toMin(S.settings.workStart));
     const run = day.find(b => b.status === 'andamento' && !D.isBreak(b));
     if (run && k === t) cursor = Math.max(cursor, U.toMin(run.end));
-    const fixed = day.filter(b => (b.fixed || D.isBreak(b)) && b.status !== 'cancelada');
+    // Não se mexe em: horário fixo, intervalo e as tarefas com horário e duração marcadas para o dia (a rotina desvia delas)
+    const fixed = [...day.filter(b => (b.fixed || D.isBreak(b)) && b.status !== 'cancelada'), ...Cal.ocupados(k)];
     const movable = day.filter(b => !b.fixed && !D.isBreak(b) && !D.blockDone(b) && b.status !== 'andamento'
       && (includeLate || U.toMin(b.start) >= cursor || k !== t));
     const end = U.toMin(S.settings.workEnd);

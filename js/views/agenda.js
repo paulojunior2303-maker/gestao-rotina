@@ -9,6 +9,10 @@ Views.agenda = {
     Cal.sync('agenda', k);
     const blocks = D.dayBlocks(k);
     const conflicts = D.conflicts(blocks);
+    // Tarefa com horário e duração ocupa o horário: marca o que bate com a rotina
+    const ocup = Cal.ocupados(k), bate = new Map(ocup.map(o => [o.id, Cal.batem(k, o)]));
+    const blocosBatendo = new Set([...bate.values()].flat().map(b => b.id));
+    const nBate = [...bate.values()].filter(l => l.length).length;
     const prog = D.progress(k);
     const late = blocks.filter(b => D.blockLate(b, k));
     const items = Cal.itemsOn(k);
@@ -24,7 +28,7 @@ Views.agenda = {
       const badges = [
         isNow ? '<span class="badge b-blue">Agora</span>' : '',
         isLate ? '<span class="badge b-red">Atrasada</span>' : '',
-        conflicts.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
+        conflicts.has(b.id) || blocosBatendo.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
         b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
       return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color}">
@@ -45,7 +49,7 @@ Views.agenda = {
     const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
     const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
-        <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
+        <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span>${i.task && (bate.get(i.id) || []).length ? '<span class="badge b-yellow">Conflito</span>' : ''}</div>
           <small class="blk-kind">${Cal.sub(i, true)}</small></div>
         <div class="blk-actions">${i.task ? Cal.check(i) : U.icon('right', 16)}</div></div>`;
     const list = [
@@ -78,6 +82,7 @@ Views.agenda = {
       </div>
       ${blocks.length ? H.dayRail(k, { link: false }) : ''}
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
+      ${nBate && k >= t ? `<div class="alert a-yellow ag-bate">${U.icon('clock')} <span>${U.plural(nBate, 'tarefa com horário bate', 'tarefas com horário batem')} com a rotina. <button class="link" data-act="replanOpen">Reorganizar</button> abre espaço: a rotina desvia do horário da tarefa.</span></div>` : ''}
       <div class="timeline">
         ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
       </div>

@@ -11,6 +11,13 @@ const Cal = {
 
   /* Fim de uma tarefa com horário e duração ("14:00" + 30 min → "14:30") */
   fimTarefa(x) { return x.dueTime && x.dur ? U.fromMin(Math.min(1439, U.toMin(x.dueTime) + Number(x.dur))) : ''; },
+  /* Tarefas abertas com horário e duração num dia: ocupam aquele horário de verdade (a rotina desvia delas ao reorganizar) */
+  ocupados(k) {
+    return S.tasks.filter(x => OPEN(x.status) && x.dueDate === k && x.dueTime && Number(x.dur) > 0)
+      .map(x => ({ id: x.id, title: x.title, start: x.dueTime, end: this.fimTarefa(x) }));
+  },
+  /* Atividades da rotina (ainda por fazer) que batem com um horário ocupado */
+  batem(k, o) { return D.dayBlocks(k).filter(b => !D.isBreak(b) && !D.blockDone(b) && b.status !== 'cancelada' && U.toMin(b.start) < U.toMin(o.end) && U.toMin(b.end) > U.toMin(o.start)); },
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda).
      Hoje também mostra as tarefas abertas sem data e as atrasadas, para nada ficar esquecido fora do calendário. */
   itemsOn(k) {
