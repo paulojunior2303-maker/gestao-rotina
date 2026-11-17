@@ -15,6 +15,7 @@ on:
       - 'build.py'
       - 'android-app/**'
       - '.github/workflows/android-apk.yml'
+      - 'tests/**'
   workflow_dispatch:
 
 permissions:
@@ -25,7 +26,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Antes de gerar o APK, roda todos os testes automáticos (tests/run.sh). Se algum falhar, o APK não é gerado
+  # e a versão instalada nos celulares continua a anterior.
+  testes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Navegador dos testes (Playwright + Chromium)
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Rodar os testes
+        run: |
+          bash tests/run.sh | tee resultado-testes.txt
+          ! grep -q '^FALHOU' resultado-testes.txt
+      - name: Imagens dos testes (para ver o que falhou)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: testes-falharam
+          path: tests/output/
+
   apk:
+    needs: testes   # só gera o APK se todos os testes passarem
     runs-on: ubuntu-24.04   # fixo: evita mudança surpresa quando ubuntu-latest mudar de versão
     env:
       # 1.0.2 = versionCode 3; cada execução gera um número maior para instalar por cima
