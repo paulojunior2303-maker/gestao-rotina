@@ -71,7 +71,8 @@ public class CompartilharPlugin extends Plugin {
                 a.put("nome", nome(cr, u));
                 String tipo = cr.getType(u);
                 a.put("tipo", tipo == null ? "" : tipo);
-                try (InputStream in = cr.openInputStream(u)) {
+                try (InputStream in = "content".equals(u.getScheme()) ? cr.openInputStream(u) : null) {
+                    // Segurança: só lê o que o outro app entregou (content://). Um endereço file:// poderia apontar para arquivos internos do próprio FlowFire.
                     if (in == null) throw new Exception("sem conteúdo");
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     byte[] buf = new byte[65536];

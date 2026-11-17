@@ -53,7 +53,7 @@ Views.config = {
         <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
         <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
         <li>Copie a chave e cole no campo acima.</li></ol></details>
-      <p class="muted small mt">A chave fica guardada nos seus dados e nos backups. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
+      <p class="muted small mt">A chave fica guardada neste aparelho e na sua conta (FlowFire/Drive), mas <strong>não vai</strong> no arquivo de backup nem no código de transferência. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
@@ -209,7 +209,7 @@ Object.assign(Actions, {
   tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Essa pessoa já está cadastrada.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
   tecName({ id }, el) { const t = S.settings.technicians.find(x => x.id === id); if (el.value.trim()) { t.name = el.value.trim(); commit(); } },
   tecDel({ id }) { const t = S.settings.technicians.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(t.name)}</strong>? Os lançamentos já feitos são mantidos.`, () => { S.settings.technicians = S.settings.technicians.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
-  dataExport() { U.download(`backup-gestao-rotina_${U.today()}.json`, new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); UI.toast('Backup exportado.'); },
+  dataExport() { U.download(`backup-gestao-rotina_${U.today()}.json`, new Blob([JSON.stringify(Transfer.semChave(S), null, 2)], { type: 'application/json' })); UI.toast('Backup exportado.'); },
   dataImport(_, el) {
     const file = el.files[0]; if (!file) return;
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));

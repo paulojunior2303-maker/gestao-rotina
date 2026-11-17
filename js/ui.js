@@ -142,7 +142,11 @@ const UI = (() => {
   function toast(msg, type = 'ok', action) {
     const el = document.createElement('div');
     el.className = `toast ${type}`;
-    el.innerHTML = `<span>${msg}</span>${action ? `<button class="link">${action.label}</button>` : ''}`;
+    // Segurança: o aviso é sempre texto puro (nome de arquivo recebido, título vindo da IA etc. nunca viram HTML)
+    const txt = String(msg ?? '').replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" }[e]));
+    el.innerHTML = `<span></span>${action ? '<button class="link"></button>' : ''}`;
+    el.firstChild.textContent = txt;
+    if (action) el.querySelector('button').textContent = action.label;
     if (action) el.querySelector('button').onclick = () => { action.onClick(); el.remove(); };
     const rootEl = document.getElementById('toast-root');
     while (rootEl.children.length >= 2) rootEl.firstChild.remove();   // no máximo 2 avisos na tela

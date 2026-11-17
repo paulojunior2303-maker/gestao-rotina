@@ -18,8 +18,15 @@ const Transfer = {
     return out;
   },
 
+  /* Segurança: a chave da IA nunca sai no arquivo de backup nem no código de transferência
+     (eles costumam ser mandados por WhatsApp/e-mail). Quem recebe mantém a chave que já tinha no aparelho. */
+  semChave(state) {
+    const c = JSON.parse(JSON.stringify(state));
+    if (c.settings && c.settings.ia) c.settings.ia.key = '';
+    return c;
+  },
   async encode(state) {
-    const json = JSON.stringify(state);
+    const json = JSON.stringify(this.semChave(state));
     if (typeof CompressionStream === 'function') {
       const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
       const buf = new Uint8Array(await new Response(stream).arrayBuffer());
@@ -62,6 +69,7 @@ const Transfer = {
 
   confirmImport(data) {
     UI.confirm(`Importar estes dados?<br><br><strong>${U.esc(this.summary(data))}</strong>.<br><br>Os dados atuais <strong>desta versão</strong> serão substituídos. Se quiser, exporte um backup antes.`, () => {
+      if (data.settings && !(data.settings.ia && data.settings.ia.key)) data.settings.ia = { ...(data.settings.ia || {}), key: IA.key() };   // mantém a chave deste aparelho
       Store.replace(data);
       App.render();
       UI.toast('Dados importados.');

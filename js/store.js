@@ -130,6 +130,25 @@ const Store = {
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
     if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
     if (!s.meta.v5) { if (s.settings && s.settings.empresa === 'Wi-bicam, CFTV IP') s.settings.empresa = ''; s.meta.v5 = true; }
+    return this.sanear(s);
+  },
+
+  /* Segurança: dados que vêm de fora (backup, código de transferência, nuvem) não podem trazer HTML escondido
+     nos campos "de máquina" (ids, cores, datas, status…), que vão direto para atributos da página.
+     Textos livres (título, observação…) não mudam aqui: eles já são escapados na hora de mostrar. */
+  CAMPOS_MAQUINA: /^(id|\w+Id|color|date|dueDate|startDate|time|dueTime|start|end|status|priority|category|tipo|repeat|theme|breakMode|origem|tom|situacao|kind)$/,
+  sanear(s) {
+    const ruim = /[^\p{L}\p{N}_#:.\-+ ]/gu;
+    const limpa = v => v.replace(ruim, '').slice(0, 80);
+    const anda = (o, nivel) => {
+      if (!o || typeof o !== 'object' || nivel > 8) return;
+      for (const k of Object.keys(o)) {
+        const v = o[k];
+        if (typeof v === 'string') { if (this.CAMPOS_MAQUINA.test(k) && v.search(ruim) >= 0) o[k] = limpa(v); }
+        else if (v && typeof v === 'object') anda(v, nivel + 1);
+      }
+    };
+    try { anda(s, 0); } catch (e) { /* estado fora do padrão: segue como está */ }
     return s;
   },
 
@@ -187,7 +206,12 @@ const Store = {
     if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }
-      catch (e) { this.persistent = false; }
+      catch (e) {
+        // Memória do navegador cheia (limite ~5 MB): continua tentando nas próximas gravações e avisa uma vez, com o que fazer
+        let ok = false; try { localStorage.setItem('__teste__', '1'); localStorage.removeItem('__teste__'); ok = true; } catch (x) { /* sem armazenamento */ }
+        if (ok) { if (!this.cheio) { this.cheio = true; setTimeout(() => UI.toast('A memória deste navegador encheu e a última alteração pode não ter sido salva. Entre na conta FlowFire (Configurações → Conta) ou apague gravações antigas.', 'error'), 0); } }
+        else this.persistent = false;
+      }
     }
     if (cloud) Cloud.schedule();
     if (typeof Reminders !== 'undefined') Reminders.schedule();
