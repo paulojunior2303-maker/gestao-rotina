@@ -2,11 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>FlowFire (TESTE)</title>
   <meta name="description" content="Gestão de rotina, tarefas, reuniões e equipe para líderes">
   <meta name="theme-color" content="#0e0c13">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="FlowFire">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-180.png">
     <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzEwMGQxNyIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDUuMiAtMTYuMCkgc2NhbGUoMC44MDAwKSI+PHBhdGggZD0iTTM1MiAxMjggQyAzOTUgMTc1IDM5OCAyNDAgMzYwIDI4MiBDIDMzMCAzMTUgMjgwIDM0MCAyNTIgMzc4IEMgMjMyIDQwNSAyMjUgNDQ1IDIyMiA0ODAgQyAxOTAgNDU1IDE3NSA0MDUgMTg4IDM2NSBDIDIwNSAzMTUgMjU1IDI4NSAzMDAgMjU1IEMgMzQwIDIyOCAzNjAgMTg1IDM1MiAxMjggWiIgZmlsbD0iIzdhMzBmMiIvPjxwYXRoIGQ9Ik00MjUgMjc1IEMgNDUyIDMzMCA0NDUgMzgwIDQwNSA0MTIgQyAzNzAgNDQwIDMzMCA0NTUgMzA4IDQ5MCBDIDI5NiA1MTAgMjg4IDUzMCAyODUgNTUyIEMgMjYyIDUyMCAyNjIgNDcwIDI5MCA0MzggQyAzMTggNDA1IDM2OCAzOTAgMzk4IDM2MCBDIDQyNCAzMzUgNDMyIDMwNSA0MjUgMjc1IFoiIGZpbGw9IiM3YTMwZjIiLz48L2c+PC9zdmc+" type="image/svg+xml">
   <style>
 /* =========================================================
@@ -1206,6 +1210,18 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .cap-sel { min-height: 44px; padding: 9px 11px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; }
 .cap-sel:disabled { opacity: .5; }
 .cap-obs { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--input-border); border-radius: 12px; background: var(--surface-2); color: var(--text); font: inherit; resize: vertical; }
+
+/* iPhone (Safari e app na Tela de Início) */
+@supports (-webkit-touch-callout: none) {
+  /* Campo com letra menor que 16 px faz o iPhone dar zoom ao tocar e a tela fica torta */
+  input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px !important; }
+  /* Sem o "flash" cinza ao tocar e sem o menu de copiar ao segurar botões */
+  button, a, [role=button], .calx-d { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+}
+/* Aberto pela Tela de Início (tela cheia): o fundo vai até atrás da barra de status e da barra de gestos */
+@media (display-mode: standalone) {
+  html, body { background: var(--bg); overscroll-behavior-y: none; }
+}
 
 </style>
 </head>
@@ -2559,10 +2575,12 @@ const IA = {
   },
 
   /* Transcrição de um trecho de áudio (rápida: usa primeiro o modelo leve) */
+  /* O iPhone (Safari) grava em MP4/AAC e às vezes manda "audio/mp4;codecs=…": a IA quer o tipo sem os parâmetros */
+  mimeIA(m) { m = String(m || ''); return /^audio\/(mp4|x-m4a|aac)/.test(m) ? 'audio/mp4' : m; },
   async transcribe(audio, { timeout = 45000 } = {}) {
     const t = await this.call({ models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'], timeout,
       system: 'Transcreva fielmente, em português do Brasil, o que é falado neste trecho de uma reunião de equipe. Não resuma, não comente e não invente. Quando outra pessoa começar a falar, comece uma nova linha com "— ". Se não houver fala compreensível, responda apenas com: [silêncio]',
-      parts: [{ inlineData: { mimeType: audio.mime, data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
+      parts: [{ inlineData: { mimeType: IA.mimeIA(audio.mime), data: audio.b64 } }, { text: 'Transcreva este trecho.' }] });
     return /^\[sil[eê]ncio\]$/i.test(t.trim()) ? '' : t.trim();
   },
 
@@ -2598,7 +2616,7 @@ Responda em JSON com:
 - "tratados": números (1, 2, 3…) dos itens da pauta que foram de fato discutidos (item adiado ou só citado não conta).
 - "combinados": decisões confirmadas e compromissos assumidos, um por item, começando pelo responsável quando citado e com o prazo quando houver. Não inclua sugestões nem pendências.`);
     const parts = [];
-    if (audio) parts.push({ inlineData: { mimeType: audio.mime, data: audio.b64 } });
+    if (audio) parts.push({ inlineData: { mimeType: IA.mimeIA(audio.mime), data: audio.b64 } });
     parts.push({ text: `Reunião: ${e.title}
 Data: ${U.fmtDate(e.date)}${e.time ? ', ' + e.time : ''}
 Pauta numerada:
@@ -3598,6 +3616,7 @@ Views.dashboard = {
     const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
     return `
     ${Updater.banner()}
+    ${Views.dashboard.iphoneCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">
       <div><strong>Como você se chama?</strong><small>Seu nome vai no relatório do dia, nas atas e na saudação. O que você disser que vai fazer entra na sua agenda.</small></div>
       <div class="eu-row"><input name="nome" placeholder="Seu nome" maxlength="40" autocomplete="name" required><button class="btn primary">Salvar</button></div></form>`}
@@ -3612,9 +3631,20 @@ Views.dashboard = {
     <section class="card cal-card cal-home">${Cal.render('home')}${Cal.day('home')}</section>`;
   },
   render() { return this.renderEnxuto(); },
+  /* iPhone no Safari (ainda não instalado): ensina a pôr na Tela de Início. Some ao tocar em "Entendi" (vale por aparelho). */
+  ehIphone() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); },
+  instalado() { return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches); },
+  iphoneCard() {
+    if (!this.ehIphone() || this.instalado() || Native.available() || Cloud.available()) return '';
+    try { if (localStorage.getItem('ff-iphone-ok')) return ''; } catch (e) { /* sem LocalStorage: mostra */ }
+    return `<div class="card eu-card ios-card"><div><strong>Use como app no iPhone</strong>
+      <small>No Safari, toque em ${U.icon('upload', 14)} <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. O FlowFire abre em tela cheia, com ícone próprio, e seus dados ficam guardados.</small></div>
+      <div><button class="btn sm ghost" data-act="iosOk">Entendi</button></div></div>`;
+  },
 };
 Object.assign(Views.dashboard, { nav: 'Calendário', bnav: 'Calendário', icon: 'calendar' });
 Object.assign(Actions, {
+  iosOk() { try { localStorage.setItem('ff-iphone-ok', '1'); } catch (e) { /* ignora */ } App.render(); },
   euNome(_, form) { const v = form.elements.nome.value.trim().replace(/\s+/g, ' '); if (!v) return; S.settings.usuario = v; commit(); UI.toast(`Prazer, ${v.split(' ')[0]}! Dá para mudar em Configurações → Você.`); },
 });
 
@@ -5590,6 +5620,11 @@ Views.guia = {
       'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
+    ${sec('iphone', 'info', 'No iPhone', li([
+      'Abra o link do FlowFire no <strong>Safari</strong>, toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>. Ele abre como app, em tela cheia.',
+      'Entre com a mesma <strong>conta FlowFire</strong> do Android para ver as mesmas tarefas nos dois aparelhos.',
+      'No iPhone, os lembretes só aparecem com o app aberto, e o compartilhar áudio do WhatsApp direto para o FlowFire não existe: use <strong>Gravar → Áudio ou texto</strong>.',
+    ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
       'A tela Tarefas é a lista de tudo. As mesmas tarefas aparecem na Agenda e no Calendário, no dia delas.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
@@ -6164,6 +6199,9 @@ const Theme = {
     if ((document.documentElement.dataset.contraste === 'alto') !== sol) { if (sol) document.documentElement.dataset.contraste = 'alto'; else delete document.documentElement.dataset.contraste; }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', t === 'dark' ? '#0e0c13' : sol ? '#ffffff' : '#f5f3f9');
+    // iPhone na Tela de Início: letras brancas na barra de status só no tema escuro (no claro, letras escuras)
+    const ios = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (ios) ios.setAttribute('content', t === 'dark' ? 'black-translucent' : 'default');
   },
   init() {
     this.apply();
