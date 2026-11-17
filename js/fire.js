@@ -138,13 +138,64 @@ const Fire = {
     UI.toast('Você saiu da conta. Os dados continuam neste aparelho.');
   },
 
-  /* Primeira conexão neste aparelho: junta o que há aqui com o que há na nuvem */
+  /* ---------- Juntar sem perguntar ----------
+     O aparelho guarda um "retrato" (resumo de cada documento) do último ponto em que estava igual à nuvem.
+     Ao abrir de novo: documento que só mudou na nuvem → vale a nuvem; só mudou aqui → vale o daqui;
+     mudou nos dois → junta item por item (nada some; em caso de empate no mesmo item, vale o lado alterado por último). */
+  BASE: 'ff-fire-base',
+  hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + str.length; },
+  baseKey() { return `${this.BASE}:${this.canal()}`; },
+  loadBase() { try { const b = JSON.parse(localStorage.getItem(this.baseKey()) || 'null'); return b && this.user && b.uid === this.user.uid ? b.h || {} : null; } catch (e) { return null; } },
+  saveBase() { try { if (this.user) localStorage.setItem(this.baseKey(), JSON.stringify({ uid: this.user.uid, h: Object.fromEntries(Object.entries(this.last).map(([id, v]) => [id, this.hash(v)])) })); } catch (e) { /* sem armazenamento */ } },
+  /* Junta duas versões (texto JSON) do mesmo documento. novo = 'l' (este aparelho) ou 'r' (nuvem): quem foi alterado por último */
+  mergeDoc(id, l, r, novo) {
+    let L, R; try { L = JSON.parse(l); R = JSON.parse(r); } catch (e) { return novo === 'l' ? l : r; }
+    const A = novo === 'l' ? L : R, B = novo === 'l' ? R : L;   // A vence nos empates
+    if (id.startsWith('days-')) return JSON.stringify({ days: { ...(B.days || {}), ...(A.days || {}) } });
+    if (Array.isArray(L.items) && Array.isArray(R.items)) {
+      const ids = new Set((A.items || []).map(x => x && x.id));
+      return JSON.stringify({ items: [...A.items, ...(B.items || []).filter(x => x && !ids.has(x.id))] });
+    }
+    return JSON.stringify(A);   // core (configurações): vale o lado mais novo
+  },
+  /* Decide documento por documento. Devolve os textos finais; conflitos = quantos precisaram de junção */
+  tresVias(local, remote, base, novo) {
+    const next = {}; let conflitos = 0;
+    for (const id of new Set([...Object.keys(local), ...Object.keys(remote), ...Object.keys(base)])) {
+      const l = local[id], r = remote[id], b = base[id];
+      const mudouAqui = (l === undefined ? undefined : this.hash(l)) !== b, mudouLa = (r === undefined ? undefined : this.hash(r)) !== b;
+      let v;
+      if (!mudouAqui) v = r; else if (!mudouLa) v = l;
+      else if (l === undefined || r === undefined) v = l === undefined ? r : l;   // apagado de um lado e alterado do outro: fica
+      else if (l === r) v = l;
+      else { v = this.mergeDoc(id, l, r, novo); conflitos++; }
+      if (v !== undefined) next[id] = v;
+    }
+    return { next, conflitos };
+  },
+
+  /* Conexão: junta o que há aqui com o que há na nuvem */
   async attach() {
     this.setState('syncing');
     const raw = await this.api.getAll(this.user.uid);
-    const remote = this.parse(Object.fromEntries(Object.entries(raw).map(([id, d]) => [id, d.v])));
+    const rawV = Object.fromEntries(Object.entries(raw).map(([id, d]) => [id, d.v]));
+    const remote = this.parse(rawV);
     const local = this.split(S);
     const temNuvem = !!remote.core, temLocal = Drive.hasData(S) || (S.missoes || []).length > 0;
+    const base = this.loadBase();
+    if (temNuvem && base) {
+      // Este aparelho já sincronizou antes com esta conta: junta sozinho, sem perguntar
+      const remotoAt = Math.max(0, ...Object.values(raw).map(d => Number(d.at) || 0)), localAt = (S.meta && S.meta.updatedAt) || 0;
+      const { next, conflitos } = this.tresVias(local, rawV, base, localAt > remotoAt ? 'l' : 'r');
+      this.last = { ...rawV };
+      if (Object.keys(next).some(id => next[id] !== local[id]) || Object.keys(local).some(id => !(id in next))) { Store.replace(this.join(this.parse(next)), { fromCloud: true }); App.render(); }
+      await this.push();
+      this.saveBase();
+      this.listen(); this.setState('on');
+      if (conflitos) UI.toast('Os dados deste aparelho e da nuvem foram juntados.');
+      if (['config', 'equipe'].includes(App.route)) App.render();
+      return;
+    }
     let escolha = 'nuvem';
     if (!temNuvem) escolha = 'local';
     else if (temLocal && JSON.stringify(this.join(remote)) !== JSON.stringify(this.join(this.parse(local)))) escolha = await this.ask(remote.core && remote.core.meta && remote.core.meta.updatedAt);
@@ -156,6 +207,7 @@ const Fire = {
       this.last = Object.fromEntries(Object.entries(raw).map(([id, d]) => [id, d.v]));
       await this.push(true);
     }
+    this.saveBase();
     this.listen();
     this.setState('on');
     if (['config', 'equipe'].includes(App.route)) App.render();
@@ -191,6 +243,7 @@ const Fire = {
     if (!jobs.length) return;
     this.setState('syncing');
     await Promise.all(jobs);
+    this.saveBase();
     this.setState('on');
   },
   listen() {
@@ -203,11 +256,14 @@ const Fire = {
       for (const id of ids) {
         const mudouAqui = local[id] !== this.last[id];          // alterado neste aparelho e ainda não enviado
         if (id in remote && remote[id] !== this.last[id] && !mudouAqui) { next[id] = remote[id]; this.last[id] = remote[id]; changed = true; }
+        else if (id in remote && id in local && remote[id] !== this.last[id] && mudouAqui && remote[id] !== local[id]) {   // mudou nos dois ao mesmo tempo: junta (o daqui vence empates) em vez de apagar o do outro aparelho
+          next[id] = this.mergeDoc(id, local[id], remote[id], 'l'); this.last[id] = remote[id]; changed = true; }
         else if (!(id in remote) && id in this.last && !mudouAqui) { delete this.last[id]; changed = true; continue; }   // apagado em outro aparelho
         else if (id in local) next[id] = local[id];
       }
       if (!changed) return;
       Store.replace(this.join(this.parse(next)), { fromCloud: true });
+      this.saveBase();
       const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
       if (busy) this.pendingRender = true; else App.render();
       this.schedule();   // se algo deste aparelho ainda não subiu, envia agora

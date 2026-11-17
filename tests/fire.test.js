@@ -56,6 +56,25 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(!(await C.evaluate(() => Fire.connected())) && (await C.evaluate(() => S.tasks.length)) === 2, 'sair mantém os dados no aparelho');
   check(await C.locator('#cfg-conta [data-act=fireEntrar]').count() === 1, 'volta a mostrar "Entrar com Google"');
 
+  console.log('\n[6] Abrir o app depois de usar outro aparelho: junta sozinho, sem perguntar');
+  const mk = (id, title) => ({ id, title, status: 'pendente', priority: 'media', category: 'equipe', createdAt: new Date().toISOString() });
+  await B.evaluate(() => Fire.detach());   // B "fechado"
+  await A.evaluate(t => { S.tasks.push(t); commit(); }, mk('a8', 'Feita no A com o B fechado')); await W(A, 1800);
+  await B.reload(); await W(B, 1500);
+  check(await B.locator('.modal-wrap.open').count() === 0 && (await titles(B)).includes('Feita no A com o B fechado'), 'só a nuvem mudou: o aparelho recebe sem perguntar "qual versão manter"');
+  await B.evaluate(() => Fire.detach());
+  await B.evaluate(t => { S.tasks.push(t); commit(); }, mk('b9', 'Feita no B sem internet'));
+  await A.evaluate(t => { S.tasks.push(t); S.tasks.find(x => x.id === 'a8').status = 'concluida'; commit(); }, mk('a9', 'Feita no A enquanto isso')); await W(A, 1800);
+  await B.reload(); await W(B, 2000);
+  const tb = await titles(B);
+  check(await B.locator('.modal-wrap.open').count() === 0 && tb.includes('Feita no B sem internet') && tb.includes('Feita no A enquanto isso'), 'mudou nos dois: junta as tarefas dos dois aparelhos, nada some');
+  await W(A, 800);
+  const ta = await titles(A);
+  check(ta.includes('Feita no B sem internet') && ta === tb, 'o outro aparelho recebe a versão juntada');
+  check(JSON.parse(nuvem.u1.tasks.v).items.length === (await B.evaluate(() => S.tasks.length)), 'a nuvem fica igual aos aparelhos');
+  const md = await B.evaluate(() => [Fire.mergeDoc('tasks', JSON.stringify({ items: [{ id: '1', t: 'aqui' }, { id: '2' }] }), JSON.stringify({ items: [{ id: '1', t: 'nuvem' }, { id: '3' }] }), 'r'), Fire.mergeDoc('days-2026-11', JSON.stringify({ days: { '2026-11-01': [1] } }), JSON.stringify({ days: { '2026-11-02': [2] } }), 'l')]);
+  check(JSON.parse(md[0]).items.map(x => x.id + (x.t || '')).join() === '1nuvem,3,2' && Object.keys(JSON.parse(md[1]).days).length === 2, 'junção item por item: no empate vale o lado mais novo; dias diferentes ficam os dois');
+
   const errs = pages.flatMap(p => p.errs);
   check(!errs.length, 'nenhum erro de JavaScript' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
   console.log(`\nRESULTADO: ${pass} ok, ${fail} falhas`);
