@@ -1484,6 +1484,25 @@ const Store = {
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
     if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
     if (!s.meta.v5) { if (s.settings && s.settings.empresa === 'Wi-bicam, CFTV IP') s.settings.empresa = ''; s.meta.v5 = true; }
+    return this.sanear(s);
+  },
+
+  /* Segurança: dados que vêm de fora (backup, código de transferência, nuvem) não podem trazer HTML escondido
+     nos campos "de máquina" (ids, cores, datas, status…), que vão direto para atributos da página.
+     Textos livres (título, observação…) não mudam aqui: eles já são escapados na hora de mostrar. */
+  CAMPOS_MAQUINA: /^(id|\w+Id|color|date|dueDate|startDate|time|dueTime|start|end|status|priority|category|tipo|repeat|theme|breakMode|origem|tom|situacao|kind)$/,
+  sanear(s) {
+    const ruim = /[^\p{L}\p{N}_#:.\-+ ]/gu;
+    const limpa = v => v.replace(ruim, '').slice(0, 80);
+    const anda = (o, nivel) => {
+      if (!o || typeof o !== 'object' || nivel > 8) return;
+      for (const k of Object.keys(o)) {
+        const v = o[k];
+        if (typeof v === 'string') { if (this.CAMPOS_MAQUINA.test(k) && v.search(ruim) >= 0) o[k] = limpa(v); }
+        else if (v && typeof v === 'object') anda(v, nivel + 1);
+      }
+    };
+    try { anda(s, 0); } catch (e) { /* estado fora do padrão: segue como está */ }
     return s;
   },
 
@@ -1541,7 +1560,12 @@ const Store = {
     if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }
-      catch (e) { this.persistent = false; }
+      catch (e) {
+        // Memória do navegador cheia (limite ~5 MB): continua tentando nas próximas gravações e avisa uma vez, com o que fazer
+        let ok = false; try { localStorage.setItem('__teste__', '1'); localStorage.removeItem('__teste__'); ok = true; } catch (x) { /* sem armazenamento */ }
+        if (ok) { if (!this.cheio) { this.cheio = true; setTimeout(() => UI.toast('A memória deste navegador encheu e a última alteração pode não ter sido salva. Entre na conta FlowFire (Configurações → Conta) ou apague gravações antigas.', 'error'), 0); } }
+        else this.persistent = false;
+      }
     }
     if (cloud) Cloud.schedule();
     if (typeof Reminders !== 'undefined') Reminders.schedule();
@@ -1894,7 +1918,11 @@ const UI = (() => {
   function toast(msg, type = 'ok', action) {
     const el = document.createElement('div');
     el.className = `toast ${type}`;
-    el.innerHTML = `<span>${msg}</span>${action ? `<button class="link">${action.label}</button>` : ''}`;
+    // Segurança: o aviso é sempre texto puro (nome de arquivo recebido, título vindo da IA etc. nunca viram HTML)
+    const txt = String(msg ?? '').replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" }[e]));
+    el.innerHTML = `<span></span>${action ? '<button class="link"></button>' : ''}`;
+    el.firstChild.textContent = txt;
+    if (action) el.querySelector('button').textContent = action.label;
     if (action) el.querySelector('button').onclick = () => { action.onClick(); el.remove(); };
     const rootEl = document.getElementById('toast-root');
     while (rootEl.children.length >= 2) rootEl.firstChild.remove();   // no máximo 2 avisos na tela
@@ -2158,8 +2186,15 @@ const Transfer = {
     return out;
   },
 
+  /* Segurança: a chave da IA nunca sai no arquivo de backup nem no código de transferência
+     (eles costumam ser mandados por WhatsApp/e-mail). Quem recebe mantém a chave que já tinha no aparelho. */
+  semChave(state) {
+    const c = JSON.parse(JSON.stringify(state));
+    if (c.settings && c.settings.ia) c.settings.ia.key = '';
+    return c;
+  },
   async encode(state) {
-    const json = JSON.stringify(state);
+    const json = JSON.stringify(this.semChave(state));
     if (typeof CompressionStream === 'function') {
       const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
       const buf = new Uint8Array(await new Response(stream).arrayBuffer());
@@ -2202,6 +2237,7 @@ const Transfer = {
 
   confirmImport(data) {
     UI.confirm(`Importar estes dados?<br><br><strong>${U.esc(this.summary(data))}</strong>.<br><br>Os dados atuais <strong>desta versão</strong> serão substituídos. Se quiser, exporte um backup antes.`, () => {
+      if (data.settings && !(data.settings.ia && data.settings.ia.key)) data.settings.ia = { ...(data.settings.ia || {}), key: IA.key() };   // mantém a chave deste aparelho
       Store.replace(data);
       App.render();
       UI.toast('Dados importados.');
@@ -2316,8 +2352,8 @@ const Reminders = {
       const base = this.at(date, time), k = this.key(kind, x, date, time);
       if (this.ciente(k)) return;
       const lbl = kind === 'tarefa' ? 'Tarefa' : 'Imprevisto';
-      push({ k, kind, id: x.id, when: base - antes * 60000, title: `${lbl} vence ${fmtAntes}`, body: `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
-      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: `${lbl} atrasada`, body: `${x.title} · venceu às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
+      push({ k, kind, id: x.id, when: base - antes * 60000, title: kind === 'tarefa' ? `Tarefa ${fmtAntes}` : `${lbl} vence ${fmtAntes}`, body: kind === 'tarefa' ? `${x.title} · às ${time}${x.dur ? ' (' + U.fmtDur(x.dur) + ')' : ''}` : `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
+      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: kind === 'tarefa' ? 'Tarefa atrasada' : 'Imprevisto atrasado', body: `${x.title} · ${kind === 'tarefa' ? 'era' : 'venceu'} às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
     };
     S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueTime).forEach(x => prazo('tarefa', x, x.title, x.dueDate, x.dueTime));
     S.occurrences.filter(o => OPEN(o.status) && o.dueDate && o.dueTime).forEach(o => prazo('imprevisto', o, o.title, o.dueDate, o.dueTime));
@@ -2335,7 +2371,7 @@ const Reminders = {
       const evs = S.events.filter(e => e.date === k).length;
       const occ = S.occurrences.filter(o => OPEN(o.status) && o.dueDate === k).length;
       const late = S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueDate < k).length;
-      const parts = [tasks && U.plural(tasks, 'prazo de tarefa', 'prazos de tarefa'), evs && U.plural(evs, 'compromisso'), occ && U.plural(occ, 'imprevisto') + ' com prazo', late && U.plural(late, 'tarefa atrasada', 'tarefas atrasadas')].filter(Boolean);
+      const parts = [tasks && U.plural(tasks, 'tarefa'), evs && U.plural(evs, 'compromisso'), occ && U.plural(occ, 'imprevisto') + ' com prazo', late && U.plural(late, 'tarefa atrasada', 'tarefas atrasadas')].filter(Boolean);
       if (parts.length) push({ k: 'resumo:' + k, kind: 'resumo', id: k, when: this.at(k, S.settings.workStart), title: 'Seu dia', body: parts.join(', ') + '.', type: '' });
     }
     return out.sort((a, b) => a.when - b.when).slice(0, this.MAX);
@@ -2384,7 +2420,7 @@ const Reminders = {
   onAction(actionId, x) {
     if (actionId === 'feito' && x.kind === 'tarefa') {
       const t = S.tasks.find(t => t.id === x.id);
-      if (t && OPEN(t.status)) { t.status = 'concluida'; t.completedAt = new Date().toISOString(); commit(); UI.toast('Tarefa concluída pelo aviso.'); }
+      if (t && OPEN(t.status)) { const nx = Tasks.setStatus(t, 'concluida'); commit(); UI.toast(nx ? `Tarefa concluída pelo aviso. A próxima fica para ${U.fmtShort(nx.dueDate)}.` : 'Tarefa concluída pelo aviso.'); }   // setStatus: tarefa que se repete cria a próxima
       return;
     }
     if (actionId === 'ciente' || actionId === 'feito') {
@@ -3307,13 +3343,64 @@ const Fire = {
     UI.toast('Você saiu da conta. Os dados continuam neste aparelho.');
   },
 
-  /* Primeira conexão neste aparelho: junta o que há aqui com o que há na nuvem */
+  /* ---------- Juntar sem perguntar ----------
+     O aparelho guarda um "retrato" (resumo de cada documento) do último ponto em que estava igual à nuvem.
+     Ao abrir de novo: documento que só mudou na nuvem → vale a nuvem; só mudou aqui → vale o daqui;
+     mudou nos dois → junta item por item (nada some; em caso de empate no mesmo item, vale o lado alterado por último). */
+  BASE: 'ff-fire-base',
+  hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + str.length; },
+  baseKey() { return `${this.BASE}:${this.canal()}`; },
+  loadBase() { try { const b = JSON.parse(localStorage.getItem(this.baseKey()) || 'null'); return b && this.user && b.uid === this.user.uid ? b.h || {} : null; } catch (e) { return null; } },
+  saveBase() { try { if (this.user) localStorage.setItem(this.baseKey(), JSON.stringify({ uid: this.user.uid, h: Object.fromEntries(Object.entries(this.last).map(([id, v]) => [id, this.hash(v)])) })); } catch (e) { /* sem armazenamento */ } },
+  /* Junta duas versões (texto JSON) do mesmo documento. novo = 'l' (este aparelho) ou 'r' (nuvem): quem foi alterado por último */
+  mergeDoc(id, l, r, novo) {
+    let L, R; try { L = JSON.parse(l); R = JSON.parse(r); } catch (e) { return novo === 'l' ? l : r; }
+    const A = novo === 'l' ? L : R, B = novo === 'l' ? R : L;   // A vence nos empates
+    if (id.startsWith('days-')) return JSON.stringify({ days: { ...(B.days || {}), ...(A.days || {}) } });
+    if (Array.isArray(L.items) && Array.isArray(R.items)) {
+      const ids = new Set((A.items || []).map(x => x && x.id));
+      return JSON.stringify({ items: [...A.items, ...(B.items || []).filter(x => x && !ids.has(x.id))] });
+    }
+    return JSON.stringify(A);   // core (configurações): vale o lado mais novo
+  },
+  /* Decide documento por documento. Devolve os textos finais; conflitos = quantos precisaram de junção */
+  tresVias(local, remote, base, novo) {
+    const next = {}; let conflitos = 0;
+    for (const id of new Set([...Object.keys(local), ...Object.keys(remote), ...Object.keys(base)])) {
+      const l = local[id], r = remote[id], b = base[id];
+      const mudouAqui = (l === undefined ? undefined : this.hash(l)) !== b, mudouLa = (r === undefined ? undefined : this.hash(r)) !== b;
+      let v;
+      if (!mudouAqui) v = r; else if (!mudouLa) v = l;
+      else if (l === undefined || r === undefined) v = l === undefined ? r : l;   // apagado de um lado e alterado do outro: fica
+      else if (l === r) v = l;
+      else { v = this.mergeDoc(id, l, r, novo); conflitos++; }
+      if (v !== undefined) next[id] = v;
+    }
+    return { next, conflitos };
+  },
+
+  /* Conexão: junta o que há aqui com o que há na nuvem */
   async attach() {
     this.setState('syncing');
     const raw = await this.api.getAll(this.user.uid);
-    const remote = this.parse(Object.fromEntries(Object.entries(raw).map(([id, d]) => [id, d.v])));
+    const rawV = Object.fromEntries(Object.entries(raw).map(([id, d]) => [id, d.v]));
+    const remote = this.parse(rawV);
     const local = this.split(S);
     const temNuvem = !!remote.core, temLocal = Drive.hasData(S) || (S.missoes || []).length > 0;
+    const base = this.loadBase();
+    if (temNuvem && base) {
+      // Este aparelho já sincronizou antes com esta conta: junta sozinho, sem perguntar
+      const remotoAt = Math.max(0, ...Object.values(raw).map(d => Number(d.at) || 0)), localAt = (S.meta && S.meta.updatedAt) || 0;
+      const { next, conflitos } = this.tresVias(local, rawV, base, localAt > remotoAt ? 'l' : 'r');
+      this.last = { ...rawV };
+      if (Object.keys(next).some(id => next[id] !== local[id]) || Object.keys(local).some(id => !(id in next))) { Store.replace(this.join(this.parse(next)), { fromCloud: true }); App.render(); }
+      await this.push();
+      this.saveBase();
+      this.listen(); this.setState('on');
+      if (conflitos) UI.toast('Os dados deste aparelho e da nuvem foram juntados.');
+      if (['config', 'equipe'].includes(App.route)) App.render();
+      return;
+    }
     let escolha = 'nuvem';
     if (!temNuvem) escolha = 'local';
     else if (temLocal && JSON.stringify(this.join(remote)) !== JSON.stringify(this.join(this.parse(local)))) escolha = await this.ask(remote.core && remote.core.meta && remote.core.meta.updatedAt);
@@ -3325,6 +3412,7 @@ const Fire = {
       this.last = Object.fromEntries(Object.entries(raw).map(([id, d]) => [id, d.v]));
       await this.push(true);
     }
+    this.saveBase();
     this.listen();
     this.setState('on');
     if (['config', 'equipe'].includes(App.route)) App.render();
@@ -3360,6 +3448,7 @@ const Fire = {
     if (!jobs.length) return;
     this.setState('syncing');
     await Promise.all(jobs);
+    this.saveBase();
     this.setState('on');
   },
   listen() {
@@ -3372,11 +3461,14 @@ const Fire = {
       for (const id of ids) {
         const mudouAqui = local[id] !== this.last[id];          // alterado neste aparelho e ainda não enviado
         if (id in remote && remote[id] !== this.last[id] && !mudouAqui) { next[id] = remote[id]; this.last[id] = remote[id]; changed = true; }
+        else if (id in remote && id in local && remote[id] !== this.last[id] && mudouAqui && remote[id] !== local[id]) {   // mudou nos dois ao mesmo tempo: junta (o daqui vence empates) em vez de apagar o do outro aparelho
+          next[id] = this.mergeDoc(id, local[id], remote[id], 'l'); this.last[id] = remote[id]; changed = true; }
         else if (!(id in remote) && id in this.last && !mudouAqui) { delete this.last[id]; changed = true; continue; }   // apagado em outro aparelho
         else if (id in local) next[id] = local[id];
       }
       if (!changed) return;
       Store.replace(this.join(this.parse(next)), { fromCloud: true });
+      this.saveBase();
       const busy = document.querySelector('.modal-wrap') || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName));
       if (busy) this.pendingRender = true; else App.render();
       this.schedule();   // se algo deste aparelho ainda não subiu, envia agora
@@ -4983,7 +5075,7 @@ const Gravador = {
   },
   init() {
     window.addEventListener('online', () => this.processar());
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.processar(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { this.processar(); if (this.cur) this.acordado(true); } });   // o navegador solta a "tela acesa" ao sair do app: pede de novo ao voltar
     // Tenta de novo: a cada 10 s quando estava sem internet e ela voltou; a cada minuto nos outros casos
     let n = 0;
     setInterval(() => {
@@ -5385,7 +5477,7 @@ Views.config = {
         <li>Abra <strong>aistudio.google.com</strong> e entre com sua conta Google.</li>
         <li>Toque em <strong>Get API key</strong> e depois em <strong>Create API key</strong>.</li>
         <li>Copie a chave e cole no campo acima.</li></ol></details>
-      <p class="muted small mt">A chave fica guardada nos seus dados e nos backups. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
+      <p class="muted small mt">A chave fica guardada neste aparelho e na sua conta (FlowFire/Drive), mas <strong>não vai</strong> no arquivo de backup nem no código de transferência. O app só manda algo para a IA quando você grava, envia um áudio ou toca em “Preencher com IA”. No plano gratuito, o Google pode usar o conteúdo para treinar os modelos; para evitar, ative o faturamento no AI Studio.</p>`)}
 
     ${sec('jornada', 'Jornada de trabalho', 'Horários usados para alertas de “fora do expediente” e para encaixar imprevistos.', `
       <form class="form-grid cfg-form" data-submit="cfgJornada">
@@ -5541,7 +5633,7 @@ Object.assign(Actions, {
   tecAdd(_, form) { const name = form.elements.name.value.trim(); if (D.techNames().includes(name)) return UI.toast('Essa pessoa já está cadastrada.', 'warn'); S.settings.technicians.push({ id: U.uid(), name }); commit(); },
   tecName({ id }, el) { const t = S.settings.technicians.find(x => x.id === id); if (el.value.trim()) { t.name = el.value.trim(); commit(); } },
   tecDel({ id }) { const t = S.settings.technicians.find(x => x.id === id); UI.confirm(`Remover <strong>${U.esc(t.name)}</strong>? Os lançamentos já feitos são mantidos.`, () => { S.settings.technicians = S.settings.technicians.filter(x => x.id !== id); commit(); }, { danger: true, okLabel: 'Remover' }); },
-  dataExport() { U.download(`backup-gestao-rotina_${U.today()}.json`, new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' })); UI.toast('Backup exportado.'); },
+  dataExport() { U.download(`backup-gestao-rotina_${U.today()}.json`, new Blob([JSON.stringify(Transfer.semChave(S), null, 2)], { type: 'application/json' })); UI.toast('Backup exportado.'); },
   dataImport(_, el) {
     const file = el.files[0]; if (!file) return;
     file.text().then(txt => Transfer.decode(txt)).then(data => Transfer.confirmImport(data)).catch(e => UI.toast(U.esc(e.message), 'error'));
