@@ -1406,7 +1406,7 @@ const Store = {
         usuario: '',             // nome de quem usa o app (quem fala nas gravações e no relatório do dia)
         empresa: '',             // nome da empresa/equipe mostrado no menu (opcional, Configurações → Aparência)
         metricNames: {},         // nomes personalizados dos indicadores (vazio = METRIC_DEFAULT_NAMES)
-        lembretes: { on: false, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
+        lembretes: { on: true, antes: 15, repetir: true, resumo: true },   // avisos no celular/navegador
         ia: { key: '', agente: '', nivel: 'detalhada' },   // chave do Google Gemini do próprio usuário (Configurações → IA)   // tela Indicadores oculta por padrão (Configurações → Aparência)
         categories: [
           { id: 'demandas', name: 'Demandas', color: '#8e87a3' },
@@ -1458,7 +1458,7 @@ const Store = {
       gravacoes: [],   // gravações de reuniões/feedbacks (js/gravador.js); o áudio e a transcrição ficam no aparelho
       diario: {},      // por dia: { abertoEm, fechadoEm, nota } (Abrir/Fechar o dia)
       missoes: [],     // missões da Jornada (recebidas do gestor ou criadas pela própria pessoa)
-      meta: { v2: true, v3: true, v4: true, v5: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
+      meta: { v2: true, v3: true, v4: true, v5: true, v6: true },   // ex.: tutorialSeen; v2 = já no formato do novo visual
     };
   },
 
@@ -1472,6 +1472,7 @@ const Store = {
       this.state = this.defaults();
     }
     S = this.state;
+    this._ids = this.idsAtuais();
   },
 
   migrate(s) {
@@ -1484,6 +1485,8 @@ const Store = {
     if (!s.meta.v3) { this.migrateV3(s); s.meta.v3 = true; }
     if (!s.meta.v4) { this.migrateV4(s); s.meta.v4 = true; }
     if (!s.meta.v5) { if (s.settings && s.settings.empresa === 'Wi-bicam, CFTV IP') s.settings.empresa = ''; s.meta.v5 = true; }
+    // v6: lembretes ligados por padrão (pedido do usuário); quem já usava também passa a receber (dá para desligar em Configurações)
+    if (!s.meta.v6) { if (s.settings.lembretes) s.settings.lembretes.on = true; s.meta.v6 = true; }
     return this.sanear(s);
   },
 
@@ -1555,8 +1558,25 @@ const Store = {
   },
 
   /* touch = alteração feita aqui (marca o horário e envia ao Google Drive). Dados vindos de fora usam touch: false. */
+  /* Itens apagados ("lápides"): guarda o id e quando foi apagado, para a sincronização não trazer de volta
+     um item que um aparelho apagou enquanto o outro mexia na mesma lista sem internet. Esquecidos depois de 60 dias. */
+  LISTAS: ['tasks', 'occurrences', 'events', 'feedbacks', 'gravacoes', 'projects', 'indicators', 'checks'],
+  idsAtuais() { const o = {}; for (const k of this.LISTAS) o[k] = new Set((this.state[k] || []).map(x => x && x.id).filter(Boolean)); return o; },
+  marcarApagados() {
+    if (!this.state) return;
+    const agora = this.idsAtuais(), antes = this._ids;
+    this._ids = agora;
+    if (!antes) return;
+    const ap = (this.state.meta = this.state.meta || {}).apagados = this.state.meta.apagados || {};
+    const t = Date.now();
+    for (const k of this.LISTAS) for (const id of antes[k] || []) if (!agora[k].has(id)) ap[id] = t;
+    for (const k of this.LISTAS) for (const id of agora[k]) if (ap[id]) delete ap[id];   // desfazer: o item voltou
+    const velho = t - 60 * 86400000;
+    for (const [id, at] of Object.entries(ap)) if (at < velho) delete ap[id];
+  },
   save({ cloud = true, touch = true } = {}) {
     this.rev++;
+    if (touch) this.marcarApagados(); else if (this.state) this._ids = this.idsAtuais();
     if (touch && this.state) { this.state.meta = this.state.meta || {}; this.state.meta.updatedAt = Date.now(); }
     if (this.persistent) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); this.lastSaved = new Date(); }
@@ -1583,6 +1603,7 @@ const Store = {
   replace(newState, { fromCloud = false, fromDrive = false } = {}) {
     this.state = this.migrate(newState);
     S = this.state;
+    this._ids = this.idsAtuais();   // trocar os dados inteiros (backup, nuvem) não conta como "apagar" os itens que saíram
     this.save({ cloud: !fromCloud, touch: !fromCloud && !fromDrive });
   },
 
@@ -2414,7 +2435,22 @@ const Reminders = {
       ] });
       LN.addListener('localNotificationActionPerformed', ev => this.onAction(ev.actionId, (ev.notification && ev.notification.extra) || {}));
     } catch (e) { console.warn('lembretes', e); }
+    // Lembretes ligados por padrão: pede a permissão de notificações uma vez (o Android mostra a pergunta dele)
+    try {
+      if (this.on() && !localStorage.getItem('ff-lem-pedido')) {
+        localStorage.setItem('ff-lem-pedido', '1');
+        const p = await LN.checkPermissions();
+        if (p.display !== 'granted') await LN.requestPermissions();
+      }
+    } catch (e) { /* segue sem permissão: Configurações → Lembretes mostra como liberar */ }
     this.schedule();
+  },
+  /* Navegador: os lembretes estão ligados, mas falta o navegador permitir (ele só deixa pedir depois de um toque) */
+  webCard() {
+    if (!this.on() || !this.webSupported() || Notification.permission !== 'default') return '';
+    try { if (localStorage.getItem('ff-lem-web')) return ''; } catch (e) { /* mostra */ }
+    return `<div class="card eu-card lem-card"><div><strong>Quer ser avisado no horário?</strong><small>Tarefas com horário e compromissos avisam enquanto o FlowFire estiver aberto neste navegador.</small></div>
+      <div class="eu-row"><button class="btn primary" data-act="lemWebOn">Permitir avisos</button><button class="btn ghost" data-act="lemWebNao">Agora não</button></div></div>`;
   },
 
   onAction(actionId, x) {
@@ -2517,6 +2553,8 @@ Object.assign(Actions, {
     S.settings.lembretes.on = el.checked; commit();
     UI.toast(el.checked ? 'Lembretes ligados.' : 'Lembretes desligados.');
   },
+  async lemWebOn() { const ok = await Reminders.enable(); if (ok) { Reminders.webLoop(); UI.toast('Avisos ligados.'); } App.render(); },
+  lemWebNao() { try { localStorage.setItem('ff-lem-web', '1'); } catch (e) { /* ignora */ } App.render(); },
   lemAntes(_, el) { S.settings.lembretes.antes = Number(el.value); commit(); },
   lemRepetir(_, el) { S.settings.lembretes.repetir = el.checked; commit(); },
   lemResumo(_, el) { S.settings.lembretes.resumo = el.checked; commit(); },
@@ -2806,6 +2844,8 @@ const Recorder = {
   fmt(s) { return `${Math.floor(s / 60)}:${U.pad(s % 60)}`; },
   keepScreen(on) {   // tela acesa durante a gravação (app Android); falha em silêncio em versões sem o recurso
     try { const r = Native.available() && Native.P().Sistema && Native.P().Sistema.manterTela({ ligada: on }); if (r && r.catch) r.catch(() => {}); } catch (e) { /* ignorado */ }
+    // Serviço "Gravando" do Android: a gravação continua com a tela bloqueada ou com o app em segundo plano
+    try { const g = Native.available() && Native.P().Sistema && Native.P().Sistema.gravando && Native.P().Sistema.gravando({ ligada: on }); if (g && g.catch) g.catch(() => {}); } catch (e) { /* versão antiga do app */ }
   },
 
   /* onUpdate({ elapsed, text, pending, failed }) é chamado a cada segundo e a cada trecho transcrito */
@@ -3353,19 +3393,29 @@ const Fire = {
   loadBase() { try { const b = JSON.parse(localStorage.getItem(this.baseKey()) || 'null'); return b && this.user && b.uid === this.user.uid ? b.h || {} : null; } catch (e) { return null; } },
   saveBase() { try { if (this.user) localStorage.setItem(this.baseKey(), JSON.stringify({ uid: this.user.uid, h: Object.fromEntries(Object.entries(this.last).map(([id, v]) => [id, this.hash(v)])) })); } catch (e) { /* sem armazenamento */ } },
   /* Junta duas versões (texto JSON) do mesmo documento. novo = 'l' (este aparelho) ou 'r' (nuvem): quem foi alterado por último */
-  mergeDoc(id, l, r, novo) {
+  /* apagados = ids apagados em qualquer um dos aparelhos (meta.apagados dos dois lados): não voltam na junção */
+  mergeDoc(id, l, r, novo, apagados = {}) {
     let L, R; try { L = JSON.parse(l); R = JSON.parse(r); } catch (e) { return novo === 'l' ? l : r; }
     const A = novo === 'l' ? L : R, B = novo === 'l' ? R : L;   // A vence nos empates
     if (id.startsWith('days-')) return JSON.stringify({ days: { ...(B.days || {}), ...(A.days || {}) } });
     if (Array.isArray(L.items) && Array.isArray(R.items)) {
       const ids = new Set((A.items || []).map(x => x && x.id));
-      return JSON.stringify({ items: [...A.items, ...(B.items || []).filter(x => x && !ids.has(x.id))] });
+      return JSON.stringify({ items: [...A.items, ...(B.items || []).filter(x => x && !ids.has(x.id))].filter(x => !(x && apagados[x.id])) });
     }
-    return JSON.stringify(A);   // core (configurações): vale o lado mais novo
+    if (id === 'core') {   // configurações: vale o lado mais novo, mas as listas de apagados se somam
+      A.meta = { ...(A.meta || {}), apagados: { ...((B.meta || {}).apagados || {}), ...((A.meta || {}).apagados || {}) } };
+    }
+    return JSON.stringify(A);
+  },
+  apagadosDe(...txts) {
+    const o = {};
+    for (const t of txts) { try { Object.assign(o, ((JSON.parse(t) || {}).meta || {}).apagados || {}); } catch (e) { /* sem core */ } }
+    return o;
   },
   /* Decide documento por documento. Devolve os textos finais; conflitos = quantos precisaram de junção */
   tresVias(local, remote, base, novo) {
     const next = {}; let conflitos = 0;
+    const apagados = this.apagadosDe(local.core, remote.core);
     for (const id of new Set([...Object.keys(local), ...Object.keys(remote), ...Object.keys(base)])) {
       const l = local[id], r = remote[id], b = base[id];
       const mudouAqui = (l === undefined ? undefined : this.hash(l)) !== b, mudouLa = (r === undefined ? undefined : this.hash(r)) !== b;
@@ -3373,7 +3423,7 @@ const Fire = {
       if (!mudouAqui) v = r; else if (!mudouLa) v = l;
       else if (l === undefined || r === undefined) v = l === undefined ? r : l;   // apagado de um lado e alterado do outro: fica
       else if (l === r) v = l;
-      else { v = this.mergeDoc(id, l, r, novo); conflitos++; }
+      else { v = this.mergeDoc(id, l, r, novo, apagados); conflitos++; }
       if (v !== undefined) next[id] = v;
     }
     return { next, conflitos };
@@ -3462,7 +3512,7 @@ const Fire = {
         const mudouAqui = local[id] !== this.last[id];          // alterado neste aparelho e ainda não enviado
         if (id in remote && remote[id] !== this.last[id] && !mudouAqui) { next[id] = remote[id]; this.last[id] = remote[id]; changed = true; }
         else if (id in remote && id in local && remote[id] !== this.last[id] && mudouAqui && remote[id] !== local[id]) {   // mudou nos dois ao mesmo tempo: junta (o daqui vence empates) em vez de apagar o do outro aparelho
-          next[id] = this.mergeDoc(id, local[id], remote[id], 'l'); this.last[id] = remote[id]; changed = true; }
+          next[id] = this.mergeDoc(id, local[id], remote[id], 'l', this.apagadosDe(local.core, remote.core)); this.last[id] = remote[id]; changed = true; }
         else if (!(id in remote) && id in this.last && !mudouAqui) { delete this.last[id]; changed = true; continue; }   // apagado em outro aparelho
         else if (id in local) next[id] = local[id];
       }
@@ -3528,6 +3578,13 @@ const Cal = {
 
   /* Fim de uma tarefa com horário e duração ("14:00" + 30 min → "14:30") */
   fimTarefa(x) { return x.dueTime && x.dur ? U.fromMin(Math.min(1439, U.toMin(x.dueTime) + Number(x.dur))) : ''; },
+  /* Tarefas abertas com horário e duração num dia: ocupam aquele horário de verdade (a rotina desvia delas ao reorganizar) */
+  ocupados(k) {
+    return S.tasks.filter(x => OPEN(x.status) && x.dueDate === k && x.dueTime && Number(x.dur) > 0)
+      .map(x => ({ id: x.id, title: x.title, start: x.dueTime, end: this.fimTarefa(x) }));
+  },
+  /* Atividades da rotina (ainda por fazer) que batem com um horário ocupado */
+  batem(k, o) { return D.dayBlocks(k).filter(b => !D.isBreak(b) && !D.blockDone(b) && b.status !== 'cancelada' && U.toMin(b.start) < U.toMin(o.end) && U.toMin(b.end) > U.toMin(o.start)); },
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda).
      Hoje também mostra as tarefas abertas sem data e as atrasadas, para nada ficar esquecido fora do calendário. */
   itemsOn(k) {
@@ -3709,6 +3766,7 @@ Views.dashboard = {
     return `
     ${Updater.banner()}
     ${Views.dashboard.iphoneCard()}
+    ${Reminders.webCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">
       <div><strong>Como você se chama?</strong><small>Seu nome vai no relatório do dia, nas atas e na saudação. O que você disser que vai fazer entra na sua agenda.</small></div>
       <div class="eu-row"><input name="nome" placeholder="Seu nome" maxlength="40" autocomplete="name" required><button class="btn primary">Salvar</button></div></form>`}
@@ -3753,6 +3811,10 @@ Views.agenda = {
     Cal.sync('agenda', k);
     const blocks = D.dayBlocks(k);
     const conflicts = D.conflicts(blocks);
+    // Tarefa com horário e duração ocupa o horário: marca o que bate com a rotina
+    const ocup = Cal.ocupados(k), bate = new Map(ocup.map(o => [o.id, Cal.batem(k, o)]));
+    const blocosBatendo = new Set([...bate.values()].flat().map(b => b.id));
+    const nBate = [...bate.values()].filter(l => l.length).length;
     const prog = D.progress(k);
     const late = blocks.filter(b => D.blockLate(b, k));
     const items = Cal.itemsOn(k);
@@ -3768,7 +3830,7 @@ Views.agenda = {
       const badges = [
         isNow ? '<span class="badge b-blue">Agora</span>' : '',
         isLate ? '<span class="badge b-red">Atrasada</span>' : '',
-        conflicts.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
+        conflicts.has(b.id) || blocosBatendo.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
         b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
       return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color}">
@@ -3789,7 +3851,7 @@ Views.agenda = {
     const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
     const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
-        <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span></div>
+        <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span>${i.task && (bate.get(i.id) || []).length ? '<span class="badge b-yellow">Conflito</span>' : ''}</div>
           <small class="blk-kind">${Cal.sub(i, true)}</small></div>
         <div class="blk-actions">${i.task ? Cal.check(i) : U.icon('right', 16)}</div></div>`;
     const list = [
@@ -3822,6 +3884,7 @@ Views.agenda = {
       </div>
       ${blocks.length ? H.dayRail(k, { link: false }) : ''}
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
+      ${nBate && k >= t ? `<div class="alert a-yellow ag-bate">${U.icon('clock')} <span>${U.plural(nBate, 'tarefa com horário bate', 'tarefas com horário batem')} com a rotina. <button class="link" data-act="replanOpen">Reorganizar</button> abre espaço: a rotina desvia do horário da tarefa.</span></div>` : ''}
       <div class="timeline">
         ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
       </div>
@@ -5109,6 +5172,7 @@ Views.gravacoes = {
       ${pend.length ? `<div class="alert a-yellow">${U.icon('clock')} <span>${U.plural(pend.length, 'gravação esperando', 'gravações esperando')} para transcrever: ${U.esc(pend[0].motivo || '')}</span> <button class="link" data-act="gvRetry">Tentar agora</button></div>` : ''}
       ${Gravador.recording() ? '' : `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fale o que fez hoje e o que vem amanhã: o app escreve o relatório e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Áudio ou texto</strong><small>Envie áudios (do WhatsApp ou outros) e/ou um texto: a IA resume e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
+      <button class="gv-rel-btn gv-arq-btn gv-marcar" data-act="gvMarcar">${U.icon('calendar', 20)}<span><strong>Marcar reunião ou compromisso</strong><small>Para uma data futura, com pauta. Também registra um feedback sem gravar.</small></span>${U.icon('right', 16)}</button>
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
       ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : H.empty('Nenhuma gravação ainda. Toque em <strong>Gravar</strong>, na barra de baixo, para começar. Não precisa criar a reunião antes.')}`;
   },
@@ -5203,6 +5267,14 @@ Object.assign(Actions, {
     ]);
   },
   gvArq() { Gravador.pedido(); },
+  /* Marcar para depois (sem gravar agora): saiu do "+" a pedido do usuário e ficou aqui, em Gravações */
+  gvMarcar() {
+    UI.sheet('O que você quer marcar?', [
+      { label: 'Reunião', hint: 'Com data, horário e pauta. Na hora, é só gravar', icon: 'users', onClick: () => Events.form(null, U.today(), { reuniao: true }) },
+      { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, U.today()) },
+      { label: 'Feedback sem gravar', hint: 'Anotar uma conversa individual que já aconteceu', icon: 'chat', onClick: () => FB.form(null) },
+    ]);
+  },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {
@@ -5931,6 +6003,9 @@ const Capture = {
     S.tasks.push({ id: U.uid(), createdAt: new Date().toISOString(), completedAt: null, title: d.title, category: 'administrativo', responsible: d.who, priority: st.prio || 'media', status: 'pendente', startDate: t, dueDate: due, dueTime: due ? d.time || '' : '', dur: due && d.time ? d.dur || 0 : 0, notes: '', repeat: st.repeat || '', description: (st.obs || '').trim() });
     commit();
     const quando = !due ? 'sem data (aparece hoje na Agenda)' : `${due === t ? 'hoje' : due === U.addDays(t, 1) ? 'amanhã' : U.fmtShort(due)}${d.time ? ' às ' + d.time : ''}`;
+    // Tarefa com horário e duração ocupa o horário: avisa se bate com a rotina e oferece reorganizar
+    const nb = due && d.time && d.dur && due >= t ? Cal.batem(due, { start: d.time, end: U.fromMin(Math.min(1439, U.toMin(d.time) + d.dur)) }).length : 0;
+    if (nb) { UI.toast(`Tarefa criada: ${quando}. Bate com ${U.plural(nb, 'atividade', 'atividades')} da rotina.`, 'warn', { label: 'Reorganizar', onClick: () => { App.ui.agendaDate = due; if (App.route !== 'agenda') App.go('agenda'); setTimeout(() => Replan.open(due), 200); } }); return; }
     UI.toast(st.repeat ? `Tarefa criada, ${Tasks.repeatLabel(st.repeat).toLowerCase()}.` : `Tarefa criada: ${quando}.`, 'ok', App.route === 'agenda' && App.ui.agendaDate === (due || t) ? undefined : { label: 'Ver na agenda', onClick: () => Actions.goAgenda({ d: due || t }) });
   },
 
@@ -5989,7 +6064,8 @@ const Replan = {
     let cursor = from ?? (k === t ? nowR : U.toMin(S.settings.workStart));
     const run = day.find(b => b.status === 'andamento' && !D.isBreak(b));
     if (run && k === t) cursor = Math.max(cursor, U.toMin(run.end));
-    const fixed = day.filter(b => (b.fixed || D.isBreak(b)) && b.status !== 'cancelada');
+    // Não se mexe em: horário fixo, intervalo e as tarefas com horário e duração marcadas para o dia (a rotina desvia delas)
+    const fixed = [...day.filter(b => (b.fixed || D.isBreak(b)) && b.status !== 'cancelada'), ...Cal.ocupados(k)];
     const movable = day.filter(b => !b.fixed && !D.isBreak(b) && !D.blockDone(b) && b.status !== 'andamento'
       && (includeLate || U.toMin(b.start) >= cursor || k !== t));
     const end = U.toMin(S.settings.workEnd);
