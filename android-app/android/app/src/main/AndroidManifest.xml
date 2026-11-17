@@ -37,6 +37,12 @@
 
         </activity>
 
+        <!-- Mantém a gravação com a tela bloqueada (aviso fixo "Gravando") -->
+        <service
+            android:name=".GravacaoService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -58,4 +64,8 @@
     <!-- Gravar a reunião para a IA preencher a ata -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Gravação com a tela bloqueada -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 </manifest>

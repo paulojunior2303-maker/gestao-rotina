@@ -64,6 +64,24 @@ public class SistemaPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Liga/desliga o serviço que mantém a gravação viva com a tela bloqueada (aviso fixo "Gravando"). */
+    @PluginMethod
+    public void gravando(PluginCall call) {
+        final boolean ligada = Boolean.TRUE.equals(call.getBoolean("ligada", false));
+        Context ctx = getContext();
+        Intent i = new Intent(ctx, GravacaoService.class);
+        try {
+            if (ligada) {
+                // O serviço do tipo microfone só pode começar com a permissão do microfone já dada (senão o Android derruba o app)
+                if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) { call.reject("sem permissão do microfone"); return; }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i); else ctx.startService(i);
+            } else ctx.stopService(i);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject(e.getMessage() == null ? "Não foi possível manter a gravação em segundo plano" : e.getMessage());
+        }
+    }
+
     private boolean tentar(Intent i) {
         try {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

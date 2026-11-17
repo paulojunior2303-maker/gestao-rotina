@@ -245,6 +245,8 @@ const Recorder = {
   fmt(s) { return `${Math.floor(s / 60)}:${U.pad(s % 60)}`; },
   keepScreen(on) {   // tela acesa durante a gravação (app Android); falha em silêncio em versões sem o recurso
     try { const r = Native.available() && Native.P().Sistema && Native.P().Sistema.manterTela({ ligada: on }); if (r && r.catch) r.catch(() => {}); } catch (e) { /* ignorado */ }
+    // Serviço "Gravando" do Android: a gravação continua com a tela bloqueada ou com o app em segundo plano
+    try { const g = Native.available() && Native.P().Sistema && Native.P().Sistema.gravando && Native.P().Sistema.gravando({ ligada: on }); if (g && g.catch) g.catch(() => {}); } catch (e) { /* versão antiga do app */ }
   },
 
   /* onUpdate({ elapsed, text, pending, failed }) é chamado a cada segundo e a cada trecho transcrito */
