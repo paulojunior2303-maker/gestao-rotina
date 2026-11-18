@@ -191,7 +191,9 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await tap('[data-act=tkNew]'); await fill('title', 'Cobrar relatório'); await fill('responsible', 'Carlos'); await fill('dueDate', today); await save();
   await tap('[data-act=tkNew]'); await fill('title', 'Conferir estoque'); await save();
   await overflow('05-tarefas');
-  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').tap(); await W(300);
+  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet]').tap(); await W(300);   // ▶ começa
+  check((await st()).tasks.find(t => t.title === 'Cobrar relatório').status === 'andamento', 'botão único: o primeiro toque começa a tarefa');
+  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').tap(); await W(300);   // ✓ conclui
   s = await st(); check(s.tasks.find(t => t.title === 'Cobrar relatório').status === 'concluida', 'botão ✓ conclui a tarefa');
   check((await p.locator('.stat-chip', { hasText: 'Concluídas' }).textContent()).includes('1'), 'contador "Concluídas" atualiza na hora');
   check(await p.locator('.task', { hasText: 'Cobrar relatório' }).count() === 0, 'tarefa concluída sai da lista de abertas');
@@ -200,12 +202,17 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   s = await st(); check(s.tasks.find(t => t.title === 'Cobrar relatório').status === 'pendente', 'botão ↶ reabre a tarefa');
   await tap('[data-act=tkStatusF][data-v=abertas]');
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkSet][data-s=andamento]').tap(); await W(300);
-  s = await st(); check(s.tasks.find(t => t.title === 'Conferir estoque').status === 'andamento', 'botão ▶ na linha marca em execução');
+  s = await st(); check(s.tasks.find(t => t.title === 'Conferir estoque').status === 'andamento', 'botão ▶ marca em execução');
+  await p.evaluate(() => { S.tasks.push({ id: 'outra', title: 'Outra tarefa', status: 'pendente', priority: 'media', category: 'administrativo', createdAt: '' }); commit(); }); await W(300);
+  check(await p.locator('.task', { hasText: 'Outra tarefa' }).locator('.tk-ck.bloq').count() === 1, 'com uma tarefa em execução, o ▶ das outras fica apagado');
+  await p.locator('.task', { hasText: 'Outra tarefa' }).locator('[data-act=tkSet]').tap(); await W(300);
+  check((await st()).tasks.find(t => t.id === 'outra').status === 'pendente' && (await p.locator('.toast').last().textContent()).includes('Uma tarefa por vez'), 'não deixa começar duas tarefas ao mesmo tempo');
+  await p.evaluate(() => { S.tasks = S.tasks.filter(t => t.id !== 'outra'); commit(); }); await W(300);
   const run = p.locator('.task.andamento', { hasText: 'Conferir estoque' });
   check(await run.count() === 1 && (await run.textContent()).includes('em execução') && (await p.locator('.tk-grp').first().textContent()).includes('Em execução') && await run.evaluate(e => getComputedStyle(e).boxShadow.includes('inset')), 'tarefa em execução fica destacada, no topo da lista');
-  check(await run.locator('[data-act=tkSet][data-s=pendente]').count() >= 1, 'na tarefa em execução o ▶ vira ⏸ (pausar)');
+  check(await run.locator('.tk-ck.and[data-s=concluida]').count() === 1, 'na tarefa em execução o mesmo botão vira ✓ (concluir)');
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkMore]').tap(); await W(300);
-  check(await p.locator('.sheet-item:has-text("Cancelar tarefa")').count() === 1 && await p.locator('.sheet-item:has-text("Começar agora")').count() === 0, '⋯ tem Cancelar (o Começar ficou na linha)');
+  check(await p.locator('.sheet-item:has-text("Cancelar tarefa")').count() === 1 && await p.locator('.sheet-item:has-text("Reagendar")').count() === 1, '⋯ tem Reagendar e Cancelar');
   await p.keyboard.press('Escape'); await W(300);
   await p.fill('[data-input=tkSearch]', 'estoque'); await W(500); check(await p.locator('.task').count() === 1, 'busca');
   await p.fill('[data-input=tkSearch]', ''); await W(500);
@@ -261,11 +268,13 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await W(1600);
   let sch = calls.filter(c => c[0] === 'schedule').pop();
   const tAviso = sch && sch[1].find(n => n.body.includes('Entregar relatório'));
-  check(!!tAviso && tAviso.action === 'TAREFA' && (await p.evaluate(t => new Date(t).toTimeString().slice(0, 5), tAviso.at)) === '09:45', 'tarefa com horário → aviso 15 min antes (09:45) com botão Feito');
+  check(!!tAviso && tAviso.action === 'TAREFA' && (await p.evaluate(t => new Date(t).toTimeString().slice(0, 5), tAviso.at)) === '09:45', 'tarefa com horário → aviso 15 min antes (09:45) com botão Começar');
   check(sch[1].filter(n => n.body.includes('Entregar relatório')).length === 5, 'repetição a cada 30 min depois do prazo (até 2 h)');
   const tid = (await st()).tasks.find(t => t.title === 'Entregar relatório').id;
+  await p.evaluate(x => __fire('localNotificationActionPerformed', { actionId: 'comecar', notification: { extra: x } }), tAviso.extra); await W(800);
+  check((await st()).tasks.find(t => t.id === tid).status === 'andamento', '"Começar" na notificação começa a tarefa');
   await p.evaluate(x => __fire('localNotificationActionPerformed', { actionId: 'feito', notification: { extra: x } }), tAviso.extra); await W(1600);
-  check((await st()).tasks.find(t => t.id === tid).status === 'concluida', '"Feito" na notificação conclui a tarefa');
+  check((await st()).tasks.find(t => t.id === tid).status === 'concluida', '"Concluir" na notificação conclui a tarefa em execução');
   sch = calls.filter(c => c[0] === 'schedule').pop();
   check(!sch || !sch[1].some(n => n.body.includes('Entregar relatório')), 'tarefa concluída sai dos avisos');
   console.log('\n[8c] Feedbacks');

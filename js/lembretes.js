@@ -31,8 +31,8 @@ const Reminders = {
       const base = this.at(date, time), k = this.key(kind, x, date, time);
       if (this.ciente(k)) return;
       const lbl = kind === 'tarefa' ? 'Tarefa' : 'Imprevisto';
-      push({ k, kind, id: x.id, when: base - antes * 60000, title: kind === 'tarefa' ? `Tarefa ${fmtAntes}` : `${lbl} vence ${fmtAntes}`, body: kind === 'tarefa' ? `${x.title} · às ${time}${x.dur ? ' (' + U.fmtDur(x.dur) + ')' : ''}` : `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
-      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: kind === 'tarefa' ? 'Tarefa atrasada' : 'Imprevisto atrasado', body: `${x.title} · ${kind === 'tarefa' ? 'era' : 'venceu'} às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
+      push({ k, kind, id: x.id, when: base - antes * 60000, title: kind === 'tarefa' ? `Tarefa ${fmtAntes}` : `${lbl} vence ${fmtAntes}`, body: kind === 'tarefa' ? `${x.title} · às ${time}${x.dur ? ' (' + U.fmtDur(x.dur) + ')' : ''}` : `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? (x.status === 'andamento' ? 'TAREFA_RUN' : 'TAREFA') : 'AVISO' });
+      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: kind === 'tarefa' ? 'Tarefa atrasada' : 'Imprevisto atrasado', body: `${x.title} · ${kind === 'tarefa' ? 'era' : 'venceu'} às ${time}`, type: kind === 'tarefa' ? (x.status === 'andamento' ? 'TAREFA_RUN' : 'TAREFA') : 'AVISO' });
     };
     S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueTime).forEach(x => prazo('tarefa', x, x.title, x.dueDate, x.dueTime));
     S.occurrences.filter(o => OPEN(o.status) && o.dueDate && o.dueTime).forEach(o => prazo('imprevisto', o, o.title, o.dueDate, o.dueTime));
@@ -88,7 +88,8 @@ const Reminders = {
     try {
       await LN.createChannel({ id: 'lembretes', name: 'Lembretes', description: 'Prazos, compromissos e resumo do dia', importance: 5, visibility: 1, vibration: true });
       await LN.registerActionTypes({ types: [
-        { id: 'TAREFA', actions: [{ id: 'feito', title: 'Feito' }, { id: 'ciente', title: 'Parar de avisar' }] },
+        { id: 'TAREFA', actions: [{ id: 'comecar', title: 'Começar' }, { id: 'ciente', title: 'Parar de avisar' }] },
+        { id: 'TAREFA_RUN', actions: [{ id: 'feito', title: 'Concluir' }, { id: 'ciente', title: 'Parar de avisar' }] },
         { id: 'AVISO', actions: [{ id: 'ciente', title: 'Ciente' }] },
       ] });
       LN.addListener('localNotificationActionPerformed', ev => this.onAction(ev.actionId, (ev.notification && ev.notification.extra) || {}));
@@ -112,8 +113,15 @@ const Reminders = {
   },
 
   onAction(actionId, x) {
+    // Mesma regra do app: o aviso de tarefa parada tem "Começar"; o da tarefa em execução tem "Concluir"
+    if (actionId === 'comecar' && x.kind === 'tarefa') {
+      const t = S.tasks.find(t => t.id === x.id);
+      if (t && t.status === 'pendente' && Tasks.pode(t, 'andamento')) { Tasks.setStatus(t, 'andamento'); commit(); UI.toast('Tarefa em execução.'); }
+      return;
+    }
     if (actionId === 'feito' && x.kind === 'tarefa') {
       const t = S.tasks.find(t => t.id === x.id);
+      if (t && t.status === 'pendente') { if (Tasks.pode(t, 'andamento')) { Tasks.setStatus(t, 'andamento'); commit(); UI.toast('Tarefa em execução.'); } return; }   // aviso antigo ("Feito") numa tarefa parada: começa
       if (t && OPEN(t.status)) { const nx = Tasks.setStatus(t, 'concluida'); commit(); UI.toast(nx ? `Tarefa concluída pelo aviso. A próxima fica para ${U.fmtShort(nx.dueDate)}.` : 'Tarefa concluída pelo aviso.'); }   // setStatus: tarefa que se repete cria a próxima
       return;
     }

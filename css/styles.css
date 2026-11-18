@@ -1340,3 +1340,13 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-it.run, .blk-it.run { background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 24%, var(--surface)), var(--surface) 85%) !important; box-shadow: inset 3px 0 0 var(--accent); }
 .calx-it.run .calx-it-title, .blk-it.run .blk-title { font-weight: 650; }
 @media (prefers-reduced-motion: reduce) { .run-dot { animation: none; } }
+/* Botão único da tarefa (pedido do usuário): ▶ começa → ✓ conclui. Só uma em execução por vez */
+.tk-ck.play { color: var(--muted); }
+.tk-ck.play .ic { margin-left: 2px; }
+.tk-ck.play:hover { color: var(--accent); border-color: var(--accent); }
+.tk-ck.play.late { color: var(--red-text); }
+.tk-ck.play.bloq { opacity: .35; }
+.tk-ck.and { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); animation: andPulse 2s ease-in-out infinite; }
+@keyframes andPulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent); } }
+.tk-ck.canc { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .tk-ck.and { animation: none; } }

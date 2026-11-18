@@ -100,10 +100,9 @@ const Cal = {
     return (i.run ? '<span class="run-tag"><i class="run-dot"></i>em execução</span> · ' : '') + base + (i.who ? ` · ${U.esc(i.who)}` : '');
   },
   /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
-  check(i) {   // círculo, igual ao da lista de Tarefas (sugestão de design 1)
-    return i.done
-      ? `<button class="tk-ck feito" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('check', 13)}</button>`
-      : `<button class="tk-ck ${i.late ? 'late' : ''}" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa"></button>`;
+  check(i) {   // o mesmo botão único da lista de Tarefas: ▶ começa, ✓ conclui (só o que está em execução), reabre o que foi feito
+    const x = S.tasks.find(y => y.id === i.id);
+    return x ? Tasks.botao(x, i.late) : '';
   },
 
   /* Lista do dia escolhido */

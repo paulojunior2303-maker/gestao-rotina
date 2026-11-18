@@ -73,14 +73,15 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(rt && rt.repeat === 'semanal' && rt.dueDate === '2026-11-16', 'tarefa salva com repetição semanal');
   await go('tarefas');
   check((await p.locator('.task', { hasText: 'Conferir backup' }).textContent()).includes('Toda semana'), 'a lista mostra que ela se repete');
-  await p.locator('.task', { hasText: 'Conferir backup' }).locator('[data-act=tkSet][data-s=concluida]').tap(); await W();
+  await p.locator('.task', { hasText: 'Conferir backup' }).locator('[data-act=tkSet][data-s=andamento]').tap(); await W();   // começa
+  await p.locator('.task', { hasText: 'Conferir backup' }).locator('[data-act=tkSet][data-s=concluida]').tap(); await W();   // conclui
   s = await st();
   let reps = s.tasks.filter(x => x.title.startsWith('Conferir backup'));
   check(reps.length === 2 && reps.some(x => x.status === 'pendente' && x.dueDate === '2026-11-23'), 'ao concluir, nasce a próxima (23/11)');
   check((await p.locator('.toast', { hasText: 'próxima' }).last().textContent()).includes('23/11'), 'o aviso diz quando é a próxima');
   await p.locator('.toast', { hasText: 'próxima' }).last().locator('.link').tap(); await W();
   s = await st(); reps = s.tasks.filter(x => x.title.startsWith('Conferir backup'));
-  check(reps.length === 1 && reps[0].status === 'pendente', '"Desfazer" volta e apaga a próxima');
+  check(reps.length === 1 && reps[0].status === 'andamento', '"Desfazer" volta (em execução, como estava) e apaga a próxima');
   const nd = await p.evaluate(() => [Tasks.nextDue({ repeat: 'mensal', dueDate: '2026-01-31' }), Tasks.nextDue({ repeat: 'semanal', dueDate: '2026-10-01' }), Tasks.nextDue({ repeat: 'diaria', dueDate: '2026-11-11' })]);
   check(nd[0] === '2026-11-30' && nd[1] === '2026-11-12' && nd[2] === '2026-11-12', `próximos prazos certos (fim de mês, atrasada, dia útil): ${nd.join(', ')}`);
   await tap('#fab');

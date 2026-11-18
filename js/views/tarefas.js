@@ -49,16 +49,13 @@ Views.tarefas = {
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
       return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
-        <button class="tk-ck ${late ? 'late' : ''} ${x.status === 'andamento' ? 'and' : ''}" data-act="tkSet" data-id="${x.id}" data-s="${fechada ? 'pendente' : 'concluida'}" title="${fechada ? 'Reabrir' : 'Concluir'}" aria-label="${fechada ? 'Reabrir' : 'Concluir'}: ${U.esc(x.title)}">${x.status === 'concluida' ? U.icon('check', 13) : x.status === 'cancelada' ? U.icon('x', 12) : ''}</button>
+        ${Tasks.botao(x, late)}
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
           <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
           ${meta ? `<div class="tk-meta">${meta}</div>` : ''}
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
         </div>
         ${prio}
-        ${!OPEN(x.status) ? '' : x.status === 'andamento'
-          ? `<button class="icon-btn tk-play on" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Pausar (volta para pendente)" aria-label="Pausar: ${U.esc(x.title)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2"/></svg></button>`
-          : `<button class="icon-btn tk-play" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar: ${U.esc(x.title)}">${U.icon('play', 14)}</button>`}
         <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
@@ -132,6 +129,46 @@ const Tasks = {
       },
     });
   },
+  /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
+     Assim nada é concluído sem antes ser começado. */
+  emExecucao(exceto) { return S.tasks.find(y => y.status === 'andamento' && y.id !== exceto); },
+  botao(x, late, extra = '') {
+    const nome = U.esc(x.title);
+    if (x.status === 'concluida') return `<button class="tk-ck feito" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir: ${nome}">${U.icon('check', 13)}</button>`;
+    if (x.status === 'cancelada') return `<button class="tk-ck canc" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir: ${nome}">${U.icon('x', 12)}</button>`;
+    if (x.status === 'andamento') return `<button class="tk-ck and" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir: ${nome}">${U.icon('check', 14)}</button>`;
+    const outra = this.emExecucao(x.id);
+    return `<button class="tk-ck play ${late ? 'late' : ''} ${outra ? 'bloq' : ''}" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="${outra ? 'Termine ou reagende a tarefa em execução primeiro' : 'Começar'}" aria-label="Começar: ${nome}">${U.icon('play', 11)}</button>`;
+  },
+  /* Regras: uma tarefa em execução por vez; só conclui o que foi começado */
+  pode(x, s) {
+    if (s === 'andamento') {
+      const outra = this.emExecucao(x.id);
+      if (outra) { UI.toast(`Uma tarefa por vez: conclua ou reagende “${outra.title}” antes de começar outra.`, 'warn', { label: 'Ver', onClick: () => Actions.goTasks({ status: 'andamento' }) }); return false; }
+    }
+    if (s === 'concluida' && x.status !== 'andamento') { UI.toast('Comece a tarefa antes de concluir: toque no ▶.', 'warn'); return false; }
+    return true;
+  },
+  /* Reagendar: novo dia/horário; se estava em execução, para (volta para pendente) */
+  reagendar(x) {
+    UI.form({
+      title: 'Reagendar tarefa',
+      submitLabel: 'Reagendar',
+      fields: [
+        { type: 'html', html: `<p><strong>${U.esc(x.title)}</strong></p>` },
+        { name: 'dueDate', label: 'Novo dia', type: 'date', value: x.dueDate && x.dueDate >= U.today() ? x.dueDate : U.today(), required: true, half: true },
+        { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime || '', half: true },
+      ],
+      onSubmit(v) {
+        const antes = { dueDate: x.dueDate, dueTime: x.dueTime, status: x.status };
+        Object.assign(x, { dueDate: v.dueDate, dueTime: v.dueTime || '' });
+        if (x.status === 'andamento') x.status = 'pendente';
+        if (!x.dueTime) x.dur = 0;
+        commit();
+        UI.toast(`Reagendada para ${v.dueDate === U.today() ? 'hoje' : U.fmtShort(v.dueDate)}${v.dueTime ? ' às ' + v.dueTime : ''}.`, 'ok', { label: 'Desfazer', onClick: () => { Object.assign(x, antes); commit(); } });
+      },
+    });
+  },
   setStatus(x, s) {
     const was = x.status;
     if (s === 'concluida' && x.status !== 'concluida') x.completedAt = new Date().toISOString();
@@ -177,6 +214,7 @@ Object.assign(Actions, {
   /* Botões da lista (como na Agenda): ✓ conclui, ↶ reabre, ⋯ mais opções */
   tkSet({ id, s }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
+    if (!Tasks.pode(x, s)) return;
     const prev = x.status, prevAt = x.completedAt;
     const nx = Tasks.setStatus(x, s); commit();
     const undo = { label: 'Desfazer', onClick: () => { Tasks.setStatus(x, prev); x.completedAt = prevAt; commit(); } };
@@ -188,6 +226,7 @@ Object.assign(Actions, {
     const aberta = OPEN(x.status);
     UI.sheet(x.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
+      ...(aberta ? [{ label: 'Reagendar', hint: x.status === 'andamento' ? 'Para de executar agora e marca outro dia/horário' : 'Muda o dia e o horário', icon: 'calendar', onClick: () => Tasks.reagendar(x) }] : []),
       ...(aberta ? [{ label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);

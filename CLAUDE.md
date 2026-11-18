@@ -92,7 +92,10 @@ e diga o que mudou e como testar no celular.
   Testes: `tests/visual.test.js`.
 - **Design v3 (6 sugestões, no teste; bloco "Design v3" no fim de `css/styles.css`)**: (1) Tarefas como lista de papel: linha fina, círculo `.tk-ck` para concluir
   (`tkSet`), grupos por quando (`.tk-grp`: atrasadas, hoje, amanhã, próximos 7 dias, mais adiante, sem data), prioridade só alta/urgente em palavra (`.tk-prio`), abas sublinhadas
-  (`.tk-abas`, ainda `.stat-chip`); ▶ começar (`.tk-play`, vira ⏸ pausar na tarefa em execução) fica **na linha** (pedido do usuário), ✕ "Cancelar" fica no ⋯ (`tkMore`).
+  (`.tk-abas`, ainda `.stat-chip`); **botão único** (`Tasks.botao`, pedido do usuário) no lugar do círculo: ▶ começa → na tarefa em execução vira ✓ e conclui → concluída/cancelada reabre.
+  Regras em `Tasks.pode` (chamado por `tkSet` e pelos avisos): **só conclui o que foi começado** e **só uma tarefa em execução por vez** (para trocar: concluir ou
+  **Reagendar** no ⋯, `Tasks.reagendar`, que volta para pendente com novo dia/horário). Com uma em execução, o ▶ das outras fica apagado (`.bloq`). Calendário e Agenda usam o mesmo
+  botão (`Cal.check` → `Tasks.botao`). Avisos do Android: `TAREFA` tem "Começar" (`comecar`), `TAREFA_RUN` (em execução) tem "Concluir" (`feito`). ✕ "Cancelar" fica no ⋯ (`tkMore`).
   **Tarefa em execução destacada** (`.task.andamento`, `.calx-it.run`, `.blk-it.run`; `run` em `Cal.itemsOn`): fundo roxo, faixa à esquerda, "em execução" com ponto pulsando (`.run-dot`)
   e grupo próprio no topo ("Em execução agora", `g-execucao`), também na lista do dia do Início e na Agenda. (2) Início com a data grande (`Views.dashboard.diaHero`: `.dh-n` + resumo de
   três números que levam a Tarefas/Agenda); o topo mostra só a saudação. Calendário sem caixinhas. (3) Roxo só onde importa: lista do dia em grafite, `.calx-agora` (atividade da
