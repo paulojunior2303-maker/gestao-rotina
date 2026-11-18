@@ -1389,6 +1389,21 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-it .tk-pausa, .blk-it .tk-pausa { margin-right: 8px; }
 .calx-it .tk-pausa, .blk-it .tk-pausa { width: 38px; height: 38px; min-height: 0; padding: 0; justify-content: center; }
 .calx-it .tk-pausa span, .blk-it .tk-pausa span { display: none; }
+/* Tarefa esperando começar (pedido do usuário): cartão no mesmo estilo da "em execução", porém mais discreto.
+   Faixa à esquerda na cor da prioridade, fundo de superfície e ▶ com fundo roxo-claro. A em execução continua sendo a que mais chama atenção. */
+.task-list .task.pendente, .tk-col .task.pendente { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 13px 10px 13px 14px; margin: 4px 0;
+  box-shadow: inset 3px 0 0 var(--fx, color-mix(in srgb, var(--accent) 35%, transparent)); }
+.task-list .task.pendente:hover, .tk-col .task.pendente:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.task.pendente.p-alta { --fx: var(--yellow); }
+.task.pendente.p-urgente { --fx: var(--red); }
+.task.pendente.p-baixa { --fx: var(--border-strong); }
+.task.pendente.dl-row-late { background: color-mix(in srgb, var(--red) 7%, var(--surface)); border-color: color-mix(in srgb, var(--red) 28%, transparent); --fx: var(--red); }
+.task.pendente .tk-ck.play { width: 30px; height: 30px; margin-top: -2px; border: 0; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--lilac); }
+.task.pendente .tk-ck.play:hover { background: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--text); }
+.task.pendente .tk-ck.play.late { background: color-mix(in srgb, var(--red) 18%, transparent); color: var(--red-text); }
+.task.pendente .tk-ck.play.bloq { opacity: .55; }
+.task.pendente .tk-title { font-weight: 550; }
+.task-list .tk-grp + .task.pendente, .tk-col .tk-grp + .task.pendente { margin-top: 2px; }
 
 </style>
 </head>
@@ -5568,7 +5583,7 @@ Views.tarefas = {
         x.status === 'andamento' ? '<span class="run-tag"><i class="run-dot"></i>em execução</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
-      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
+      return `<div class="task ${x.status} p-${x.priority || 'media'} ${dl ? 'dl-row-' + dl.level : ''}">
         ${Tasks.botao(x, late)}
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
           <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
