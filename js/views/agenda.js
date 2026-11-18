@@ -80,7 +80,6 @@ Views.agenda = {
     const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
-    ${Agenda.modos('dia')}
     ${Occ.painel({ compacto: true })}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 

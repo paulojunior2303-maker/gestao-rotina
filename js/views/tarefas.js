@@ -1,7 +1,7 @@
 'use strict';
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
-  title: 'Agenda', icon: 'tasks', nav: 'Tarefas',
+  title: 'Tarefas', icon: 'tasks', nav: 'Tarefas',
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
@@ -76,13 +76,13 @@ Views.tarefas = {
       : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
-    ${Agenda.modos('lista')}
     ${Occ.painel({ compacto: true })}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
     <div class="tk-busca">
-      <input type="search" placeholder="Buscar tarefa ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      <input type="search" placeholder="Buscar tarefa ou pessoa" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      <button class="tk-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button>
       <button class="btn ghost tk-fbtn ${App.ui.taskFOpen ? 'on' : ''}" data-act="tkFiltros" aria-expanded="${App.ui.taskFOpen || nFiltros ? 'true' : 'false'}">${U.icon('filter', 16)} Filtros${nFiltros ? ` <b class="tk-fn">${nFiltros}</b>` : ''}</button>
     </div>
     <div class="filters card tk-filtros ${App.ui.taskFOpen || nFiltros ? 'aberto' : ''}">

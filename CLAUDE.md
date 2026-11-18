@@ -32,9 +32,10 @@ e diga o que mudou e como testar no celular.
   O código de jogo/Jornada/missões, equipes, indicadores, projetos, pessoas, checklists, revisão da semana, "Agora", abrir/fechar o dia, gráficos,
   relatórios Excel/PDF e tutorial foi **apagado**. Os dados dessas telas continuam no estado (`S.projects`, `S.indicators`, `S.missoes`, `S.equipes`,
   `S.checks`, `S.diario`…), em `Store.migrate` e nos `split/join` da nuvem, para não perder nada de quem já usava. Endereços antigos caem na tela mais próxima.
-- **Navegação**: **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, **Gravar** no meio, Agenda, Imprevistos), **sem** botão Menu.
-  **Tarefas e Agenda são uma tela só** (pedido do usuário): "Agenda" com os modos **Dia** (`#agenda`) e **Lista de tarefas** (`#tarefas`), no seletor `Agenda.modos`;
-  `#tarefas` continua sendo rota (fora do menu; `routeVisible`), e `navAtual` acende "Agenda" nas duas. O selo de atrasadas fica na Agenda.
+- **Navegação**: **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, **Gravar** no meio, **Tarefas**, Imprevistos), **sem** botão Menu.
+  **Sem botão "Agenda"** (pedido do usuário: o Calendário já é a agenda inteira). A agenda do dia (`#agenda`, linha do tempo) abre pelo Calendário ("Agenda do dia");
+  continua sendo rota (`routeVisible`), fora do menu, e `navAtual` acende o Calendário nela. **Tarefas** mostra só a lista (sem o seletor `Agenda.modos`, que ficou sem uso),
+  com o ⚠ de imprevisto (`.tk-oc`) ao lado da busca. O selo de atrasadas fica em Tarefas.
   Menu lateral (☰ ou arrastar da borda): no celular mostra só o que **não** está na barra de baixo (Configurações, Guia; classe `in-bottom`);
   no computador (sem barra de baixo) mostra tudo e o Calendário tem o botão grande de gravar (`.gv-rec-big`, escondido no celular).
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Calendário e Agenda usam `quickAdd`
@@ -135,7 +136,7 @@ e diga o que mudou e como testar no celular.
 - **Lembretes ligados por padrão** (pedido do usuário; `meta.v6` liga uma vez para quem já usava; instalação nova já nasce com `v6`): no Android, `initNative` pede a permissão
   uma vez (`localStorage['ff-lem-pedido']`); no navegador, cartão "Quer ser avisado no horário?" no Calendário (`Reminders.webCard`, "Agora não" → `ff-lem-web`).
 - **Imprevistos em destaque (pedido do usuário: vêm antes de tudo)**: `Occ.painel()` = quadro vermelho no topo do Início, da Agenda (Dia) e da Lista de tarefas
-  (`.oc-card`; na Agenda/Lista só aparece com imprevisto aberto — `compacto` —, e o botão ⚠ `.ag-modos-oc` fica na barra Dia | Lista). **Sem prazo** no registro (`Capture` e `Occ.form`).
+  (`.oc-card`; na agenda do dia e em Tarefas só aparece com imprevisto aberto — `compacto` —, e o botão ⚠ `.tk-oc` fica ao lado da busca de Tarefas). **Sem prazo** no registro (`Capture` e `Occ.form`).
   **Começar** (`Occ.comecar` / `occComecar`, também `occStatus` com `andamento`): encaixa na agenda agora (30 min, `Capture.encaixarAgora`, empurra o resto), põe em andamento e
   **pausa a tarefa em execução**; só um imprevisto em andamento. Enquanto houver imprevisto em andamento, **nenhuma tarefa começa** (`Tasks.pode`). Bloco do imprevisto na linha do tempo
   em vermelho (`.blk-occ`) e o dia de hoje com anel vermelho no calendário (`.has-occ`). Testes em `tests/melhorias.test.js`.

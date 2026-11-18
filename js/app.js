@@ -2,13 +2,14 @@
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral (no celular só o que não está na barra de baixo) e barra de baixo com o botão Gravar no meio */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'gravacoes', 'agenda', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'imprevistos']],
   ['Ajustes', ['config', 'guia']],
 ];
-/* Tarefas e Agenda viraram uma tela só (pedido do usuário): "Agenda", com os modos Dia (#agenda) e Lista de tarefas (#tarefas) */
-const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'agenda', 'imprevistos'];
-const routeVisible = id => id === 'tarefas' || NAV_GROUPS.some(([, ids]) => ids.includes(id));
-const navAtual = r => r === 'tarefas' ? 'agenda' : r;
+/* Barra de baixo (pedido do usuário): Calendário, Gravações, Gravar, Tarefas e Imprevistos.
+   A agenda do dia (#agenda, linha do tempo) não tem botão: abre pelo Calendário ("Agenda do dia"), que já é a agenda inteira. */
+const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'tarefas', 'imprevistos'];
+const routeVisible = id => id === 'agenda' || NAV_GROUPS.some(([, ids]) => ids.includes(id));
+const navAtual = r => r === 'agenda' ? 'dashboard' : r;
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
   act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
@@ -39,7 +40,7 @@ const App = {
   renderNav() {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
-    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'agenda' && late ? `<span class="nav-badge">${late}</span>` : '';
+    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${navAtual(this.route) === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${navAtual(this.route) === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';

@@ -55,7 +55,7 @@ Views.guia = {
     ]))}
     ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
       'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário: sua rotina e as tarefas, tudo junto.',
-      'Para registrar um imprevisto, toque no <strong>⚠</strong> vermelho da Agenda (ou em <strong>Registrar imprevisto</strong> no Início) e escreva em poucas palavras. Imprevisto não tem prazo.',
+      'Para registrar um imprevisto, toque no <strong>⚠</strong> vermelho em Tarefas (ou em <strong>Registrar imprevisto</strong> no Início) e escreva em poucas palavras. Imprevisto não tem prazo.',
       'Imprevisto aberto fica num quadro vermelho no topo do Início e da Agenda. <strong>Começar</strong> põe na agenda agora, empurra o resto do dia e pausa a tarefa que estava em execução. Enquanto ele não for <strong>Resolvido</strong>, nenhuma tarefa começa.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
@@ -65,7 +65,7 @@ Views.guia = {
       'No iPhone, os lembretes só aparecem com o app aberto, e o compartilhar áudio do WhatsApp direto para o FlowFire não existe: use <strong>Gravar → Áudio ou texto</strong>.',
     ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
-      'Tarefas e Agenda são uma tela só. Na <strong>Agenda</strong>, use <strong>Dia</strong> para ver a linha do tempo e <strong>Lista de tarefas</strong> para ver tudo, agrupado por quando.',
+      'Em <strong>Tarefas</strong> fica a lista de tudo, agrupada por quando. A linha do tempo do dia abre pelo <strong>Calendário</strong>, em <strong>Agenda do dia</strong>.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
       'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
       'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
