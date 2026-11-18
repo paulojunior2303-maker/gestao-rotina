@@ -1355,6 +1355,16 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-it.run, .blk-it.run { background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 24%, var(--surface)), var(--surface) 85%) !important; box-shadow: inset 3px 0 0 var(--accent); }
 .calx-it.run .calx-it-title, .blk-it.run .blk-title { font-weight: 650; }
 @media (prefers-reduced-motion: reduce) { .run-dot { animation: none; } }
+/* Botão único da tarefa (pedido do usuário): ▶ começa → ✓ conclui. Só uma em execução por vez */
+.tk-ck.play { color: var(--muted); }
+.tk-ck.play .ic { margin-left: 2px; }
+.tk-ck.play:hover { color: var(--accent); border-color: var(--accent); }
+.tk-ck.play.late { color: var(--red-text); }
+.tk-ck.play.bloq { opacity: .35; }
+.tk-ck.and { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); animation: andPulse 2s ease-in-out infinite; }
+@keyframes andPulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent); } }
+.tk-ck.canc { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .tk-ck.and { animation: none; } }
 
 </style>
 </head>
@@ -2509,8 +2519,8 @@ const Reminders = {
       const base = this.at(date, time), k = this.key(kind, x, date, time);
       if (this.ciente(k)) return;
       const lbl = kind === 'tarefa' ? 'Tarefa' : 'Imprevisto';
-      push({ k, kind, id: x.id, when: base - antes * 60000, title: kind === 'tarefa' ? `Tarefa ${fmtAntes}` : `${lbl} vence ${fmtAntes}`, body: kind === 'tarefa' ? `${x.title} · às ${time}${x.dur ? ' (' + U.fmtDur(x.dur) + ')' : ''}` : `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
-      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: kind === 'tarefa' ? 'Tarefa atrasada' : 'Imprevisto atrasado', body: `${x.title} · ${kind === 'tarefa' ? 'era' : 'venceu'} às ${time}`, type: kind === 'tarefa' ? 'TAREFA' : 'AVISO' });
+      push({ k, kind, id: x.id, when: base - antes * 60000, title: kind === 'tarefa' ? `Tarefa ${fmtAntes}` : `${lbl} vence ${fmtAntes}`, body: kind === 'tarefa' ? `${x.title} · às ${time}${x.dur ? ' (' + U.fmtDur(x.dur) + ')' : ''}` : `${x.title} · prazo às ${time}`, type: kind === 'tarefa' ? (x.status === 'andamento' ? 'TAREFA_RUN' : 'TAREFA') : 'AVISO' });
+      if (c.repetir) for (let i = 1; i <= this.REPEATS; i++) push({ k, kind, id: x.id, when: base + i * this.REPEAT_MIN * 60000, title: kind === 'tarefa' ? 'Tarefa atrasada' : 'Imprevisto atrasado', body: `${x.title} · ${kind === 'tarefa' ? 'era' : 'venceu'} às ${time}`, type: kind === 'tarefa' ? (x.status === 'andamento' ? 'TAREFA_RUN' : 'TAREFA') : 'AVISO' });
     };
     S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueTime).forEach(x => prazo('tarefa', x, x.title, x.dueDate, x.dueTime));
     S.occurrences.filter(o => OPEN(o.status) && o.dueDate && o.dueTime).forEach(o => prazo('imprevisto', o, o.title, o.dueDate, o.dueTime));
@@ -2566,7 +2576,8 @@ const Reminders = {
     try {
       await LN.createChannel({ id: 'lembretes', name: 'Lembretes', description: 'Prazos, compromissos e resumo do dia', importance: 5, visibility: 1, vibration: true });
       await LN.registerActionTypes({ types: [
-        { id: 'TAREFA', actions: [{ id: 'feito', title: 'Feito' }, { id: 'ciente', title: 'Parar de avisar' }] },
+        { id: 'TAREFA', actions: [{ id: 'comecar', title: 'Começar' }, { id: 'ciente', title: 'Parar de avisar' }] },
+        { id: 'TAREFA_RUN', actions: [{ id: 'feito', title: 'Concluir' }, { id: 'ciente', title: 'Parar de avisar' }] },
         { id: 'AVISO', actions: [{ id: 'ciente', title: 'Ciente' }] },
       ] });
       LN.addListener('localNotificationActionPerformed', ev => this.onAction(ev.actionId, (ev.notification && ev.notification.extra) || {}));
@@ -2590,8 +2601,15 @@ const Reminders = {
   },
 
   onAction(actionId, x) {
+    // Mesma regra do app: o aviso de tarefa parada tem "Começar"; o da tarefa em execução tem "Concluir"
+    if (actionId === 'comecar' && x.kind === 'tarefa') {
+      const t = S.tasks.find(t => t.id === x.id);
+      if (t && t.status === 'pendente' && Tasks.pode(t, 'andamento')) { Tasks.setStatus(t, 'andamento'); commit(); UI.toast('Tarefa em execução.'); }
+      return;
+    }
     if (actionId === 'feito' && x.kind === 'tarefa') {
       const t = S.tasks.find(t => t.id === x.id);
+      if (t && t.status === 'pendente') { if (Tasks.pode(t, 'andamento')) { Tasks.setStatus(t, 'andamento'); commit(); UI.toast('Tarefa em execução.'); } return; }   // aviso antigo ("Feito") numa tarefa parada: começa
       if (t && OPEN(t.status)) { const nx = Tasks.setStatus(t, 'concluida'); commit(); UI.toast(nx ? `Tarefa concluída pelo aviso. A próxima fica para ${U.fmtShort(nx.dueDate)}.` : 'Tarefa concluída pelo aviso.'); }   // setStatus: tarefa que se repete cria a próxima
       return;
     }
@@ -3803,10 +3821,9 @@ const Cal = {
     return (i.run ? '<span class="run-tag"><i class="run-dot"></i>em execução</span> · ' : '') + base + (i.who ? ` · ${U.esc(i.who)}` : '');
   },
   /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
-  check(i) {   // círculo, igual ao da lista de Tarefas (sugestão de design 1)
-    return i.done
-      ? `<button class="tk-ck feito" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('check', 13)}</button>`
-      : `<button class="tk-ck ${i.late ? 'late' : ''}" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa"></button>`;
+  check(i) {   // o mesmo botão único da lista de Tarefas: ▶ começa, ✓ conclui (só o que está em execução), reabre o que foi feito
+    const x = S.tasks.find(y => y.id === i.id);
+    return x ? Tasks.botao(x, i.late) : '';
   },
 
   /* Lista do dia escolhido */
@@ -5528,16 +5545,13 @@ Views.tarefas = {
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
       return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
-        <button class="tk-ck ${late ? 'late' : ''} ${x.status === 'andamento' ? 'and' : ''}" data-act="tkSet" data-id="${x.id}" data-s="${fechada ? 'pendente' : 'concluida'}" title="${fechada ? 'Reabrir' : 'Concluir'}" aria-label="${fechada ? 'Reabrir' : 'Concluir'}: ${U.esc(x.title)}">${x.status === 'concluida' ? U.icon('check', 13) : x.status === 'cancelada' ? U.icon('x', 12) : ''}</button>
+        ${Tasks.botao(x, late)}
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
           <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
           ${meta ? `<div class="tk-meta">${meta}</div>` : ''}
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
         </div>
         ${prio}
-        ${!OPEN(x.status) ? '' : x.status === 'andamento'
-          ? `<button class="icon-btn tk-play on" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Pausar (volta para pendente)" aria-label="Pausar: ${U.esc(x.title)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2"/></svg></button>`
-          : `<button class="icon-btn tk-play" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar: ${U.esc(x.title)}">${U.icon('play', 14)}</button>`}
         <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
@@ -5611,6 +5625,46 @@ const Tasks = {
       },
     });
   },
+  /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
+     Assim nada é concluído sem antes ser começado. */
+  emExecucao(exceto) { return S.tasks.find(y => y.status === 'andamento' && y.id !== exceto); },
+  botao(x, late, extra = '') {
+    const nome = U.esc(x.title);
+    if (x.status === 'concluida') return `<button class="tk-ck feito" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir: ${nome}">${U.icon('check', 13)}</button>`;
+    if (x.status === 'cancelada') return `<button class="tk-ck canc" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir: ${nome}">${U.icon('x', 12)}</button>`;
+    if (x.status === 'andamento') return `<button class="tk-ck and" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir: ${nome}">${U.icon('check', 14)}</button>`;
+    const outra = this.emExecucao(x.id);
+    return `<button class="tk-ck play ${late ? 'late' : ''} ${outra ? 'bloq' : ''}" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="${outra ? 'Termine ou reagende a tarefa em execução primeiro' : 'Começar'}" aria-label="Começar: ${nome}">${U.icon('play', 11)}</button>`;
+  },
+  /* Regras: uma tarefa em execução por vez; só conclui o que foi começado */
+  pode(x, s) {
+    if (s === 'andamento') {
+      const outra = this.emExecucao(x.id);
+      if (outra) { UI.toast(`Uma tarefa por vez: conclua ou reagende “${outra.title}” antes de começar outra.`, 'warn', { label: 'Ver', onClick: () => Actions.goTasks({ status: 'andamento' }) }); return false; }
+    }
+    if (s === 'concluida' && x.status !== 'andamento') { UI.toast('Comece a tarefa antes de concluir: toque no ▶.', 'warn'); return false; }
+    return true;
+  },
+  /* Reagendar: novo dia/horário; se estava em execução, para (volta para pendente) */
+  reagendar(x) {
+    UI.form({
+      title: 'Reagendar tarefa',
+      submitLabel: 'Reagendar',
+      fields: [
+        { type: 'html', html: `<p><strong>${U.esc(x.title)}</strong></p>` },
+        { name: 'dueDate', label: 'Novo dia', type: 'date', value: x.dueDate && x.dueDate >= U.today() ? x.dueDate : U.today(), required: true, half: true },
+        { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime || '', half: true },
+      ],
+      onSubmit(v) {
+        const antes = { dueDate: x.dueDate, dueTime: x.dueTime, status: x.status };
+        Object.assign(x, { dueDate: v.dueDate, dueTime: v.dueTime || '' });
+        if (x.status === 'andamento') x.status = 'pendente';
+        if (!x.dueTime) x.dur = 0;
+        commit();
+        UI.toast(`Reagendada para ${v.dueDate === U.today() ? 'hoje' : U.fmtShort(v.dueDate)}${v.dueTime ? ' às ' + v.dueTime : ''}.`, 'ok', { label: 'Desfazer', onClick: () => { Object.assign(x, antes); commit(); } });
+      },
+    });
+  },
   setStatus(x, s) {
     const was = x.status;
     if (s === 'concluida' && x.status !== 'concluida') x.completedAt = new Date().toISOString();
@@ -5656,6 +5710,7 @@ Object.assign(Actions, {
   /* Botões da lista (como na Agenda): ✓ conclui, ↶ reabre, ⋯ mais opções */
   tkSet({ id, s }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
+    if (!Tasks.pode(x, s)) return;
     const prev = x.status, prevAt = x.completedAt;
     const nx = Tasks.setStatus(x, s); commit();
     const undo = { label: 'Desfazer', onClick: () => { Tasks.setStatus(x, prev); x.completedAt = prevAt; commit(); } };
@@ -5667,6 +5722,7 @@ Object.assign(Actions, {
     const aberta = OPEN(x.status);
     UI.sheet(x.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
+      ...(aberta ? [{ label: 'Reagendar', hint: x.status === 'andamento' ? 'Para de executar agora e marca outro dia/horário' : 'Muda o dia e o horário', icon: 'calendar', onClick: () => Tasks.reagendar(x) }] : []),
       ...(aberta ? [{ label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
