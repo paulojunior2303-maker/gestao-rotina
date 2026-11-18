@@ -1223,6 +1223,125 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
   html, body { background: var(--bg); overscroll-behavior-y: none; }
 }
 
+/* ================= Design v3 (sugestões 1 a 6, aprovadas para o teste) ================= */
+/* 1. Tarefas como lista de papel: linha fina, círculo para concluir, grupos por quando */
+.tk-abas.stat-chips { gap: 22px; border-bottom: 1px solid var(--line); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.tk-abas .stat-chip { flex-direction: row; align-items: baseline; gap: 5px; min-width: 0; flex-shrink: 0; background: none; border: 0; border-radius: 0; padding: 4px 0 11px; min-height: 40px; color: var(--muted); }
+.tk-abas .stat-chip:hover { border: 0; color: var(--text-2); }
+.tk-abas .stat-chip span { order: -1; font-size: 14px; color: inherit; }
+.tk-abas .stat-chip strong { font-family: var(--font); font-size: 13.5px; font-weight: 500; color: var(--muted); opacity: .75; }
+.tk-abas .stat-chip.active { background: none; color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.tk-abas .stat-chip.active span { color: var(--text); font-weight: 600; }
+.tk-abas .stat-chip.c-red strong { color: var(--red); opacity: 1; }
+.task-list { gap: 0; }
+.task-list .task, .tk-col .task { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 13px 2px; gap: 13px; align-items: flex-start; }
+.task-list .task::before, .tk-col .task::before { display: none; }
+.task-list .task:hover, .tk-col .task:hover { background: var(--hover); }
+.task.dl-row-late, .task.dl-row-today, .task.dl-row-soon { background: none; }
+.tk-ck { flex: none; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; border: 1.7px solid var(--border-strong); background: none; color: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; position: relative; transition: background .15s, border-color .15s, transform .12s; }
+.tk-ck::after { content: ""; position: absolute; inset: -10px; }   /* área de toque de 44 px */
+.tk-ck:hover { border-color: var(--accent); }
+.tk-ck:active { transform: scale(.86); }
+.tk-ck.late { border-color: var(--red); }
+.tk-ck.and { border-color: var(--accent); background: conic-gradient(var(--accent) 0 50%, transparent 0); }
+.task.concluida .tk-ck { background: var(--accent); border-color: var(--accent); }
+.task.cancelada .tk-ck { border-color: var(--border-strong); color: var(--muted); }
+.task .tk-title { font-weight: 500; font-size: 15px; line-height: 1.38; }
+.task .tk-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
+.task .tk-meta .dl-late { color: var(--red-text); background: none; padding: 0; border: 0; font-weight: 500; }
+.task .tk-and { color: var(--accent); }
+.task .tk-desc { margin-top: 3px; }
+.tk-prio { flex: none; font-size: 12px; margin-top: 3px; color: var(--yellow-text); }
+.tk-prio.p-urgente { color: var(--red-text); }
+.tk-mais { margin: -9px -6px -9px -4px; color: var(--muted); }
+.task.concluida .tk-title { color: var(--muted); }
+.tk-grp { display: flex; justify-content: space-between; padding: 20px 2px 6px; font-size: 11.5px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.tk-grp:first-child { padding-top: 6px; }
+.tk-grp span { letter-spacing: 0; font-weight: 500; opacity: .7; }
+.tk-grp.g-atrasadas { color: var(--red-text); }
+/* 5. Computador: abertas em três colunas */
+.tk-cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.tk-col { min-width: 0; }
+.tk-col header { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 10px; border-bottom: 1px solid var(--border-strong); }
+.tk-col header b { font-family: var(--font-d); font-size: 17px; font-weight: 600; }
+.tk-col header span { color: var(--muted); font-size: 13px; }
+.tk-col .tk-grp:first-of-type { padding-top: 14px; }
+.tk-col-vazio { color: var(--muted); font-size: 13.5px; padding: 16px 0 4px; margin: 0; }
+.tk-add { background: none; border: 0; color: var(--muted); font: inherit; font-size: 13.5px; padding: 12px 0; cursor: pointer; }
+.tk-add:hover { color: var(--accent); }
+/* 6. Tela vazia com a voz do app */
+.vazio { padding: 40px 10px 20px; display: flex; flex-direction: column; gap: 16px; }
+.vazio-t { font-family: var(--font-d); font-size: 42px; font-weight: 700; line-height: 1; letter-spacing: -.035em; }
+.vazio-t span { color: var(--lilac); }
+.vazio p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; max-width: 330px; }
+.vazio-dicas { margin-top: 10px; padding-top: 16px; border-top: 1px dashed var(--border-strong); display: flex; flex-direction: column; gap: 12px; }
+.vazio-dicas div { display: flex; align-items: center; gap: 12px; color: var(--text-2); font-size: 14px; }
+.vazio-dicas i { width: 30px; height: 30px; flex: none; border-radius: 9px; background: var(--surface); display: grid; place-items: center; color: var(--accent); }
+.vazio small { color: var(--muted); font-size: 12.5px; margin-top: 18px; }
+/* 2. Início: a data como protagonista e o resumo de três números */
+.dia-hero { display: flex; flex-direction: column; gap: 18px; padding: 2px 4px 4px; }
+.dh-data { display: flex; align-items: flex-end; gap: 14px; }
+.dh-n { font-family: var(--font-d); font-size: 108px; font-weight: 700; line-height: .8; letter-spacing: -.065em; font-variant-numeric: tabular-nums; }
+.dh-sub { display: flex; flex-direction: column; gap: 2px; padding-bottom: 4px; }
+.dh-sub b { font-family: var(--font-d); font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+.dh-sub span { color: var(--muted); font-size: 15px; }
+.dh-resumo { display: grid; grid-template-columns: 1fr 1fr 1.25fr; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.dh-resumo button { background: none; border: 0; color: inherit; font: inherit; text-align: left; padding: 13px 0; display: flex; flex-direction: column; gap: 2px; cursor: pointer; min-width: 0; }
+.dh-resumo button:active { opacity: .7; }
+.dh-resumo b { font-family: var(--font-d); font-size: 26px; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dh-resumo b.r { color: var(--red-text); }
+.dh-resumo small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar.is-hero .th-greet { font-size: 15px; color: var(--text-2); }
+@media (min-width: 901px) { .dh-n { font-size: 120px; } .dia-hero { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 40px; } .dh-resumo { flex: 0 1 520px; } }
+/* Calendário mais leve: sem caixinhas; roxo só no dia de hoje */
+.calx-d { background: transparent; border-color: transparent; }
+.calx-d.off { border-color: transparent; }
+.calx-d.sel { background: var(--surface-2); border-color: var(--border-strong); }
+.calx-d.today.sel { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.calx-d .calx-dots i { background: color-mix(in srgb, var(--text) 32%, transparent); }
+.calx-d .calx-dots i.late, .calx-d .calx-dots i.t-imprevisto { background: var(--red); box-shadow: none; }
+@media (min-width: 901px) { .calx-d { border-color: var(--line); } }
+/* 3. Roxo só onde importa: lista do dia em grafite; roxo para o "agora", vermelho para o atrasado */
+.calx-it, .blk { border-color: transparent; }
+.calx-it::before, .blk::before { display: none; }
+.calx-it:hover { border-color: var(--border-strong); }
+.calx-it.late { border-color: transparent; }
+.calx-it.late .calx-it-time, .calx-it.late .calx-it-time small { color: var(--red-text); }
+.calx-it.done, .calx-it.ok { background: transparent; }
+.calx-agora { margin-bottom: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 26%, var(--surface)), var(--surface) 75%); box-shadow: inset 3px 0 0 var(--accent); }
+.calx-agora .calx-it-time { color: var(--lilac); }
+.calx-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--lilac); }
+.calx-it .tk-ck, .blk-it .tk-ck { margin: 0 4px 0 0; }
+.tk-ck.feito { background: var(--accent); border-color: var(--accent); }
+/* 4. Agenda com altura proporcional ao tempo */
+.timeline { gap: 4px; }
+.blk { overflow: hidden; }
+.blk.now { border-color: transparent; box-shadow: inset 3px 0 0 var(--accent); background: color-mix(in srgb, var(--primary) 20%, var(--surface)); }
+.blk.late { background: var(--surface); box-shadow: inset 3px 0 0 var(--red); border-color: transparent; }
+.blk.st-andamento { border-color: transparent; }
+.timeline > .blk-it.t-tarefa:not(.st-concluida) { background: transparent; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent); }
+.timeline > .blk-it.t-tarefa.late { border-color: var(--red-border); }
+.ag-semhora .blk-it { border-color: transparent; background: var(--surface); }
+.ag-semhora .blk-it.st-concluida { background: transparent; }
+.ag-agora { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid var(--red); z-index: 1; pointer-events: none; }
+.ag-agora::before { content: ""; position: absolute; left: -1px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+.ag-livre { position: relative; display: flex; align-items: center; padding-left: 86px; color: var(--muted); font-size: 12px; opacity: .8; }
+.ag-livre span { border-left: 1px dashed var(--border-strong); padding-left: 10px; height: 100%; display: flex; align-items: center; }
+.ag-semhora { display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+.ag-semhora-h { font-size: 11.5px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 2px 2px 4px; }
+.ag-semhora .blk-it { min-height: 50px; }
+.ag-agora { z-index: 0; }
+.blk > .blk-time, .blk > .blk-body, .blk > .blk-actions { position: relative; z-index: 1; }
+.blk-actions .tk-ck { margin-right: 6px; }
+/* As cores por tipo (.t-tarefa etc.) usam !important na borda: na lista do dia e na agenda, só o "agora" e o atrasado ganham cor */
+.calx-it[class*="t-"], .ag-semhora .blk-it[class*="t-"] { border-color: transparent !important; }
+.calx-it[class*="t-"]:hover { border-color: var(--border-strong) !important; }
+.timeline > .blk-it.t-tarefa:not(.st-concluida) { border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important; }
+.timeline > .blk-it.t-tarefa.late { border-color: var(--red-border) !important; }
+.timeline > .blk-it[class*="t-"]:not(.t-tarefa) { border-color: transparent !important; }
+.vazio-menor .vazio { padding-top: 18px; }
+.vazio-menor .vazio-t { font-size: 30px; }
+
 </style>
 </head>
 <body>
@@ -1980,6 +2099,9 @@ const UI = (() => {
       const tag = link ? `a href="#agenda" data-act="goAgenda" data-d="${k}"` : 'div';
       return `<${tag} class="rail" aria-label="Linha do tempo do dia"><span class="rail-track">${segs}${nowM}</span><span class="rail-ticks">${ticks.join('')}</span></${link ? 'a' : 'div'}>`;
     },
+    /* Tela vazia com a voz do app (sugestão de design 6): frase grande, o que fazer em seguida e um rodapé opcional */
+    vazio: (linha1, linha2, texto, dicas = [], rodape = '') => `<div class="vazio"><div class="vazio-t">${linha1}<br><span>${linha2}</span></div>${texto ? `<p>${texto}</p>` : ''}
+      ${dicas.length ? `<div class="vazio-dicas">${dicas.map(([ic, t]) => `<div><i>${U.icon(ic, 15)}</i>${t}</div>`).join('')}</div>` : ''}${rodape ? `<small>${rodape}</small>` : ''}</div>`,
     empty: (msg, action = '') => `<div class="empty">${U.icon('info', 22)}<p>${msg}</p>${action}</div>`,
     demo: x => x && x.demo ? '<span class="demo-badge">EXEMPLO</span>' : '',
     catOptions: () => S.settings.categories.map(c => [c.id, c.name]),
@@ -3667,28 +3789,32 @@ const Cal = {
     return base + (i.who ? ` · ${U.esc(i.who)}` : '');
   },
   /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
-  check(i) {
+  check(i) {   // círculo, igual ao da lista de Tarefas (sugestão de design 1)
     return i.done
-      ? `<button class="icon-btn" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('undo', 16)}</button>`
-      : `<button class="icon-btn ok" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa">${U.icon('check', 16)}</button>`;
+      ? `<button class="tk-ck feito" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('check', 13)}</button>`
+      : `<button class="tk-ck ${i.late ? 'late' : ''}" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa"></button>`;
   },
 
   /* Lista do dia escolhido */
   day(id) {
     const s = this.st(id), k = s.sel, t = U.today();
-    const items = this.itemsOn(k);
+    // Sugestão 3: o que está acontecendo agora (atividade da rotina) entra em destaque no topo; o que já foi feito vai para o fim
+    const todos = this.itemsOn(k), items = [...todos.filter(i => !i.done), ...todos.filter(i => i.done)];
     const ag = D.dayBlocks(k), prog = D.progress(k);
+    const agora = k === t ? ag.find(b => D.blockNow(b, k) && !D.isBreak(b) && !D.blockDone(b)) : null;
     const d = U.parse(k), wd = U.WD[d.getDay()].replace('-feira', '');
     const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : wd;
     return `<div class="calx-day">
       <div class="calx-day-h">
         <div><small class="muted">${when}</small><h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2></div>
       </div>
+      ${agora ? `<div class="calx-it calx-agora" role="button" tabindex="0" data-act="goAgenda" data-d="${k}"><span class="calx-it-time">${agora.start}<small>${agora.end}</small></span>
+          <span class="calx-it-main"><span class="calx-tag">Agora</span><span class="calx-it-title">${U.esc(agora.title)}</span><small>rotina · termina em ${U.fmtDur(Math.max(1, U.toMin(agora.end) - U.nowMin()))}</small></span>${U.icon('right', 15)}</div>` : ''}
       ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}${i.end ? `<small>${i.end}</small>` : ''}</span>
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.sub(i)}</small></span>
           ${i.task ? this.check(i) : U.icon('right', 15)}</div>`).join('')}</div>`
-        : `<p class="calx-empty muted small">Nada marcado para este dia.</p>`}
+        : agora ? '' : `<p class="calx-empty muted small">${D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia livre. Nada marcado.'}</p>`}
       <button class="calx-agenda" data-act="goAgenda" data-d="${k}">
         ${U.icon('clock', 16)}<span><strong>Agenda do dia</strong><small class="muted">${ag.length ? `${U.plural(prog.total, 'atividade')}${prog.pct !== null ? ` · ${prog.pct}% concluído` : ''}` : D.isWorkday(k) ? 'Sem atividades' : 'Dia de folga'}</small></span>
         ${ag.length && prog.pct !== null ? H.bar(prog.pct) : ''}${U.icon('right', 15)}
@@ -3758,13 +3884,30 @@ Views.dashboard = {
     const t = U.today(), d = U.parse(t);
     const greet = this.saudacao();
     const eu = (S.settings.usuario || '').trim().split(' ')[0];
-    return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
+    return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span>`;
+  },
+  /* Sugestão de design 2: a data como protagonista + resumo de três números (tocar leva para a lista certa) */
+  diaHero() {
+    const t = U.today(), d = U.parse(t), agora = U.nowTime();
+    const hoje = S.tasks.filter(x => OPEN(x.status) && x.dueDate === t).length;
+    const atr = S.tasks.filter(x => OPEN(x.status) && D.taskLate(x)).length;
+    const prox = Cal.itemsOn(t).filter(i => i.time && i.time >= agora && !i.done && !i.semData)[0]
+      || D.dayBlocks(t).filter(b => !D.isBreak(b) && !D.blockDone(b) && b.status !== 'cancelada' && b.start >= agora)[0];
+    const pNome = prox ? (prox.label || prox.title) : '';
+    return `<section class="dia-hero">
+      <div class="dh-data"><span class="dh-n">${d.getDate()}</span><span class="dh-sub"><b>${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}</b><span>${U.MONTHS[d.getMonth()].toLowerCase()} de ${d.getFullYear()}</span></span></div>
+      <div class="dh-resumo">
+        <button data-act="goTasks" data-status="abertas"><b>${hoje}</b><small>${hoje === 1 ? 'tarefa hoje' : 'tarefas hoje'}</small></button>
+        <button data-act="goTasks" data-status="atrasadas"><b class="${atr ? 'r' : ''}">${atr}</b><small>${atr === 1 ? 'atrasada' : 'atrasadas'}</small></button>
+        <button data-act="goAgenda" data-d="${t}"><b>${prox ? (prox.time || prox.start) : '—'}</b><small>${prox ? 'próxima: ' + U.esc(pNome) : 'nada com horário'}</small></button>
+      </div></section>`;
   },
   renderEnxuto() {
     const rec = Gravador.recording();
     const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
     return `
     ${Updater.banner()}
+    ${Views.dashboard.diaHero()}
     ${Views.dashboard.iphoneCard()}
     ${Reminders.webCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">
@@ -3821,11 +3964,15 @@ Views.agenda = {
     const d = U.parse(k), wd = U.WD[d.getDay()];
     const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : '';
 
+    // Sugestão de design 4: cada atividade ocupa o espaço do tempo que dura (1 px por minuto, entre 54 e 220 px)
+    const PX = 1, alto = (s0, e0) => `min-height:${Math.round(Math.max(54, Math.min(220, (e0 - s0) * PX)))}px`;
+    const nowM = U.nowMin();
+    const linhaAgora = (s0, e0) => `<span class="ag-agora" style="top:${Math.round(Math.max(4, Math.min(96, (nowM - s0) / Math.max(1, e0 - s0) * 100)))}%" aria-hidden="true"></span>`;
     const row = b => {
       const c = D.cat(b.category);
       const isLate = D.blockLate(b, k), isNow = D.blockNow(b, k);
       if (D.isBreak(b)) {
-        return `<div class="blk blk-break" style="--c:${c.color}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body" data-act="agEdit" data-id="${b.id}"><span class="blk-title">${U.esc(b.title)}</span></div></div>`;
+        return `<div class="blk blk-break" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body" data-act="agEdit" data-id="${b.id}"><span class="blk-title">${U.esc(b.title)}</span></div></div>`;
       }
       const badges = [
         isNow ? '<span class="badge b-blue">Agora</span>' : '',
@@ -3833,7 +3980,7 @@ Views.agenda = {
         conflicts.has(b.id) || blocosBatendo.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
         b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
-      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color}">
+      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}">${isNow ? linhaAgora(U.toMin(b.start), U.toMin(b.end)) : ''}
         <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div>
         <div class="blk-body" data-act="agEdit" data-id="${b.id}">
           <div class="blk-head"><span class="blk-title">${U.esc(b.title)}</span>${badges}</div>
@@ -3841,25 +3988,36 @@ Views.agenda = {
         </div>
         <div class="blk-actions">
           ${b.status === 'concluida'
-            ? `<button class="icon-btn" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-            : `<button class="icon-btn ok" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`}
+            ? `<button class="tk-ck feito" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('check', 13)}</button>`
+            : `<button class="tk-ck ${isLate ? 'late' : ''}" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir" aria-label="Concluir"></button>`}
           <button class="icon-btn" data-act="agMore" data-id="${b.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
         </div>
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
     const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
-    const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it t-${i.type} ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type});${i.time && i.end ? alto(U.toMin(i.time), U.toMin(i.end)) : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span>${i.task && (bate.get(i.id) || []).length ? '<span class="badge b-yellow">Conflito</span>' : ''}</div>
           <small class="blk-kind">${Cal.sub(i, true)}</small></div>
         <div class="blk-actions">${i.task ? Cal.check(i) : U.icon('right', 16)}</div></div>`;
-    const list = [
-      ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
-      ...blocks.map(b => ({ t: b.start, h: row(b) })),
-      ...items.filter(i => i.time).map(i => ({ t: i.time, h: item(i) })),
-    ].map((x, n) => ({ ...x, n })).sort((a, b) => a.t.localeCompare(b.t) || a.n - b.n);
-
+    // Com horário: em ordem, com o tempo livre entre um e outro proporcional; sem horário: num grupo compacto em cima
+    const semHoraL = [...items.filter(i => !i.time && !i.done), ...items.filter(i => !i.time && i.done)];
+    const comHora = [
+      ...blocks.map(b => ({ s: U.toMin(b.start), e: U.toMin(b.end), h: row(b) })),
+      ...items.filter(i => i.time).map(i => ({ s: U.toMin(i.time), e: i.end ? U.toMin(i.end) : U.toMin(i.time) + 30, h: item(i) })),
+    ].map((x, n) => ({ ...x, n })).sort((a, b) => a.s - b.s || a.n - b.n);
+    let fim = null; const partes = [];
+    for (const x of comHora) {
+      if (fim !== null && x.s - fim >= 15) {
+        const temAgora = k === t && nowM >= fim && nowM < x.s;
+        partes.push(`<div class="ag-livre" style="height:${Math.round(Math.max(26, Math.min(90, (x.s - fim) * .6)))}px">${temAgora ? linhaAgora(fim, x.s) : ''}<span>livre · ${U.fmtDur(x.s - fim)}</span></div>`);
+      }
+      partes.push(x.h); fim = Math.max(fim ?? 0, x.e);
+    }
+    const nAtr = semHoraL.filter(i => i.semData === 'atrasada').length;
+    const listaSem = semHoraL.length ? `<div class="ag-semhora"><div class="ag-semhora-h">${U.plural(semHoraL.length, 'item sem horário', 'itens sem horário')}${nAtr ? ` · <span class="c-red">${U.plural(nAtr, 'atrasado', 'atrasados')}</span>` : ''}</div>${semHoraL.map(item).join('')}</div>` : '';
+    const list = [listaSem, ...partes].filter(Boolean);
     const breakOk = (S.settings.breakMode || 'fixo') === 'flexivel' && k >= t && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada');
     const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
       : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`
@@ -3886,7 +4044,7 @@ Views.agenda = {
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
       ${nBate && k >= t ? `<div class="alert a-yellow ag-bate">${U.icon('clock')} <span>${U.plural(nBate, 'tarefa com horário bate', 'tarefas com horário batem')} com a rotina. <button class="link" data-act="replanOpen">Reorganizar</button> abre espaço: a rotina desvia do horário da tarefa.</span></div>` : ''}
       <div class="timeline">
-        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
+        ${list.length ? list.join('') : H.vazio(D.isWorkday(k) ? 'Dia livre.' : 'Dia de folga.', D.isWorkday(k) ? 'Nada marcado.' : 'Descanse.', `Toque em <strong>+</strong> para adicionar uma tarefa neste dia.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}`)}
       </div>
     </section>`;
   },
@@ -4141,7 +4299,7 @@ Views.imprevistos = {
     </div>
     ${nToday || minToday ? `<div class="occ-today card">${U.icon('alert', 18)}<span>Hoje: <strong>${U.plural(nToday, 'imprevisto')}</strong>${minToday ? ` · <strong>${U.fmtDur(minToday)}</strong> tomados da agenda` : ''}</span></div>` : ''}
     <p class="muted small">Aconteceu algo? Toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai tomar: o app encaixa agora na agenda e empurra o resto do dia.</p>
-    <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;
+    <div class="occ-list">${list.length ? list.map(card).join('') : (f === 'abertas' ? H.vazio('Nenhum imprevisto.', 'Dia sob controle.', all.length ? 'Tudo o que apareceu já foi resolvido.' : 'Quando algo sair do previsto, anote aqui: o app encaixa na agenda e empurra o resto do dia.', [['plus', 'Toque no + e diga quanto tempo vai tomar']]) : H.empty('Nenhum registro.'))}</div>`;
   },
 };
 
@@ -5174,7 +5332,7 @@ Views.gravacoes = {
       ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Áudio ou texto</strong><small>Envie áudios (do WhatsApp ou outros) e/ou um texto: a IA resume e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       <button class="gv-rel-btn gv-arq-btn gv-marcar" data-act="gvMarcar">${U.icon('calendar', 20)}<span><strong>Marcar reunião ou compromisso</strong><small>Para uma data futura, com pauta. Também registra um feedback sem gravar.</small></span>${U.icon('right', 16)}</button>
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
-      ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : H.empty('Nenhuma gravação ainda. Toque em <strong>Gravar</strong>, na barra de baixo, para começar. Não precisa criar a reunião antes.')}`;
+      ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : '<div class="vazio-menor">' + H.vazio('Nenhuma gravação.', 'É só apertar e falar.', 'Grave uma reunião, um feedback ou o relatório do dia. A IA escreve o resumo e anota o que for combinado.', [['mic', 'Toque em <strong>Gravar</strong>, na barra de baixo'], ['upload', 'Ou envie um áudio do WhatsApp']]) + '</div>'}`;
   },
   chip(x) {
     const ok = x.partes.filter(p => p.st === 'ok').length, tot = x.partes.length;
@@ -5343,33 +5501,48 @@ Views.tarefas = {
     const filtersOn = f.priority || f.category || f.period || f.from || f.to || f.q;
     const nFiltros = [f.priority, f.category, f.period, f.from || f.to].filter(Boolean).length;
 
+    // Sugestão 1 (lista de papel): linha sem cartão, círculo para concluir, agrupada por quando
+    const tm = U.addDays(t, 1), d7 = U.addDays(t, 7);
     const row = x => {
       const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
-      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
+      const fechada = x.status === 'concluida' || x.status === 'cancelada';
+      const quando = !x.dueDate ? '' : x.dueDate === t || x.dueDate === tm ? '' : x.dueDate === U.addDays(t, -1) ? 'ontem' : `${U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase()} ${U.fmtShort(x.dueDate)}`;
+      const hora = x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? ' – ' + Cal.fimTarefa(x) : '') : '';
+      const late = OPEN(x.status) && D.taskLate(x);
+      const meta = [late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
+        x.status === 'andamento' ? '<span class="tk-and">em andamento</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
+        x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
+      const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
+      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
+        <button class="tk-ck ${late ? 'late' : ''} ${x.status === 'andamento' ? 'and' : ''}" data-act="tkSet" data-id="${x.id}" data-s="${fechada ? 'pendente' : 'concluida'}" title="${fechada ? 'Reabrir' : 'Concluir'}" aria-label="${fechada ? 'Reabrir' : 'Concluir'}: ${U.esc(x.title)}">${x.status === 'concluida' ? U.icon('check', 13) : x.status === 'cancelada' ? U.icon('x', 12) : ''}</button>
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
-          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
+          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
+          ${meta ? `<div class="tk-meta">${meta}</div>` : ''}
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
-          <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
-            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : ''}</span>` : '<span class="muted">Sem data</span>'}
-            ${x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''}
-            ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
         </div>
-        <div class="tk-side">
-          ${x.status === 'concluida' || x.status === 'cancelada'
-            ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-            : `${x.status === 'andamento'
-                ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
-                : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
-               <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
-               <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
-          <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
-        </div>
+        ${prio}
+        <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
+    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
+      : x.dueDate <= t ? 'hoje' : x.dueDate === tm ? 'amanha' : x.dueDate <= d7 ? 'semana' : 'depois';
+    const NOMES = { atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
+    const grupos = (ks, l) => ks.map(k => { const it = l.filter(x => grupoDe(x) === k); return it.length ? `<div class="tk-grp g-${k}">${NOMES[k]}<span>${it.length}</span></div>${it.map(row).join('')}` : ''; }).join('');
+    const ORDEM = ['atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    // Sugestão 5: no computador, as abertas em três colunas (Hoje · Depois · Sem data)
+    const pc = window.matchMedia && matchMedia('(min-width: 901px)').matches;
+    const colunas = pc && f.status === 'abertas' && list.length;
+    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="tkNew">+ Adicionar</button></section>`; };
+    const nome = ((S.settings.usuario || '').trim().split(' ')[0]) || '';
+    // Sugestão 6: tela vazia com a voz do app
+    const vazio = !all.length || (f.status === 'abertas' && !filtersOn && !list.length)
+      ? H.vazio('Nada pendente.', nome ? `Pode respirar, ${U.esc(nome)}.` : 'Calma, Pae.', all.length ? 'Você zerou a lista. Quando aparecer algo, é só anotar ou falar.' : 'Sua lista começa aqui. Anote o que precisa fazer e o app lembra por você.',
+        [['plus', 'Toque no + e escreva em poucas palavras'], ['mic', 'Ou grave um áudio: o app anota sozinho']], counts.concluida ? `${U.plural(counts.concluida, 'tarefa concluída', 'tarefas concluídas')} até agora` : '')
+      : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
     <div class="toolbar">
-      <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
+      <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
     <div class="tk-busca">
       <input type="search" placeholder="Buscar tarefa ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
@@ -5384,7 +5557,8 @@ Views.tarefas = {
       ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
     </div>
     ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
-    <div class="task-list">${list.length ? list.map(row).join('') : H.empty(all.length ? 'Nenhuma tarefa com esses filtros.' : 'Nenhuma tarefa cadastrada ainda.', all.length ? '' : '<button class="btn sm primary" data-act="tkNew">Criar primeira tarefa</button>')}</div>`;
+    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
+      : `<div class="task-list">${list.length ? grupos(ORDEM, list) : vazio}</div>`}`;
   },
 };
 
@@ -5473,8 +5647,13 @@ Object.assign(Actions, {
   },
   tkMore({ id }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
+    const aberta = OPEN(x.status);
     UI.sheet(x.title, [
+      ...(aberta ? [x.status === 'andamento'
+        ? { label: 'Voltar para pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
+        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) }] : []),
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
+      ...(aberta ? [{ label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
   },
@@ -6345,6 +6524,8 @@ const App = {
     Fire.init();
     Gravador.init();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
+    // Tarefas em colunas no computador e em lista no celular: refaz a tela ao cruzar a largura de 901 px
+    if (window.matchMedia) matchMedia('(min-width: 901px)').addEventListener('change', () => { if (this.route === 'tarefas' && !document.querySelector('.modal-wrap')) this.render(); });
     if (!CANAL_TESTE && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },
