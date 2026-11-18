@@ -1420,6 +1420,39 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .ag-modos b { font-weight: 500; color: var(--muted); font-size: 13px; }
 .ag-modos-atr { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font-size: 11px; display: inline-grid; place-items: center; }
 @media (min-width: 901px) { .ag-modos { max-width: 420px; } }
+/* Imprevistos em destaque (pedido do usuário: vêm antes de tudo) — quadro vermelho no topo do Início, da Agenda e da Lista de tarefas */
+.oc-painel { display: flex; flex-direction: column; gap: 8px; }
+.oc-painel.vazio-oc { align-items: flex-end; }
+.oc-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--red-text); }
+.oc-h > span { display: inline-flex; align-items: center; gap: 6px; }
+.oc-novo { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--red) 55%, transparent);
+  background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red-text); font: inherit; font-size: 13px; font-weight: 650; letter-spacing: 0; text-transform: none; cursor: pointer; }
+.oc-novo:hover { background: color-mix(in srgb, var(--red) 22%, transparent); }
+.oc-card { display: flex; align-items: center; gap: 12px; padding: 16px 14px 16px 18px; border-radius: 16px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--red) 26%, var(--surface)), color-mix(in srgb, var(--red) 9%, var(--surface)) 80%);
+  border: 1px solid color-mix(in srgb, var(--red) 45%, transparent); box-shadow: inset 4px 0 0 var(--red); }
+.oc-card.run { box-shadow: inset 4px 0 0 var(--red), 0 0 0 3px color-mix(in srgb, var(--red) 22%, transparent); animation: ocPulse 2.2s ease-in-out infinite; }
+@keyframes ocPulse { 50% { box-shadow: inset 4px 0 0 var(--red), 0 0 0 6px color-mix(in srgb, var(--red) 8%, transparent); } }
+.oc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; cursor: pointer; }
+.oc-info strong { font-size: 16.5px; font-weight: 650; line-height: 1.3; }
+.oc-info small { color: var(--text-2); font-size: 12.5px; opacity: .85; }
+.oc-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--red-text); display: inline-flex; align-items: center; }
+.oc-tag .run-dot { background: var(--red); }
+.oc-acoes { display: flex; gap: 6px; flex: none; }
+.oc-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 14px; border-radius: 12px; border: 0; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.oc-btn.go { background: var(--red); color: #fff; }
+.oc-btn.ok { background: var(--green); color: #08130e; }
+.oc-btn.ghost { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); padding: 0 12px; }
+.oc-btn:active { transform: scale(.96); }
+.dia-hero + .oc-painel, .ag-modos + .oc-painel { margin-top: -4px; }
+/* Bloco do imprevisto na linha do tempo e o dia de hoje no calendário */
+.blk.blk-occ { background: color-mix(in srgb, var(--red) 16%, var(--surface)) !important; box-shadow: inset 4px 0 0 var(--red) !important; }
+.blk.blk-occ .blk-title { font-weight: 700; }
+.calx-d.has-occ .calx-n { box-shadow: 0 0 0 2px var(--red); }
+@media (prefers-reduced-motion: reduce) { .oc-card.run { animation: none; } }
+.ag-modos { grid-template-columns: 1fr 1fr auto; }
+.ag-modos-oc { width: 46px; border: 0; border-radius: 10px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
+.ag-modos-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }
 
 </style>
 </head>
@@ -3842,7 +3875,7 @@ const Cal = {
     const cell = k => {
       const items = this.itemsOn(k), inMonth = s.mode === 'week' || U.monthKey(k) === r.mk;
       const ag = S.days[k] || (D.isWorkday(k) && k >= t) ? D.progress(k) : null;
-      const cls = ['calx-d', inMonth ? '' : 'out', k === t ? 'today' : '', k === s.sel ? 'sel' : '', D.isWorkday(k) ? '' : 'off', items.some(i => i.late) ? 'has-late' : ''].join(' ');
+      const cls = ['calx-d', inMonth ? '' : 'out', k === t ? 'today' : '', k === t && S.occurrences.some(o => OPEN(o.status)) ? 'has-occ' : '', k === s.sel ? 'sel' : '', D.isWorkday(k) ? '' : 'off', items.some(i => i.late) ? 'has-late' : ''].join(' ');
       const max = s.mode === 'week' ? 5 : 3;
       return `<button class="${cls}" data-act="calSel" data-cal="${id}" data-k="${k}" aria-label="${U.fmtLong(k)}${items.length ? `, ${U.plural(items.length, 'item', 'itens')}` : ''}" ${k === s.sel ? 'aria-pressed="true"' : ''}>
         <span class="calx-n">${U.parse(k).getDate()}</span>
@@ -3994,6 +4027,7 @@ Views.dashboard = {
     return `
     ${Updater.banner()}
     ${Views.dashboard.diaHero()}
+    ${Occ.painel()}
     ${Views.dashboard.iphoneCard()}
     ${Reminders.webCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">
@@ -4066,7 +4100,7 @@ Views.agenda = {
         conflicts.has(b.id) || blocosBatendo.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
         b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
-      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}">${isNow ? linhaAgora(U.toMin(b.start), U.toMin(b.end)) : ''}
+      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''} ${b.occurrenceId && OPEN(b.status) ? 'blk-occ' : ''}" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}">${isNow ? linhaAgora(U.toMin(b.start), U.toMin(b.end)) : ''}
         <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div>
         <div class="blk-body" data-act="agEdit" data-id="${b.id}">
           <div class="blk-head"><span class="blk-title">${U.esc(b.title)}</span>${badges}</div>
@@ -4112,6 +4146,7 @@ Views.agenda = {
 
     return `
     ${Agenda.modos('dia')}
+    ${Occ.painel({ compacto: true })}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
     <section class="ag-day">
@@ -4143,7 +4178,8 @@ const Agenda = {
   modos(ativo) {
     const abertas = S.tasks.filter(x => OPEN(x.status)).length, atr = S.tasks.filter(D.taskLate).length;
     return `<nav class="ag-modos" aria-label="Agenda"><a href="#agenda" class="${ativo === 'dia' ? 'on' : ''}" ${ativo === 'dia' ? 'aria-current="page"' : ''}>${U.icon('clock', 16)} Dia</a>
-      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a></nav>`;
+      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a>
+      <button class="ag-modos-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button></nav>`;
   },
   /* Horários livres de um dia para encaixar uma tarefa de "dur" minutos (pedido do usuário: toda tarefa entra na agenda).
      Ocupado de verdade: outras tarefas com horário, compromissos/reuniões, intervalo e atividades com horário fixo.
@@ -4425,6 +4461,45 @@ Views.imprevistos = {
 };
 
 const Occ = {
+  /* Quadro de imprevistos em destaque (pedido do usuário: imprevisto vem antes de tudo).
+     Fica no topo do Início, da Agenda e da Lista de tarefas, com o botão de registrar sempre à vista. */
+  emAndamento(exceto) { return S.occurrences.find(o => o.status === 'andamento' && o.id !== exceto); },
+  painel({ compacto = false } = {}) {
+    const abertos = S.occurrences.filter(o => OPEN(o.status)).sort((a, b) => (b.status === 'andamento') - (a.status === 'andamento') || (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+    const novo = (curto) => `<button class="oc-novo" data-act="capture" data-type="imprevisto">${U.icon('plus', 15)} ${curto ? 'Imprevisto' : 'Registrar imprevisto'}</button>`;
+    if (!abertos.length) return compacto ? '' : `<div class="oc-painel vazio-oc">${novo(false)}</div>`;
+    const ha = iso => { const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
+    const card = o => {
+      const run = o.status === 'andamento';
+      const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
+      return `<div class="oc-card ${run ? 'run' : ''}">
+        <div class="oc-info" data-act="occEdit" data-id="${o.id}">
+          <span class="oc-tag">${run ? '<i class="run-dot"></i>resolvendo agora' : 'imprevisto'}</span>
+          <strong>${U.esc(o.title)}${H.demo(o)}</strong>
+          <small>${o.createdAt ? 'registrado ' + ha(o.createdAt) : U.fmtShort(o.date) + (o.time ? ' ' + o.time : '')}${o.responsible ? ' · ' + U.esc(o.responsible) : ''}${sch ? ` · na agenda ${sch.start}–${sch.end}` : ''}</small>
+        </div>
+        <div class="oc-acoes">${run
+          ? `<button class="oc-btn ghost" data-act="occStatus" data-id="${o.id}" data-s="pendente" aria-label="Pausar"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg></button><button class="oc-btn ok" data-act="occStatus" data-id="${o.id}" data-s="concluida">${U.icon('check', 16)} Resolvido</button>`
+          : `<button class="oc-btn go" data-act="occComecar" data-id="${o.id}">${U.icon('play', 14)} Começar</button>`}</div>
+      </div>`;
+    };
+    return `<section class="oc-painel"><div class="oc-h"><span>${U.icon('alert', 15)} ${U.plural(abertos.length, 'imprevisto aberto', 'imprevistos abertos')}</span>${novo(true)}</div>${abertos.map(card).join('')}</section>`;
+  },
+  /* Começar um imprevisto: vai para a agenda AGORA (30 min, empurrando o resto) e pausa o que estava em execução */
+  comecar(o, dur = 30) {
+    const t = U.today(), avisos = [];
+    const tk = typeof Tasks !== 'undefined' && Tasks.emExecucao();
+    if (tk) { tk.status = 'pendente'; avisos.push(`“${tk.title}” foi pausada`); }
+    const outro = this.emAndamento(o.id);
+    if (outro) { outro.status = 'pendente'; Occ.syncBlock(outro); }
+    if (!(o.scheduled && o.scheduled.date === t)) {
+      const r = Capture.encaixarAgora(o, dur);
+      o.status = 'andamento';
+      avisos.push(`entrou na agenda agora (${r.start}–${r.end})`);
+    } else { o.status = 'andamento'; const b = D.findBlock(t, o.scheduled.blockId); if (b) b.status = 'andamento'; }
+    commit();
+    UI.toast(`Imprevisto em andamento: ${avisos.join(' e ')}.`, 'ok');
+  },
   form(o, { scheduleAfter = false, defaults = {} } = {}) {
     const isNew = !o;
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime(), ...defaults };
@@ -4436,8 +4511,6 @@ const Occ = {
       { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: o.priority, half: true },
       { name: 'date', label: 'Aconteceu em', type: 'date', required: true, value: o.date, half: true },
       { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
-      { name: 'dueDate', label: 'Prazo para resolver', type: 'date', value: o.dueDate, half: true },
-      { name: 'dueTime', label: 'Até que horas', type: 'time', value: o.dueTime, half: true },
       { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
       { type: 'html', html: '<span class="tk-form-dica" hidden></span>' },
     ];
@@ -4472,9 +4545,11 @@ Object.assign(Actions, {
   occFilter({ v }) { App.ui.occFilter = v; App.render(); },
   occNew() { Occ.form(null); },
   occEdit({ id }) { Occ.form(S.occurrences.find(o => o.id === id)); },
+  occComecar({ id }) { const o = S.occurrences.find(x => x.id === id); if (o) Occ.comecar(o); },
   occSchedule({ id }) { Agenda.scheduleDialog(S.occurrences.find(o => o.id === id)); },
   occStatus({ id, s }) {
     const o = S.occurrences.find(x => x.id === id); if (!o) return;
+    if (s === 'andamento') return Occ.comecar(o);
     o.status = s; if (s === 'concluida') o.resolvedAt = new Date().toISOString();
     let gap = 0;
     const t = U.today(), b = s === 'concluida' && o.scheduled && o.scheduled.date === t ? D.findBlock(t, o.scheduled.blockId) : null;
@@ -5663,6 +5738,7 @@ Views.tarefas = {
 
     return `
     ${Agenda.modos('lista')}
+    ${Occ.painel({ compacto: true })}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
@@ -5745,6 +5821,8 @@ const Tasks = {
   /* Regras: uma tarefa em execução por vez; só conclui o que foi começado */
   pode(x, s) {
     if (s === 'andamento') {
+      const oc = Occ.emAndamento();   // imprevisto vem antes de tudo
+      if (oc) { UI.toast(`Resolva primeiro o imprevisto “${oc.title}”.`, 'warn', { label: 'Ver', onClick: () => App.go('agenda') }); return false; }
       const outra = this.emExecucao(x.id);
       if (outra) { UI.toast(`Uma tarefa por vez: conclua ou reagende “${outra.title}” antes de começar outra.`, 'warn', { label: 'Ver', onClick: () => Actions.goTasks({ status: 'andamento' }) }); return false; }
     }
@@ -6165,7 +6243,8 @@ Views.guia = {
     ]))}
     ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
       'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário: sua rotina e as tarefas, tudo junto.',
-      'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
+      'Para registrar um imprevisto, toque no <strong>⚠</strong> vermelho da Agenda (ou em <strong>Registrar imprevisto</strong> no Início) e escreva em poucas palavras. Imprevisto não tem prazo.',
+      'Imprevisto aberto fica num quadro vermelho no topo do Início e da Agenda. <strong>Começar</strong> põe na agenda agora, empurra o resto do dia e pausa a tarefa que estava em execução. Enquanto ele não for <strong>Resolvido</strong>, nenhuma tarefa começa.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
     ${sec('iphone', 'info', 'No iPhone', li([
@@ -6271,8 +6350,7 @@ const Capture = {
       if (st.type === 'imprevisto') {
         // Imprevisto: tudo numa tela só também (pedido do usuário), sem "Mais detalhes"
         const resto = `${whoField('Quem resolve?')}
-          <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-oprio', 'priority', H.prioOptions(), st.oprio)}</label>
-            <label><span class="cap-l">Prazo para resolver</span><input type="date" id="cap-odue" class="cap-in" value="${st.odue}"></label></div>
+          <label><span class="cap-l">Prioridade</span>${sel('cap-oprio', 'priority', H.prioOptions(), st.oprio)}</label>
           ${obsField}`;
         if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${resto}`;
         const cur = Capture.current();
@@ -6381,9 +6459,10 @@ const Capture = {
     const t = U.today();
     if (st.type === 'imprevisto') {
       const now = !!st.dur && k === t;
-      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: (st.obs || '').trim(), priority: st.oprio || 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: st.odue || '', dueTime: '', responsible: d.who, notes: '' };
+      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: (st.obs || '').trim(), priority: st.oprio || 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: '', dueTime: '', responsible: d.who, notes: '' };
       S.occurrences.push(o);
       if (!now) { commit(); UI.toast('Imprevisto registrado.', 'ok', { label: 'Encaixar na agenda', onClick: () => Agenda.scheduleDialog(o) }); return; }
+      const tk = Tasks.emExecucao(); if (tk) tk.status = 'pendente';   // imprevisto vem antes de tudo: pausa a tarefa em execução
       const r = Capture.encaixarAgora(o, st.dur);
       commit();
       const over = D.overflowCount(t);
