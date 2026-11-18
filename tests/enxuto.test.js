@@ -59,10 +59,10 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(await p.locator('.cal-home .calx-month').count() === 1 || await p.locator('.cal-home .calx-grid .calx-d').count() >= 28, 'Início é o calendário do mês inteiro');
   check(!(await p.locator('.gv-rec-big').isVisible()), 'no celular não há o botão grande repetido (o Gravar fica na barra de baixo)');
   const lado = await p.$$eval('#nav a', as => as.filter(a => getComputedStyle(a).display !== 'none').map(a => a.getAttribute('href')));
-  check(lado.join(' ') === '#imprevistos #config #guia', `menu lateral sem repetir a barra de baixo: ${lado.join(' ')}`);
+  check(lado.join(' ') === '#config #guia', `menu lateral sem repetir a barra de baixo: ${lado.join(' ')}`);
   check(await p.locator('#bottom-nav > *').count() === 5 && await p.locator('#bottom-nav .bn-rec').count() === 1, 'barra de baixo: Calendário, Gravações, Gravar, Tarefas, Agenda');
   const menu = await p.$$eval('#nav a', as => as.map(a => a.getAttribute('href')));
-  check(!menu.some(h => /jornada|indicadores|projetos|equipe|checklists|pessoas|semana|reunioes/.test(h)) && menu.length === 7, `menu enxuto (${menu.length} telas): ${menu.join(' ')}`);
+  check(!menu.some(h => /jornada|indicadores|projetos|equipe|checklists|pessoas|semana|reunioes/.test(h)) && menu.length === 6, `menu enxuto (${menu.length} telas): ${menu.join(' ')}`);
   await go('jornada'); check(await p.locator('.cal-home').count() === 1, 'telas retiradas voltam para o calendário');
   check(await p.locator('.jg-card').count() === 0, 'sem cartão do jogo');
   await p.screenshot({ path: OUT + '/enxuto-1-calendario.png' }); await fits('Calendário');

@@ -68,7 +68,7 @@ const Capture = {
   /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
   open({ type, k } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
+    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 30, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
     const techs = D.techNames();
     const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
@@ -94,12 +94,17 @@ const Capture = {
       // Tarefa: tudo numa tela só (pedido do usuário), sem "Mais detalhes"
       const tm = U.addDays(t, 1);
       const other = st.due && st.due !== t && st.due !== tm;
-      return `<span class="cap-l">Quando?</span>
+      // Toda tarefa entra na agenda (pedido do usuário): dia e horário obrigatórios, com sugestões de horários livres
+      const livres = Agenda.livres(st.due, st.tdur || 30);
+      return `<span class="cap-l">Quando? <em class="cap-obr">obrigatório</em></span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
-        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label>${btn('due', '', 'Sem data', !st.due)}</div>
-        ${st.due ? `<div class="cap-2"><label><span class="cap-l">Horário</span><input type="time" id="cap-time" class="cap-in" value="${st.time}"></label>
-          <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS, st.tdur || '', !st.time)}</label></div>`
-          : `<p class="muted small cap-nodate">Sem data, ela fica no dia de hoje da Agenda e do Calendário até você concluir.</p>`}
+        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
+        <div class="cap-2"><label><span class="cap-l">Horário <em class="cap-obr">obrigatório</em></span><input type="time" id="cap-time" class="cap-in" value="${st.time}" required></label>
+          <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS.filter(([v]) => v), st.tdur || 30)}</label></div>
+        <span class="cap-l">Horários livres ${st.due === t ? 'hoje' : st.due === tm ? 'amanhã' : 'em ' + U.fmtShort(st.due)}</span>
+        <div class="cap-chips cap-livres">${livres.length ? livres.map(l => `<button type="button" class="cap-chip ${st.time === l.h ? 'on' : ''} ${l.sobre ? 'sobre' : ''}" data-livre="${l.h}" title="${l.sobre ? 'No horário de: ' + U.esc(l.sobre) : 'Horário livre'}">${l.h}${l.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente. Escolha outro dia ou digite um horário.</span>'}</div>
+        ${livres.some(l => l.sobre) ? '<p class="muted small cap-nota"><i class="cap-ponto">•</i> cai sobre uma atividade da rotina: depois é só tocar em Reorganizar na Agenda.</p>' : ''}
+        ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>.</span></p>` : ''}
         ${whoField('Quem faz?')}
         <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
           <label><span class="cap-l">Repetir</span>${sel('cap-rep', 'repeat', Tasks.REPEAT, st.repeat)}</label></div>
@@ -146,20 +151,21 @@ const Capture = {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
-      if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
+      if (b.dataset.due !== undefined) { st.due = b.dataset.due || t; st.touched.due = true; paint(); return; }
+      if (b.dataset.livre) { st.time = b.dataset.livre; st.touched.time = true; err(''); paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
     });
     m.el.addEventListener('input', e => {
       const id = e.target.id;
       if (id === 'cap-who') { st.who = e.target.value.trim(); st.touched.who = true; }
-      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; const d = $('#cap-dur'); if (d) d.disabled = !st.time; }
+      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; m.el.querySelectorAll('[data-livre]').forEach(c => c.classList.toggle('on', c.dataset.livre === st.time)); }
       if (id === 'cap-obs') st.obs = e.target.value;
     });
     m.el.addEventListener('change', e => {
       const id = e.target.id, v = e.target.value;
       if (id === 'cap-date' && v) { st.due = v; st.touched.due = true; paint(); }
-      if (id === 'cap-dur') { st.tdur = +v || 0; st.touched.tdur = true; }
+      if (id === 'cap-dur') { st.tdur = +v || 30; st.touched.tdur = true; paint(); }
       if (id === 'cap-prio') st.prio = v;
       if (id === 'cap-oprio') st.oprio = v;
       if (id === 'cap-odue') st.odue = v;
@@ -180,6 +186,7 @@ const Capture = {
   save(st, ta, k) {
     const d = Capture.read(st, ta);
     if (!d.title) return 'Escreva em poucas palavras o que é.';
+    if (st.type === 'tarefa' && !st.time) return 'Escolha o horário: toque num horário livre ou digite a hora.';
     const t = U.today();
     if (st.type === 'imprevisto') {
       const now = !!st.dur && k === t;

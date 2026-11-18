@@ -1,7 +1,7 @@
 'use strict';
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
-  title: 'Gestão de tarefas', icon: 'tasks', nav: 'Tarefas',
+  title: 'Agenda', icon: 'tasks', nav: 'Tarefas',
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
@@ -76,6 +76,7 @@ Views.tarefas = {
       : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
+    ${Agenda.modos('lista')}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
@@ -105,18 +106,21 @@ const Tasks = {
     const isNew = !x;
     x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
     const obs = [x.description, x.notes].filter(Boolean).join('\n');
-    UI.form({
+    // Toda tarefa entra na agenda (pedido do usuário): dia e horário obrigatórios, com sugestões de horários livres
+    const dia0 = x.dueDate || U.today();
+    const m = UI.form({
       title: isNew ? 'Nova tarefa' : 'Editar tarefa',
       fields: [
         { name: 'title', label: 'O que precisa fazer?', required: true, value: x.title },
-        { name: 'dueDate', label: 'Dia', type: 'date', value: x.dueDate, half: true },
-        { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, half: true },
-        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS, value: String(x.dur || ''), half: true },
+        { name: 'dueDate', label: 'Dia', type: 'date', value: dia0, required: true, half: true },
+        { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, required: true, half: true },
+        { type: 'html', html: '<div class="tk-livres"></div>' },
+        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS.filter(([v]) => v), value: String(x.dur || 30), half: true },
         { name: 'responsible', label: 'Quem faz?', value: x.responsible, list: D.techNames(), placeholder: 'Você', half: true },
         { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
         { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true },
         { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
-        { type: 'html', html: `<p class="muted small tk-form-dica">Sem dia, a tarefa aparece hoje na Agenda até você concluir.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
+        { type: 'html', html: `<p class="muted small tk-form-dica">Dia e horário são obrigatórios: toda tarefa entra na agenda.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
       ],
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); Actions.tkDelete({ id: x.id }); } }],
       onSubmit(v) {
@@ -128,6 +132,16 @@ const Tasks = {
         commit(); UI.toast(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.');
       },
     });
+    // Horários livres do dia escolhido (atualiza quando muda o dia ou a duração; um toque preenche o horário)
+    const fm = m.el.querySelector('form'), caixa = m.el.querySelector('.tk-livres');
+    const pinta = () => {
+      const d = fm.elements.dueDate.value || U.today(), h = fm.elements.dueTime.value;
+      const l = Agenda.livres(d, fm.elements.dur.value, { ignorar: x.id });
+      caixa.innerHTML = `<span class="lbl">Horários livres</span><div class="cap-chips">${l.length ? l.map(o => `<button type="button" class="cap-chip ${o.h === h ? 'on' : ''} ${o.sobre ? 'sobre' : ''}" data-livre="${o.h}" title="${o.sobre ? 'No horário de: ' + U.esc(o.sobre) : 'Horário livre'}">${o.h}${o.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente.</span>'}</div>`;
+    };
+    pinta();
+    fm.addEventListener('change', e => { if (['dueDate', 'dur', 'dueTime'].includes(e.target.name)) pinta(); });
+    caixa.addEventListener('click', e => { const b = e.target.closest('[data-livre]'); if (b) { fm.elements.dueTime.value = b.dataset.livre; pinta(); } });
   },
   /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
      Assim nada é concluído sem antes ser começado. */

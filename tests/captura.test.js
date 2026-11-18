@@ -128,12 +128,20 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   s = await st();
   const ab = s.tasks.find(x => x.title === 'Ligar para fornecedor às 16:15');
   check(ab && ab.dueDate === today && ab.dueTime === '16:15' && ab.dur === 15 && ab.priority === 'alta' && ab.description === 'Pedir prazo de entrega' && !(s.days[today] || []).some(x => x.title.startsWith('Ligar')), 'vira tarefa de hoje 16:15 com 15 min (sem bloco duplicado na agenda)');
-  // Sem data
+  // Dia e horário obrigatórios, com horários livres
   await p.tap('#fab'); await W();
-  await p.locator(`${M} #cap-t`).fill('Organizar o almoxarifado');
-  await p.tap(`${M} [data-due=""]`); await W(100);
-  check(await p.locator(`${M} #cap-time`).count() === 0 && (await p.textContent(`${M} .cap-nodate`)).includes('hoje'), 'sem data: explica que fica no dia de hoje');
+  await p.locator(`${M} #cap-t`).fill('Revisar contrato');
+  check(await p.locator(`${M} [data-due=""]`).count() === 0, 'não existe mais "Sem data": toda tarefa entra na agenda');
+  await p.tap(`${M} [data-save]`); await W(150);
+  check((await p.textContent(`${M} .form-error`)).includes('horário') && (await st()).tasks.every(x => x.title !== 'Revisar contrato'), 'sem horário não salva e diz o que falta');
+  const livres = await p.locator(`${M} [data-livre]`).allTextContents();
+  check(livres.length > 0 && !livres.some(h => h.startsWith('16:15')), `mostra horários livres e não oferece o horário já ocupado (${livres.join(', ')})`);
+  await p.locator(`${M} [data-livre]`).first().tap(); await W(150);
+  check((await p.inputValue(`${M} #cap-time`)) === livres[0].replace('•', '').trim(), 'tocar num horário livre preenche o horário');
   await p.tap(`${M} [data-save]`); await W();
+  check((await st()).tasks.some(x => x.title === 'Revisar contrato' && x.dueTime && x.dueDate === today), 'tarefa salva no dia e horário escolhidos');
+  // Tarefa antiga sem data (de antes da regra) continua aparecendo hoje
+  await p.evaluate(() => { S.tasks.push({ id: 'sd1', title: 'Organizar o almoxarifado', status: 'pendente', dueDate: '', dueTime: '', priority: 'media', category: 'administrativo', createdAt: new Date().toISOString() }); commit(); });
   // Tarefa atrasada (de ontem)
   await p.evaluate(() => { S.tasks.push({ id: 'atr1', title: 'Relatório atrasado', status: 'pendente', dueDate: '2026-11-10', dueTime: '', priority: 'media', category: 'administrativo', createdAt: new Date().toISOString() }); commit(); });
 

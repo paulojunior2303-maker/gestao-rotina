@@ -32,8 +32,10 @@ e diga o que mudou e como testar no celular.
   O código de jogo/Jornada/missões, equipes, indicadores, projetos, pessoas, checklists, revisão da semana, "Agora", abrir/fechar o dia, gráficos,
   relatórios Excel/PDF e tutorial foi **apagado**. Os dados dessas telas continuam no estado (`S.projects`, `S.indicators`, `S.missoes`, `S.equipes`,
   `S.checks`, `S.diario`…), em `Store.migrate` e nos `split/join` da nuvem, para não perder nada de quem já usava. Endereços antigos caem na tela mais próxima.
-- **Navegação**: **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, **Gravar** no meio, Tarefas, Agenda), **sem** botão Menu.
-  Menu lateral (☰ ou arrastar da borda): no celular mostra só o que **não** está na barra de baixo (Imprevistos, Configurações, Guia; classe `in-bottom`);
+- **Navegação**: **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, **Gravar** no meio, Agenda, Imprevistos), **sem** botão Menu.
+  **Tarefas e Agenda são uma tela só** (pedido do usuário): "Agenda" com os modos **Dia** (`#agenda`) e **Lista de tarefas** (`#tarefas`), no seletor `Agenda.modos`;
+  `#tarefas` continua sendo rota (fora do menu; `routeVisible`), e `navAtual` acende "Agenda" nas duas. O selo de atrasadas fica na Agenda.
+  Menu lateral (☰ ou arrastar da borda): no celular mostra só o que **não** está na barra de baixo (Configurações, Guia; classe `in-bottom`);
   no computador (sem barra de baixo) mostra tudo e o Calendário tem o botão grande de gravar (`.gv-rec-big`, escondido no celular).
 - **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Calendário e Agenda usam `quickAdd`
   (só a anotação rápida, **sem** a lista "Ou escolha": reunião/feedback/relatório ficam em Gravações, a pedido do usuário). Tarefas usa o formulário de tarefa.
@@ -42,6 +44,10 @@ e diga o que mudou e como testar no celular.
   e `IA.itensNorm` convertem `tipo: 'agenda'` em tarefa). `Cal.itemsOn(hoje)` também traz as tarefas abertas **sem data** e as **atrasadas** (`semData`), para tudo aparecer
   no Calendário e na Agenda; nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
   Blocos da rotina (`S.days`) continuam: vêm da rotina padrão e o `Actions.agNew` segue existindo (formulário completo), mas sem botão no "+".
+- **Dia e horário obrigatórios na tarefa** (pedido do usuário: toda tarefa entra na agenda): no "+" não há mais "Sem data", o horário é exigido ao salvar e
+  a duração padrão é 30 min; `Agenda.livres(dia, dur)` sugere até 6 horários (livres de tarefas, compromissos, intervalo e horário fixo; primeiro os sem rotina,
+  depois os que caem sobre uma atividade da rotina, marcados com "•"). `Tasks.form` também exige dia e horário e mostra os mesmos horários livres (`.tk-livres`).
+  Tarefas antigas sem data/horário continuam aparecendo (hoje / "Sem horário").
 - **Formulário de tarefa enxuto (pedido do usuário)**: tudo numa tela só, sem "Mais detalhes"/"Mais opções". No "+" (`Capture`, aba Tarefa): Quando, Horário + Duração
   (`#cap-dur`, `Tasks.DURS`), Quem faz, Prioridade + Repetir (`#cap-prio`, `#cap-rep`) e Observação (`#cap-obs` → `description`). Aba Imprevisto: tempo agora,
   Quem resolve, Prioridade + Prazo para resolver (`#cap-oprio`, `#cap-odue`) e Observação. **Não há mais "Mais detalhes"** (nem `Capture.details`).

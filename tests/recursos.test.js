@@ -68,7 +68,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await go('dashboard'); await tap('#fab');
   await p.locator(`${M} #cap-t`).fill('Conferir backup dos gravadores toda segunda'); await W(150);
   check(await p.locator(`${M} [data-type=tarefa].active`).count() === 1 && (await p.inputValue(`${M} #cap-rep`)) === 'semanal', 'anotação rápida entende a repetição');
-  await tap(`${M} [data-save]`);
+  await p.fill(`${M} #cap-time`, '09:00'); await tap(`${M} [data-save]`);
   s = await st(); const rt = s.tasks.find(x => x.title.startsWith('Conferir backup'));
   check(rt && rt.repeat === 'semanal' && rt.dueDate === '2026-11-16', 'tarefa salva com repetição semanal');
   await go('tarefas');
@@ -97,6 +97,9 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(cols === 2, 'dois campos por linha também no celular');
   await shot('8-form-curto'); await fits('Formulário de tarefa');
   await p.locator(`${M} [name=title]`).fill('Tarefa com descrição'); await p.locator(`${M} [name=description]`).fill('Detalhe importante');
+  await tap(`${M} [data-submit]`);
+  check(await p.locator(M).count() === 1 && (await st()).tasks.every(t => t.title !== 'Tarefa com descrição'), 'sem horário o formulário não salva (dia e horário obrigatórios)');
+  await p.locator(`${M} .tk-livres [data-livre]`).first().tap(); await W(200);
   await tap(`${M} [data-submit]`);
   await p.evaluate(() => { const x = S.tasks.find(t => t.title === 'Tarefa com descrição'); x.notes = 'Nota antiga'; x.category = 'campo'; commit(); });
   await p.locator('.task', { hasText: 'Tarefa com descrição' }).locator('.tk-body').tap(); await W();

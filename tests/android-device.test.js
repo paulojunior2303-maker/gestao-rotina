@@ -91,17 +91,18 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   console.log('\n[1] Dashboard e navegação');
   check((await p.textContent('#storage-status')).includes('aparelho'), 'status "Dados salvos neste aparelho"');
   await overflow('01-dashboard');
-  check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0, 'barra de baixo com Calendário, Gravações, Tarefas e Agenda (e o Gravar no meio), sem o botão Menu');
+  check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0 && await p.locator('#bottom-nav a[href="#tarefas"]').count() === 0, 'barra de baixo com Calendário, Gravações, Agenda e Imprevistos (Tarefas está dentro da Agenda)');
   check(await p.locator('#bottom-nav .bn-rec').count() === 1, 'botão Gravar no meio da barra de baixo');
-  await tap('#bottom-nav a[href="#tarefas"]'); check(await p.textContent('#page-title') === 'Gestão de tarefas', 'barra de baixo → Tarefas');
+  await tap('#bottom-nav a[href="#agenda"]'); await tap('.ag-modos a[href="#tarefas"]');
+  check(await p.textContent('#page-title') === 'Agenda' && await p.locator('.ag-modos a.on[href="#tarefas"]').count() === 1 && await p.locator('#bottom-nav a.active[href="#agenda"]').count() === 1, 'Agenda → "Lista de tarefas" (uma tela só, a barra continua em Agenda)');
   await tap('#bottom-nav a[href="#dashboard"]');
   check(await p.locator('.cal-home .calx-grid').count() === 1, 'calendário em destaque na tela inicial');
   await tap('#menu-btn'); await W(300);
   check(await p.evaluate(() => document.body.classList.contains('menu-open')), '☰ abre o menu lateral');
   await overflow('01b-menu');
   check(await p.locator('#nav a[href="#agenda"]').isHidden() && await p.locator('#nav a[href="#config"]').isVisible(), 'menu lateral não repete o que está na barra de baixo');
-  await tap('#nav a[href="#imprevistos"]'); await W(300);
-  check(!(await p.evaluate(() => document.body.classList.contains('menu-open'))) && (await p.textContent('#page-title')) === 'Imprevistos', 'item do menu navega e fecha o menu');
+  await tap('#nav a[href="#guia"]'); await W(300);
+  check(!(await p.evaluate(() => document.body.classList.contains('menu-open'))) && (await p.evaluate(() => location.hash)) === '#guia', 'item do menu navega e fecha o menu');
   check(await p.locator('#nav a[href="#semanal"], #nav a[href="#mensal"]').count() === 0, 'planejamento semanal e mensal não são mais telas separadas');
 
   console.log('\n[2] Agenda (Dia) — concluir atividades (problema relatado)');
@@ -188,8 +189,14 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[4] Tarefas');
   await go('tarefas');
-  await tap('[data-act=tkNew]'); await fill('title', 'Cobrar relatório'); await fill('responsible', 'Carlos'); await fill('dueDate', today); await save();
+  await tap('[data-act=tkNew]'); await fill('title', 'Cobrar relatório'); await fill('responsible', 'Carlos'); await fill('dueDate', today); await fill('dueTime', '16:00'); await save();
   await tap('[data-act=tkNew]'); await fill('title', 'Conferir estoque'); await save();
+  check(await p.locator(`${M} .form-error:not([hidden]), ${M} :invalid`).count() > 0 || await p.locator(M).count() === 1, 'tarefa sem horário não é salva (horário obrigatório)');
+  await fill('dueDate', await p.evaluate(() => U.addDays(U.today(), 1))); await W(200);   // o teste roda à noite: hoje já passou do expediente
+  check(await p.locator(`${M} .tk-livres [data-livre]`).count() > 0, 'o formulário mostra horários livres');
+  await p.locator(`${M} .tk-livres [data-livre]`).first().tap(); await W(200);
+  check((await p.inputValue(`${M} [name=dueTime]`)).length === 5, 'tocar num horário livre preenche o horário');
+  await save();
   await overflow('05-tarefas');
   await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet]').tap(); await W(300);   // ▶ começa
   check((await st()).tasks.find(t => t.title === 'Cobrar relatório').status === 'andamento', 'botão único: o primeiro toque começa a tarefa');

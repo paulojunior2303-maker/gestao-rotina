@@ -2,11 +2,13 @@
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral (no celular só o que não está na barra de baixo) e barra de baixo com o botão Gravar no meio */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'gravacoes', 'agenda', 'imprevistos']],
   ['Ajustes', ['config', 'guia']],
 ];
-const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'];
-const routeVisible = id => NAV_GROUPS.some(([, ids]) => ids.includes(id));
+/* Tarefas e Agenda viraram uma tela só (pedido do usuário): "Agenda", com os modos Dia (#agenda) e Lista de tarefas (#tarefas) */
+const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'agenda', 'imprevistos'];
+const routeVisible = id => id === 'tarefas' || NAV_GROUPS.some(([, ids]) => ids.includes(id));
+const navAtual = r => r === 'tarefas' ? 'agenda' : r;
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
   act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
@@ -37,12 +39,12 @@ const App = {
   renderNav() {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
-    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'agenda' && late ? `<span class="nav-badge">${late}</span>` : '';
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${navAtual(this.route) === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${navAtual(this.route) === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => id === 'REC' ? `<button class="bn-rec ${Gravador.recording() ? 'on' : ''}" data-act="${Gravador.recording() ? 'gvTela' : 'gvRec'}" aria-label="${Gravador.recording() ? 'Abrir a gravação' : 'Gravar reunião ou feedback'}"><span class="bn-rec-c">${U.icon(Gravador.recording() ? 'stop' : 'mic', 24)}</span><span class="bn-rec-t">${Gravador.recording() ? Gravador.fmt(Gravador.elapsed()) : 'Gravar'}</span></button>` : `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => id === 'REC' ? `<button class="bn-rec ${Gravador.recording() ? 'on' : ''}" data-act="${Gravador.recording() ? 'gvTela' : 'gvRec'}" aria-label="${Gravador.recording() ? 'Abrir a gravação' : 'Gravar reunião ou feedback'}"><span class="bn-rec-c">${U.icon(Gravador.recording() ? 'stop' : 'mic', 24)}</span><span class="bn-rec-t">${Gravador.recording() ? Gravador.fmt(Gravador.elapsed()) : 'Gravar'}</span></button>` : `<a href="#${id}" class="${navAtual(this.route) === id ? 'active' : ''}"${navAtual(this.route) === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
     const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae!';
     document.getElementById('storage-status').innerHTML =

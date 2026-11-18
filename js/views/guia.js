@@ -49,7 +49,7 @@ Views.guia = {
     ]))}
     ${sec('calendario', 'calendar', 'Calendário', li([
       'A tela inicial mostra o mês inteiro. Toque num dia para ver as tarefas, gravações, reuniões e compromissos dele. Conclua uma tarefa ali mesmo, no ✓.',
-      'O <strong>+</strong> anota uma <strong>tarefa</strong> no dia que você escolheu: diga ou escolha o horário e quanto tempo leva, se quiser. Tarefa sem data e tarefa atrasada aparecem no dia de hoje até você concluir.',
+      'O <strong>+</strong> anota uma <strong>tarefa</strong>. Dia e horário são obrigatórios: toda tarefa entra na agenda. O app mostra os <strong>horários livres</strong> do dia; um toque escolhe.',
       'Reunião, feedback e relatório do dia ficam em <strong>Gravações</strong>.',
       CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para guardar os dados na nuvem. O áudio e a transcrição completa ficam no aparelho.',
     ]))}
@@ -64,7 +64,7 @@ Views.guia = {
       'No iPhone, os lembretes só aparecem com o app aberto, e o compartilhar áudio do WhatsApp direto para o FlowFire não existe: use <strong>Gravar → Áudio ou texto</strong>.',
     ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
-      'A tela Tarefas é a lista de tudo. As mesmas tarefas aparecem na Agenda e no Calendário, no dia delas.',
+      'Tarefas e Agenda são uma tela só. Na <strong>Agenda</strong>, use <strong>Dia</strong> para ver a linha do tempo e <strong>Lista de tarefas</strong> para ver tudo, agrupado por quando.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
       'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
       'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
