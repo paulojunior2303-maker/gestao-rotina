@@ -92,7 +92,9 @@ e diga o que mudou e como testar no celular.
   Testes: `tests/visual.test.js`.
 - **Design v3 (6 sugestões, no teste; bloco "Design v3" no fim de `css/styles.css`)**: (1) Tarefas como lista de papel: linha fina, círculo `.tk-ck` para concluir
   (`tkSet`), grupos por quando (`.tk-grp`: atrasadas, hoje, amanhã, próximos 7 dias, mais adiante, sem data), prioridade só alta/urgente em palavra (`.tk-prio`), abas sublinhadas
-  (`.tk-abas`, ainda `.stat-chip`); ▶ "Começar agora" e ✕ "Cancelar" ficam no ⋯ (`tkMore`). (2) Início com a data grande (`Views.dashboard.diaHero`: `.dh-n` + resumo de
+  (`.tk-abas`, ainda `.stat-chip`); ▶ começar (`.tk-play`, vira ⏸ pausar na tarefa em execução) fica **na linha** (pedido do usuário), ✕ "Cancelar" fica no ⋯ (`tkMore`).
+  **Tarefa em execução destacada** (`.task.andamento`, `.calx-it.run`, `.blk-it.run`; `run` em `Cal.itemsOn`): fundo roxo, faixa à esquerda, "em execução" com ponto pulsando (`.run-dot`)
+  e grupo próprio no topo ("Em execução agora", `g-execucao`), também na lista do dia do Início e na Agenda. (2) Início com a data grande (`Views.dashboard.diaHero`: `.dh-n` + resumo de
   três números que levam a Tarefas/Agenda); o topo mostra só a saudação. Calendário sem caixinhas. (3) Roxo só onde importa: lista do dia em grafite, `.calx-agora` (atividade da
   rotina em andamento) em destaque, vermelho só no atrasado; `Cal.check` usa o mesmo círculo. (4) Agenda proporcional: `min-height` de 1 px/min (54–220 px), tempo livre
   `.ag-livre`, linha da hora atual `.ag-agora`, itens sem horário no grupo `.ag-semhora`, tarefa com horário tracejada; concluir a rotina também é círculo. (5) Computador:

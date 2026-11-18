@@ -51,7 +51,7 @@ Views.agenda = {
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
     const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
-    const item = i => `<div class="blk blk-it t-${i.type} ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type});${i.time && i.end ? alto(U.toMin(i.time), U.toMin(i.end)) : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it t-${i.type} ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''} ${i.run ? 'run' : ''}" style="--c:var(--t-${i.type});${i.time && i.end ? alto(U.toMin(i.time), U.toMin(i.end)) : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span>${i.task && (bate.get(i.id) || []).length ? '<span class="badge b-yellow">Conflito</span>' : ''}</div>
           <small class="blk-kind">${Cal.sub(i, true)}</small></div>

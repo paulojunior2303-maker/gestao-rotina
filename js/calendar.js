@@ -25,7 +25,7 @@ const Cal = {
     // Gravações (reunião/feedback gravado): a reunião ligada a ela não aparece de novo
     (S.gravacoes || []).filter(g => g.date === k).forEach(g => out.push({ type: 'gravacao', label: Gravador.nome(g), time: g.time, id: g.id, done: g.status === 'pronta', act: 'gvOpen', sub: g.status === 'pronta' ? (g.tipo === 'feedback' ? 'Feedback · resumo pronto' : g.tipo === 'relatorio' ? 'Relatório do dia · pronto' : g.tipo === 'audio' ? (g.origem === 'texto' ? 'Mensagem recebida · analisada' : 'Áudio recebido · transcrito') : 'Reunião · resumo pronto') : g.status === 'gravando' ? 'Gravando agora' : 'Gravação · transcrevendo' }));
     S.events.filter(e => e.date === k && !e.gravacaoId).forEach(e => out.push({ type: Meetings.isMeeting(e) ? 'reuniao' : 'evento', label: e.title, time: e.time, id: e.id, demo: e.demo, done: !!e.registro, act: 'evView' }));
-    const tk = (x, extra) => out.push({ type: 'tarefa', label: x.title, time: extra ? '' : x.dueTime, end: extra ? '' : this.fimTarefa(x), done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit', task: true, who: x.responsible || '', ...extra });
+    const tk = (x, extra) => out.push({ type: 'tarefa', label: x.title, time: extra ? '' : x.dueTime, end: extra ? '' : this.fimTarefa(x), done: x.status === 'concluida', late: D.taskLate(x), id: x.id, demo: x.demo, act: 'tkEdit', task: true, run: x.status === 'andamento', who: x.responsible || '', ...extra });
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => tk(x));
     if (k === U.today()) {
       S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueDate < k).forEach(x => tk(x, { semData: 'atrasada', era: U.fmtShort(x.dueDate), sub: `Tarefa atrasada · era para ${U.fmtShort(x.dueDate)}` }));
@@ -97,7 +97,7 @@ const Cal = {
   sub(i, agenda) {
     const base = i.sub && (!agenda || i.semData) ? (i.late && i.semData === 'atrasada' ? `<span class="c-red">${i.sub}</span>` : i.sub)
       : `${this.TYPES[i.type]}${i.done ? (i.type === 'reuniao' ? ' · registrada' : i.type === 'gravacao' ? ' · pronta' : ' · concluída') : i.late ? ' · <span class="c-red">atrasada</span>' : ''}`;
-    return base + (i.who ? ` · ${U.esc(i.who)}` : '');
+    return (i.run ? '<span class="run-tag"><i class="run-dot"></i>em execução</span> · ' : '') + base + (i.who ? ` · ${U.esc(i.who)}` : '');
   },
   /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
   check(i) {   // círculo, igual ao da lista de Tarefas (sugestão de design 1)
@@ -110,7 +110,7 @@ const Cal = {
   day(id) {
     const s = this.st(id), k = s.sel, t = U.today();
     // Sugestão 3: o que está acontecendo agora (atividade da rotina) entra em destaque no topo; o que já foi feito vai para o fim
-    const todos = this.itemsOn(k), items = [...todos.filter(i => !i.done), ...todos.filter(i => i.done)];
+    const todos = this.itemsOn(k), items = [...todos.filter(i => i.run), ...todos.filter(i => !i.done && !i.run), ...todos.filter(i => i.done)];
     const ag = D.dayBlocks(k), prog = D.progress(k);
     const agora = k === t ? ag.find(b => D.blockNow(b, k) && !D.isBreak(b) && !D.blockDone(b)) : null;
     const d = U.parse(k), wd = U.WD[d.getDay()].replace('-feira', '');
@@ -121,7 +121,7 @@ const Cal = {
       </div>
       ${agora ? `<div class="calx-it calx-agora" role="button" tabindex="0" data-act="goAgenda" data-d="${k}"><span class="calx-it-time">${agora.start}<small>${agora.end}</small></span>
           <span class="calx-it-main"><span class="calx-tag">Agora</span><span class="calx-it-title">${U.esc(agora.title)}</span><small>rotina · termina em ${U.fmtDur(Math.max(1, U.toMin(agora.end) - U.nowMin()))}</small></span>${U.icon('right', 15)}</div>` : ''}
-      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+      ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''} ${i.run ? 'run' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}${i.end ? `<small>${i.end}</small>` : ''}</span>
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.sub(i)}</small></span>
           ${i.task ? this.check(i) : U.icon('right', 15)}</div>`).join('')}</div>`

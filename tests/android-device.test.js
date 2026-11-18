@@ -199,9 +199,14 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await p.locator('.task').first().locator('[data-act=tkSet][data-s=pendente]').tap(); await W(300);
   s = await st(); check(s.tasks.find(t => t.title === 'Cobrar relatório').status === 'pendente', 'botão ↶ reabre a tarefa');
   await tap('[data-act=tkStatusF][data-v=abertas]');
+  await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkSet][data-s=andamento]').tap(); await W(300);
+  s = await st(); check(s.tasks.find(t => t.title === 'Conferir estoque').status === 'andamento', 'botão ▶ na linha marca em execução');
+  const run = p.locator('.task.andamento', { hasText: 'Conferir estoque' });
+  check(await run.count() === 1 && (await run.textContent()).includes('em execução') && (await p.locator('.tk-grp').first().textContent()).includes('Em execução') && await run.evaluate(e => getComputedStyle(e).boxShadow.includes('inset')), 'tarefa em execução fica destacada, no topo da lista');
+  check(await run.locator('[data-act=tkSet][data-s=pendente]').count() >= 1, 'na tarefa em execução o ▶ vira ⏸ (pausar)');
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkMore]').tap(); await W(300);
-  await tap('.sheet-item:has-text("Começar agora")'); await W(300);
-  s = await st(); check(s.tasks.find(t => t.title === 'Conferir estoque').status === 'andamento' && (await p.locator('.task', { hasText: 'Conferir estoque' }).textContent()).includes('em andamento'), '⋯ → "Começar agora" marca em andamento e a linha mostra');
+  check(await p.locator('.sheet-item:has-text("Cancelar tarefa")').count() === 1 && await p.locator('.sheet-item:has-text("Começar agora")').count() === 0, '⋯ tem Cancelar (o Começar ficou na linha)');
+  await p.keyboard.press('Escape'); await W(300);
   await p.fill('[data-input=tkSearch]', 'estoque'); await W(500); check(await p.locator('.task').count() === 1, 'busca');
   await p.fill('[data-input=tkSearch]', ''); await W(500);
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkMore]').tap(); await W(300); await tap('.sheet-item.danger:has-text("Excluir")'); await tap(`${M} [data-yes]`);

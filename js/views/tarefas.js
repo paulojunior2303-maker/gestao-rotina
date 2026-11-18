@@ -45,7 +45,7 @@ Views.tarefas = {
       const hora = x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? ' – ' + Cal.fimTarefa(x) : '') : '';
       const late = OPEN(x.status) && D.taskLate(x);
       const meta = [late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
-        x.status === 'andamento' ? '<span class="tk-and">em andamento</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
+        x.status === 'andamento' ? '<span class="run-tag"><i class="run-dot"></i>em execução</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
       return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
@@ -56,14 +56,17 @@ Views.tarefas = {
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
         </div>
         ${prio}
+        ${!OPEN(x.status) ? '' : x.status === 'andamento'
+          ? `<button class="icon-btn tk-play on" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Pausar (volta para pendente)" aria-label="Pausar: ${U.esc(x.title)}"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2"/></svg></button>`
+          : `<button class="icon-btn tk-play" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar: ${U.esc(x.title)}">${U.icon('play', 14)}</button>`}
         <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
-    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
+    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
       : x.dueDate <= t ? 'hoje' : x.dueDate === tm ? 'amanha' : x.dueDate <= d7 ? 'semana' : 'depois';
-    const NOMES = { atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
+    const NOMES = { execucao: 'Em execução agora', atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
     const grupos = (ks, l) => ks.map(k => { const it = l.filter(x => grupoDe(x) === k); return it.length ? `<div class="tk-grp g-${k}">${NOMES[k]}<span>${it.length}</span></div>${it.map(row).join('')}` : ''; }).join('');
-    const ORDEM = ['atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    const ORDEM = ['execucao', 'atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
     // Sugestão 5: no computador, as abertas em três colunas (Hoje · Depois · Sem data)
     const pc = window.matchMedia && matchMedia('(min-width: 901px)').matches;
     const colunas = pc && f.status === 'abertas' && list.length;
@@ -92,7 +95,7 @@ Views.tarefas = {
       ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
     </div>
     ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
-    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
+    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['execucao', 'atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
       : `<div class="task-list">${list.length ? grupos(ORDEM, list) : vazio}</div>`}`;
   },
 };
@@ -184,9 +187,6 @@ Object.assign(Actions, {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
     const aberta = OPEN(x.status);
     UI.sheet(x.title, [
-      ...(aberta ? [x.status === 'andamento'
-        ? { label: 'Voltar para pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
-        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) }] : []),
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
       ...(aberta ? [{ label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
