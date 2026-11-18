@@ -183,6 +183,9 @@ const UI = (() => {
       const tag = link ? `a href="#agenda" data-act="goAgenda" data-d="${k}"` : 'div';
       return `<${tag} class="rail" aria-label="Linha do tempo do dia"><span class="rail-track">${segs}${nowM}</span><span class="rail-ticks">${ticks.join('')}</span></${link ? 'a' : 'div'}>`;
     },
+    /* Tela vazia com a voz do app (sugestão de design 6): frase grande, o que fazer em seguida e um rodapé opcional */
+    vazio: (linha1, linha2, texto, dicas = [], rodape = '') => `<div class="vazio"><div class="vazio-t">${linha1}<br><span>${linha2}</span></div>${texto ? `<p>${texto}</p>` : ''}
+      ${dicas.length ? `<div class="vazio-dicas">${dicas.map(([ic, t]) => `<div><i>${U.icon(ic, 15)}</i>${t}</div>`).join('')}</div>` : ''}${rodape ? `<small>${rodape}</small>` : ''}</div>`,
     empty: (msg, action = '') => `<div class="empty">${U.icon('info', 22)}<p>${msg}</p>${action}</div>`,
     demo: x => x && x.demo ? '<span class="demo-badge">EXEMPLO</span>' : '',
     catOptions: () => S.settings.categories.map(c => [c.id, c.name]),

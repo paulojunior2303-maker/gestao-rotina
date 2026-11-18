@@ -187,6 +187,8 @@ const App = {
     Fire.init();
     Gravador.init();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Drive.auto(); });
+    // Tarefas em colunas no computador e em lista no celular: refaz a tela ao cruzar a largura de 901 px
+    if (window.matchMedia) matchMedia('(min-width: 901px)').addEventListener('change', () => { if (this.route === 'tarefas' && !document.querySelector('.modal-wrap')) this.render(); });
     if (!CANAL_TESTE && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !Cloud.available() && !Native.available()) navigator.serviceWorker.register('sw.js').catch(() => {});
   },
   go(route) { if (this.route === route) this.render({ resetScroll: true }); else location.hash = '#' + route; },

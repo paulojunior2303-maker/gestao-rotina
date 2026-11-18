@@ -10,13 +10,30 @@ Views.dashboard = {
     const t = U.today(), d = U.parse(t);
     const greet = this.saudacao();
     const eu = (S.settings.usuario || '').trim().split(' ')[0];
-    return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span><span class="th-date">${U.WD[U.weekday(t)].replace('-feira', '')}, ${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</span>`;
+    return `<span class="th-greet">${greet}${eu ? ', ' + U.esc(eu) : ''}</span>`;
+  },
+  /* Sugestão de design 2: a data como protagonista + resumo de três números (tocar leva para a lista certa) */
+  diaHero() {
+    const t = U.today(), d = U.parse(t), agora = U.nowTime();
+    const hoje = S.tasks.filter(x => OPEN(x.status) && x.dueDate === t).length;
+    const atr = S.tasks.filter(x => OPEN(x.status) && D.taskLate(x)).length;
+    const prox = Cal.itemsOn(t).filter(i => i.time && i.time >= agora && !i.done && !i.semData)[0]
+      || D.dayBlocks(t).filter(b => !D.isBreak(b) && !D.blockDone(b) && b.status !== 'cancelada' && b.start >= agora)[0];
+    const pNome = prox ? (prox.label || prox.title) : '';
+    return `<section class="dia-hero">
+      <div class="dh-data"><span class="dh-n">${d.getDate()}</span><span class="dh-sub"><b>${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}</b><span>${U.MONTHS[d.getMonth()].toLowerCase()} de ${d.getFullYear()}</span></span></div>
+      <div class="dh-resumo">
+        <button data-act="goTasks" data-status="abertas"><b>${hoje}</b><small>${hoje === 1 ? 'tarefa hoje' : 'tarefas hoje'}</small></button>
+        <button data-act="goTasks" data-status="atrasadas"><b class="${atr ? 'r' : ''}">${atr}</b><small>${atr === 1 ? 'atrasada' : 'atrasadas'}</small></button>
+        <button data-act="goAgenda" data-d="${t}"><b>${prox ? (prox.time || prox.start) : '—'}</b><small>${prox ? 'próxima: ' + U.esc(pNome) : 'nada com horário'}</small></button>
+      </div></section>`;
   },
   renderEnxuto() {
     const rec = Gravador.recording();
     const atencao = Gravador.list().filter(g => g.status !== 'gravando' && (!g.tipo || g.status === 'pendente')).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
     return `
     ${Updater.banner()}
+    ${Views.dashboard.diaHero()}
     ${Views.dashboard.iphoneCard()}
     ${Reminders.webCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">

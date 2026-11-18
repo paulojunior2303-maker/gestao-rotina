@@ -552,7 +552,7 @@ Views.gravacoes = {
       ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Áudio ou texto</strong><small>Envie áudios (do WhatsApp ou outros) e/ou um texto: a IA resume e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       <button class="gv-rel-btn gv-arq-btn gv-marcar" data-act="gvMarcar">${U.icon('calendar', 20)}<span><strong>Marcar reunião ou compromisso</strong><small>Para uma data futura, com pauta. Também registra um feedback sem gravar.</small></span>${U.icon('right', 16)}</button>
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
-      ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : H.empty('Nenhuma gravação ainda. Toque em <strong>Gravar</strong>, na barra de baixo, para começar. Não precisa criar a reunião antes.')}`;
+      ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : '<div class="vazio-menor">' + H.vazio('Nenhuma gravação.', 'É só apertar e falar.', 'Grave uma reunião, um feedback ou o relatório do dia. A IA escreve o resumo e anota o que for combinado.', [['mic', 'Toque em <strong>Gravar</strong>, na barra de baixo'], ['upload', 'Ou envie um áudio do WhatsApp']]) + '</div>'}`;
   },
   chip(x) {
     const ok = x.partes.filter(p => p.st === 'ok').length, tot = x.partes.length;

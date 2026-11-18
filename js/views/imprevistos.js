@@ -45,7 +45,7 @@ Views.imprevistos = {
     </div>
     ${nToday || minToday ? `<div class="occ-today card">${U.icon('alert', 18)}<span>Hoje: <strong>${U.plural(nToday, 'imprevisto')}</strong>${minToday ? ` · <strong>${U.fmtDur(minToday)}</strong> tomados da agenda` : ''}</span></div>` : ''}
     <p class="muted small">Aconteceu algo? Toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai tomar: o app encaixa agora na agenda e empurra o resto do dia.</p>
-    <div class="occ-list">${list.length ? list.map(card).join('') : H.empty(f === 'abertas' ? 'Nenhum imprevisto em aberto.' : 'Nenhum registro.')}</div>`;
+    <div class="occ-list">${list.length ? list.map(card).join('') : (f === 'abertas' ? H.vazio('Nenhum imprevisto.', 'Dia sob controle.', all.length ? 'Tudo o que apareceu já foi resolvido.' : 'Quando algo sair do previsto, anote aqui: o app encaixa na agenda e empurra o resto do dia.', [['plus', 'Toque no + e diga quanto tempo vai tomar']]) : H.empty('Nenhum registro.'))}</div>`;
   },
 };
 

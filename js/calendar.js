@@ -100,28 +100,32 @@ const Cal = {
     return base + (i.who ? ` · ${U.esc(i.who)}` : '');
   },
   /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
-  check(i) {
+  check(i) {   // círculo, igual ao da lista de Tarefas (sugestão de design 1)
     return i.done
-      ? `<button class="icon-btn" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('undo', 16)}</button>`
-      : `<button class="icon-btn ok" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa">${U.icon('check', 16)}</button>`;
+      ? `<button class="tk-ck feito" data-act="tkSet" data-id="${i.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir tarefa">${U.icon('check', 13)}</button>`
+      : `<button class="tk-ck ${i.late ? 'late' : ''}" data-act="tkSet" data-id="${i.id}" data-s="concluida" title="Concluir" aria-label="Concluir tarefa"></button>`;
   },
 
   /* Lista do dia escolhido */
   day(id) {
     const s = this.st(id), k = s.sel, t = U.today();
-    const items = this.itemsOn(k);
+    // Sugestão 3: o que está acontecendo agora (atividade da rotina) entra em destaque no topo; o que já foi feito vai para o fim
+    const todos = this.itemsOn(k), items = [...todos.filter(i => !i.done), ...todos.filter(i => i.done)];
     const ag = D.dayBlocks(k), prog = D.progress(k);
+    const agora = k === t ? ag.find(b => D.blockNow(b, k) && !D.isBreak(b) && !D.blockDone(b)) : null;
     const d = U.parse(k), wd = U.WD[d.getDay()].replace('-feira', '');
     const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : wd;
     return `<div class="calx-day">
       <div class="calx-day-h">
         <div><small class="muted">${when}</small><h2>${d.getDate()} de ${U.MONTHS[d.getMonth()].toLowerCase()}</h2></div>
       </div>
+      ${agora ? `<div class="calx-it calx-agora" role="button" tabindex="0" data-act="goAgenda" data-d="${k}"><span class="calx-it-time">${agora.start}<small>${agora.end}</small></span>
+          <span class="calx-it-main"><span class="calx-tag">Agora</span><span class="calx-it-title">${U.esc(agora.title)}</span><small>rotina · termina em ${U.fmtDur(Math.max(1, U.toMin(agora.end) - U.nowMin()))}</small></span>${U.icon('right', 15)}</div>` : ''}
       ${items.length ? `<div class="calx-list">${items.map(i => `<div class="calx-it t-${i.type} ${this.feito(i)} ${i.late ? 'late' : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
           <span class="calx-it-time">${i.time || '—'}${i.end ? `<small>${i.end}</small>` : ''}</span>
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.sub(i)}</small></span>
           ${i.task ? this.check(i) : U.icon('right', 15)}</div>`).join('')}</div>`
-        : `<p class="calx-empty muted small">Nada marcado para este dia.</p>`}
+        : agora ? '' : `<p class="calx-empty muted small">${D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia livre. Nada marcado.'}</p>`}
       <button class="calx-agenda" data-act="goAgenda" data-d="${k}">
         ${U.icon('clock', 16)}<span><strong>Agenda do dia</strong><small class="muted">${ag.length ? `${U.plural(prog.total, 'atividade')}${prog.pct !== null ? ` · ${prog.pct}% concluído` : ''}` : D.isWorkday(k) ? 'Sem atividades' : 'Dia de folga'}</small></span>
         ${ag.length && prog.pct !== null ? H.bar(prog.pct) : ''}${U.icon('right', 15)}

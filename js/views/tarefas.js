@@ -36,33 +36,48 @@ Views.tarefas = {
     const filtersOn = f.priority || f.category || f.period || f.from || f.to || f.q;
     const nFiltros = [f.priority, f.category, f.period, f.from || f.to].filter(Boolean).length;
 
+    // Sugestão 1 (lista de papel): linha sem cartão, círculo para concluir, agrupada por quando
+    const tm = U.addDays(t, 1), d7 = U.addDays(t, 7);
     const row = x => {
       const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
-      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}" style="--c:${D.cat(x.category).color}">
+      const fechada = x.status === 'concluida' || x.status === 'cancelada';
+      const quando = !x.dueDate ? '' : x.dueDate === t || x.dueDate === tm ? '' : x.dueDate === U.addDays(t, -1) ? 'ontem' : `${U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase()} ${U.fmtShort(x.dueDate)}`;
+      const hora = x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? ' – ' + Cal.fimTarefa(x) : '') : '';
+      const late = OPEN(x.status) && D.taskLate(x);
+      const meta = [late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
+        x.status === 'andamento' ? '<span class="tk-and">em andamento</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
+        x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
+      const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
+      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
+        <button class="tk-ck ${late ? 'late' : ''} ${x.status === 'andamento' ? 'and' : ''}" data-act="tkSet" data-id="${x.id}" data-s="${fechada ? 'pendente' : 'concluida'}" title="${fechada ? 'Reabrir' : 'Concluir'}" aria-label="${fechada ? 'Reabrir' : 'Concluir'}: ${U.esc(x.title)}">${x.status === 'concluida' ? U.icon('check', 13) : x.status === 'cancelada' ? U.icon('x', 12) : ''}</button>
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
-          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}${x.status === 'andamento' || x.status === 'cancelada' ? ' ' + H.status(x.status) : ''}</div>
+          <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
+          ${meta ? `<div class="tk-meta">${meta}</div>` : ''}
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
-          <div class="tk-meta">${H.cat(x.category)} ${H.prio(x.priority)} ${x.responsible ? `<span class="muted">${U.icon('user', 13)} ${U.esc(x.responsible)}</span>` : ''}
-            ${x.dueDate ? `<span class="muted">${U.icon('flag', 13)} ${U.fmtDate(x.dueDate)}${x.dueTime ? ' ' + x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : ''}</span>` : '<span class="muted">Sem data</span>'}
-            ${x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''}
-            ${H.deadline(dl && dl.level !== 'ok' ? dl : null)}</div>
         </div>
-        <div class="tk-side">
-          ${x.status === 'concluida' || x.status === 'cancelada'
-            ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-            : `${x.status === 'andamento'
-                ? `<button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="pendente" title="Voltar para pendente" aria-label="Voltar para pendente">${U.icon('undo', 16)}</button>`
-                : `<button class="icon-btn info" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="Começar agora" aria-label="Começar agora">${U.icon('play', 14)}</button>`}
-               <button class="icon-btn ok" data-act="tkSet" data-id="${x.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>
-               <button class="icon-btn" data-act="tkSet" data-id="${x.id}" data-s="cancelada" title="Cancelar tarefa" aria-label="Cancelar tarefa">${U.icon('x', 16)}</button>`}
-          <button class="icon-btn" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
-        </div>
+        ${prio}
+        <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
+    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
+      : x.dueDate <= t ? 'hoje' : x.dueDate === tm ? 'amanha' : x.dueDate <= d7 ? 'semana' : 'depois';
+    const NOMES = { atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
+    const grupos = (ks, l) => ks.map(k => { const it = l.filter(x => grupoDe(x) === k); return it.length ? `<div class="tk-grp g-${k}">${NOMES[k]}<span>${it.length}</span></div>${it.map(row).join('')}` : ''; }).join('');
+    const ORDEM = ['atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    // Sugestão 5: no computador, as abertas em três colunas (Hoje · Depois · Sem data)
+    const pc = window.matchMedia && matchMedia('(min-width: 901px)').matches;
+    const colunas = pc && f.status === 'abertas' && list.length;
+    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="tkNew">+ Adicionar</button></section>`; };
+    const nome = ((S.settings.usuario || '').trim().split(' ')[0]) || '';
+    // Sugestão 6: tela vazia com a voz do app
+    const vazio = !all.length || (f.status === 'abertas' && !filtersOn && !list.length)
+      ? H.vazio('Nada pendente.', nome ? `Pode respirar, ${U.esc(nome)}.` : 'Calma, Pae.', all.length ? 'Você zerou a lista. Quando aparecer algo, é só anotar ou falar.' : 'Sua lista começa aqui. Anote o que precisa fazer e o app lembra por você.',
+        [['plus', 'Toque no + e escreva em poucas palavras'], ['mic', 'Ou grave um áudio: o app anota sozinho']], counts.concluida ? `${U.plural(counts.concluida, 'tarefa concluída', 'tarefas concluídas')} até agora` : '')
+      : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
     <div class="toolbar">
-      <div class="stat-chips">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
+      <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
     <div class="tk-busca">
       <input type="search" placeholder="Buscar tarefa ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
@@ -77,7 +92,8 @@ Views.tarefas = {
       ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
     </div>
     ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
-    <div class="task-list">${list.length ? list.map(row).join('') : H.empty(all.length ? 'Nenhuma tarefa com esses filtros.' : 'Nenhuma tarefa cadastrada ainda.', all.length ? '' : '<button class="btn sm primary" data-act="tkNew">Criar primeira tarefa</button>')}</div>`;
+    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
+      : `<div class="task-list">${list.length ? grupos(ORDEM, list) : vazio}</div>`}`;
   },
 };
 
@@ -166,8 +182,13 @@ Object.assign(Actions, {
   },
   tkMore({ id }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;
+    const aberta = OPEN(x.status);
     UI.sheet(x.title, [
+      ...(aberta ? [x.status === 'andamento'
+        ? { label: 'Voltar para pendente', icon: 'undo', onClick: () => Actions.tkSet({ id, s: 'pendente' }) }
+        : { label: 'Começar agora', hint: 'Marca como em andamento', icon: 'play', onClick: () => Actions.tkSet({ id, s: 'andamento' }) }] : []),
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
+      ...(aberta ? [{ label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
   },

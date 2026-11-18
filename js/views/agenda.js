@@ -19,11 +19,15 @@ Views.agenda = {
     const d = U.parse(k), wd = U.WD[d.getDay()];
     const when = k === t ? 'Hoje' : k === U.addDays(t, 1) ? 'Amanhã' : k === U.addDays(t, -1) ? 'Ontem' : '';
 
+    // Sugestão de design 4: cada atividade ocupa o espaço do tempo que dura (1 px por minuto, entre 54 e 220 px)
+    const PX = 1, alto = (s0, e0) => `min-height:${Math.round(Math.max(54, Math.min(220, (e0 - s0) * PX)))}px`;
+    const nowM = U.nowMin();
+    const linhaAgora = (s0, e0) => `<span class="ag-agora" style="top:${Math.round(Math.max(4, Math.min(96, (nowM - s0) / Math.max(1, e0 - s0) * 100)))}%" aria-hidden="true"></span>`;
     const row = b => {
       const c = D.cat(b.category);
       const isLate = D.blockLate(b, k), isNow = D.blockNow(b, k);
       if (D.isBreak(b)) {
-        return `<div class="blk blk-break" style="--c:${c.color}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body" data-act="agEdit" data-id="${b.id}"><span class="blk-title">${U.esc(b.title)}</span></div></div>`;
+        return `<div class="blk blk-break" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}"><div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div><div class="blk-body" data-act="agEdit" data-id="${b.id}"><span class="blk-title">${U.esc(b.title)}</span></div></div>`;
       }
       const badges = [
         isNow ? '<span class="badge b-blue">Agora</span>' : '',
@@ -31,7 +35,7 @@ Views.agenda = {
         conflicts.has(b.id) || blocosBatendo.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
         b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
-      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color}">
+      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}">${isNow ? linhaAgora(U.toMin(b.start), U.toMin(b.end)) : ''}
         <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div>
         <div class="blk-body" data-act="agEdit" data-id="${b.id}">
           <div class="blk-head"><span class="blk-title">${U.esc(b.title)}</span>${badges}</div>
@@ -39,25 +43,36 @@ Views.agenda = {
         </div>
         <div class="blk-actions">
           ${b.status === 'concluida'
-            ? `<button class="icon-btn" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('undo', 16)}</button>`
-            : `<button class="icon-btn ok" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir" aria-label="Concluir">${U.icon('check', 16)}</button>`}
+            ? `<button class="tk-ck feito" data-act="agStatus" data-id="${b.id}" data-s="pendente" title="Reabrir" aria-label="Reabrir">${U.icon('check', 13)}</button>`
+            : `<button class="tk-ck ${isLate ? 'late' : ''}" data-act="agStatus" data-id="${b.id}" data-s="concluida" title="Concluir" aria-label="Concluir"></button>`}
           <button class="icon-btn" data-act="agMore" data-id="${b.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
         </div>
       </div>`;
     };
     // Reuniões, compromissos e prazos entram na mesma lista, pela hora
     const semHora = i => i.semData === 'atrasada' ? ['Era', i.era] : i.semData === 'sem' ? ['Sem', 'data'] : i.type === 'reuniao' || i.type === 'evento' ? ['Dia', 'todo'] : ['Sem', 'hora'];
-    const item = i => `<div class="blk blk-it ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type})" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
+    const item = i => `<div class="blk blk-it t-${i.type} ${Cal.feito(i) === 'done' ? 'st-concluida' : Cal.feito(i) === 'ok' ? 'blk-ok' : ''} ${i.late ? 'late' : ''}" style="--c:var(--t-${i.type});${i.time && i.end ? alto(U.toMin(i.time), U.toMin(i.end)) : ''}" role="button" tabindex="0" data-act="${i.act}" data-id="${i.id}">
         <div class="blk-time"><strong>${i.time || semHora(i)[0]}</strong>${i.time ? (i.end ? `<span>${i.end}</span>` : '') : `<span>${semHora(i)[1]}</span>`}</div>
         <div class="blk-body"><div class="blk-head"><span class="blk-title">${U.esc(i.label)}${H.demo(i)}</span>${i.task && (bate.get(i.id) || []).length ? '<span class="badge b-yellow">Conflito</span>' : ''}</div>
           <small class="blk-kind">${Cal.sub(i, true)}</small></div>
         <div class="blk-actions">${i.task ? Cal.check(i) : U.icon('right', 16)}</div></div>`;
-    const list = [
-      ...items.filter(i => !i.time).map(i => ({ t: '', h: item(i) })),
-      ...blocks.map(b => ({ t: b.start, h: row(b) })),
-      ...items.filter(i => i.time).map(i => ({ t: i.time, h: item(i) })),
-    ].map((x, n) => ({ ...x, n })).sort((a, b) => a.t.localeCompare(b.t) || a.n - b.n);
-
+    // Com horário: em ordem, com o tempo livre entre um e outro proporcional; sem horário: num grupo compacto em cima
+    const semHoraL = [...items.filter(i => !i.time && !i.done), ...items.filter(i => !i.time && i.done)];
+    const comHora = [
+      ...blocks.map(b => ({ s: U.toMin(b.start), e: U.toMin(b.end), h: row(b) })),
+      ...items.filter(i => i.time).map(i => ({ s: U.toMin(i.time), e: i.end ? U.toMin(i.end) : U.toMin(i.time) + 30, h: item(i) })),
+    ].map((x, n) => ({ ...x, n })).sort((a, b) => a.s - b.s || a.n - b.n);
+    let fim = null; const partes = [];
+    for (const x of comHora) {
+      if (fim !== null && x.s - fim >= 15) {
+        const temAgora = k === t && nowM >= fim && nowM < x.s;
+        partes.push(`<div class="ag-livre" style="height:${Math.round(Math.max(26, Math.min(90, (x.s - fim) * .6)))}px">${temAgora ? linhaAgora(fim, x.s) : ''}<span>livre · ${U.fmtDur(x.s - fim)}</span></div>`);
+      }
+      partes.push(x.h); fim = Math.max(fim ?? 0, x.e);
+    }
+    const nAtr = semHoraL.filter(i => i.semData === 'atrasada').length;
+    const listaSem = semHoraL.length ? `<div class="ag-semhora"><div class="ag-semhora-h">${U.plural(semHoraL.length, 'item sem horário', 'itens sem horário')}${nAtr ? ` · <span class="c-red">${U.plural(nAtr, 'atrasado', 'atrasados')}</span>` : ''}</div>${semHoraL.map(item).join('')}</div>` : '';
+    const list = [listaSem, ...partes].filter(Boolean);
     const breakOk = (S.settings.breakMode || 'fixo') === 'flexivel' && k >= t && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada');
     const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
       : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`
@@ -84,7 +99,7 @@ Views.agenda = {
       ${late.length && k <= t ? `<div class="alert a-red">${U.icon('alert')} <span>${U.plural(late.length, 'atividade passou', 'atividades passaram')} do horário. Use <strong>Reorganizar</strong> para remanejar.</span></div>` : ''}
       ${nBate && k >= t ? `<div class="alert a-yellow ag-bate">${U.icon('clock')} <span>${U.plural(nBate, 'tarefa com horário bate', 'tarefas com horário batem')} com a rotina. <button class="link" data-act="replanOpen">Reorganizar</button> abre espaço: a rotina desvia do horário da tarefa.</span></div>` : ''}
       <div class="timeline">
-        ${list.length ? list.map(x => x.h).join('') : H.empty(D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia de folga. Nada marcado.', `<small class="muted">Toque em <strong>+</strong> para adicionar.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}</small>`)}
+        ${list.length ? list.join('') : H.vazio(D.isWorkday(k) ? 'Dia livre.' : 'Dia de folga.', D.isWorkday(k) ? 'Nada marcado.' : 'Descanse.', `Toque em <strong>+</strong> para adicionar uma tarefa neste dia.${S.routine.length ? '' : ' Para a agenda se montar sozinha todo dia, cadastre sua rotina em <a class="link" href="#config" data-act="cfgJump" data-id="rotina">Configurações → Rotina padrão</a>.'}`)}
       </div>
     </section>`;
   },
