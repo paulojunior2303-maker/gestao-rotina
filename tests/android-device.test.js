@@ -211,6 +211,10 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   const run = p.locator('.task.andamento', { hasText: 'Conferir estoque' });
   check(await run.count() === 1 && (await run.textContent()).includes('em execução') && (await p.locator('.tk-grp').first().textContent()).includes('Em execução') && await run.evaluate(e => getComputedStyle(e).boxShadow.includes('inset')), 'tarefa em execução fica destacada, no topo da lista');
   check(await run.locator('.tk-ck.and[data-s=concluida]').count() === 1, 'na tarefa em execução o mesmo botão vira ✓ (concluir)');
+  check(await run.locator('.tk-pausa').isVisible(), 'botão "Pausar" à vista na tarefa em execução');
+  await run.locator('.tk-pausa').tap(); await W(300);
+  check((await st()).tasks.find(t => t.title === 'Conferir estoque').status === 'pendente' && (await p.locator('.toast').last().textContent()).includes('Reagendar'), 'um toque em Pausar para a tarefa (e o aviso oferece Reagendar)');
+  await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkSet][data-s=andamento]').tap(); await W(300);
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkMore]').tap(); await W(300);
   check(await p.locator('.sheet-item:has-text("Cancelar")').count() === 0 && await p.locator('.sheet-item:has-text("Pausar ou reagendar")').count() === 1, '⋯ não tem mais Cancelar: tem "Pausar ou reagendar"');
   await tap('.sheet-item:has-text("Pausar ou reagendar")'); await W(300);

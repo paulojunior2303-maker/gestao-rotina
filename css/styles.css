@@ -1365,3 +1365,12 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .rg-linha label { font-size: 13px; color: var(--text-2); flex: 1 1 100%; }
 .rg-linha .cap-in { flex: 1; min-width: 0; }
 .rg-linha .btn { min-height: 40px; }
+/* Pausar à vista na tarefa em execução */
+.tk-pausa { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 13px; margin: -4px 0; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--lilac) 45%, transparent);
+  background: color-mix(in srgb, var(--primary) 22%, transparent); color: var(--lilac); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
+.tk-pausa::after { content: ""; position: absolute; inset: -5px; }
+.tk-pausa:hover { background: color-mix(in srgb, var(--primary) 35%, transparent); color: var(--text); }
+.tk-pausa:active { transform: scale(.96); }
+.calx-it .tk-pausa, .blk-it .tk-pausa { margin-right: 8px; }
+.calx-it .tk-pausa, .blk-it .tk-pausa { width: 38px; height: 38px; min-height: 0; padding: 0; justify-content: center; }
+.calx-it .tk-pausa span, .blk-it .tk-pausa span { display: none; }

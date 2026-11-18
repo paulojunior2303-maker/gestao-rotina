@@ -55,7 +55,7 @@ Views.tarefas = {
           ${meta ? `<div class="tk-meta">${meta}</div>` : ''}
           ${x.description ? `<div class="tk-desc">${U.esc(x.description)}</div>` : ''}
         </div>
-        ${prio}
+        ${x.status === 'andamento' ? Tasks.pausaBtn(x) : prio}
         <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
@@ -140,6 +140,8 @@ const Tasks = {
     const outra = this.emExecucao(x.id);
     return `<button class="tk-ck play ${late ? 'late' : ''} ${outra ? 'bloq' : ''}" data-act="tkSet" data-id="${x.id}" data-s="andamento" title="${outra ? 'Termine ou reagende a tarefa em execução primeiro' : 'Começar'}" aria-label="Começar: ${nome}">${U.icon('play', 11)}</button>`;
   },
+  /* Pausar com um toque (pedido do usuário: fácil de achar). Fica à vista só na tarefa em execução */
+  pausaBtn(x) { return `<button class="tk-pausa" data-act="tkPausar" data-id="${x.id}" title="Pausar" aria-label="Pausar: ${U.esc(x.title)}"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg><span>Pausar</span></button>`; },
   /* Regras: uma tarefa em execução por vez; só conclui o que foi começado */
   pode(x, s) {
     if (s === 'andamento') {
@@ -245,6 +247,11 @@ Object.assign(Actions, {
     const undo = { label: 'Desfazer', onClick: () => { Tasks.setStatus(x, prev); x.completedAt = prevAt; commit(); } };
     if (s === 'concluida') UI.toast(nx ? `Tarefa concluída. A próxima fica para ${U.fmtShort(nx.dueDate)}.` : 'Tarefa concluída.', 'ok', undo);
     else if (s === 'cancelada') UI.toast('Tarefa cancelada.', 'ok', undo);
+  },
+  tkPausar({ id }) {
+    const x = S.tasks.find(y => y.id === id); if (!x || x.status !== 'andamento') return;
+    x.status = 'pendente'; commit();
+    UI.toast('Tarefa pausada. Continua na sua lista.', 'ok', { label: 'Reagendar', onClick: () => Tasks.reagendar(x) });
   },
   tkMore({ id }) {
     const x = S.tasks.find(y => y.id === id); if (!x) return;

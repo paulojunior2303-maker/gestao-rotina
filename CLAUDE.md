@@ -95,7 +95,8 @@ e diga o que mudou e como testar no celular.
   (`.tk-abas`, ainda `.stat-chip`); **botão único** (`Tasks.botao`, pedido do usuário) no lugar do círculo: ▶ começa → na tarefa em execução vira ✓ e conclui → concluída/cancelada reabre.
   Regras em `Tasks.pode` (chamado por `tkSet` e pelos avisos): **só conclui o que foi começado** e **só uma tarefa em execução por vez** (para trocar: concluir ou
   **"Pausar ou reagendar"** no ⋯, `Tasks.reagendar`: só pausar, daqui a 1 h/2 h, fim do expediente, outro horário hoje, amanhã, próximo dia útil, segunda ou outra data;
-  sempre volta para pendente, com "Desfazer"). **Não há mais "Cancelar"** na interface (pedido do usuário: a tarefa nunca some); as canceladas antigas ficam em "Todas" e reabrem pelo botão. Com uma em execução, o ▶ das outras fica apagado (`.bloq`). Calendário e Agenda usam o mesmo
+  sempre volta para pendente, com "Desfazer"). **Pausar à vista** (`Tasks.pausaBtn` → `tkPausar`): botão "⏸ Pausar" na tarefa em execução (na lista do Início e na Agenda só o ícone);
+  um toque pausa e o aviso oferece "Reagendar"). **Não há mais "Cancelar"** na interface (pedido do usuário: a tarefa nunca some); as canceladas antigas ficam em "Todas" e reabrem pelo botão. Com uma em execução, o ▶ das outras fica apagado (`.bloq`). Calendário e Agenda usam o mesmo
   botão (`Cal.check` → `Tasks.botao`). Avisos do Android: `TAREFA` tem "Começar" (`comecar`), `TAREFA_RUN` (em execução) tem "Concluir" (`feito`). O ⋯ (`tkMore`) tem Pausar ou reagendar, Editar e Excluir.
   **Tarefa em execução destacada** (`.task.andamento`, `.calx-it.run`, `.blk-it.run`; `run` em `Cal.itemsOn`): fundo roxo, faixa à esquerda, "em execução" com ponto pulsando (`.run-dot`)
   e grupo próprio no topo ("Em execução agora", `g-execucao`), também na lista do dia do Início e na Agenda. (2) Início com a data grande (`Views.dashboard.diaHero`: `.dh-n` + resumo de

@@ -102,7 +102,7 @@ const Cal = {
   /* Botão de concluir/reabrir tarefa direto no calendário e na agenda */
   check(i) {   // o mesmo botão único da lista de Tarefas: ▶ começa, ✓ conclui (só o que está em execução), reabre o que foi feito
     const x = S.tasks.find(y => y.id === i.id);
-    return x ? Tasks.botao(x, i.late) : '';
+    return x ? (x.status === 'andamento' ? Tasks.pausaBtn(x) : '') + Tasks.botao(x, i.late) : '';
   },
 
   /* Lista do dia escolhido */
