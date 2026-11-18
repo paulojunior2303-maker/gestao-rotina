@@ -1350,3 +1350,18 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 @keyframes andPulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent); } }
 .tk-ck.canc { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .tk-ck.and { animation: none; } }
+/* Pausar ou reagendar (no lugar de Cancelar: a tarefa nunca some) */
+.rg { display: flex; flex-direction: column; gap: 10px; }
+.rg-nome { margin: 0 0 2px; font-weight: 600; font-size: 15px; }
+.rg-l { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 6px; }
+.rg-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.rg-op { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; min-height: 48px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
+.rg-op:hover { border-color: var(--accent); }
+.rg-op:active { transform: scale(.98); }
+.rg-op strong { font-weight: 600; font-size: 14px; }
+.rg-op small { color: var(--muted); font-size: 12.5px; }
+.rg-pausa { background: color-mix(in srgb, var(--primary) 18%, var(--surface-2)); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.rg-linha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rg-linha label { font-size: 13px; color: var(--text-2); flex: 1 1 100%; }
+.rg-linha .cap-in { flex: 1; min-width: 0; }
+.rg-linha .btn { min-height: 40px; }

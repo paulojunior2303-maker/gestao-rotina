@@ -212,7 +212,16 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(await run.count() === 1 && (await run.textContent()).includes('em execução') && (await p.locator('.tk-grp').first().textContent()).includes('Em execução') && await run.evaluate(e => getComputedStyle(e).boxShadow.includes('inset')), 'tarefa em execução fica destacada, no topo da lista');
   check(await run.locator('.tk-ck.and[data-s=concluida]').count() === 1, 'na tarefa em execução o mesmo botão vira ✓ (concluir)');
   await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkMore]').tap(); await W(300);
-  check(await p.locator('.sheet-item:has-text("Cancelar tarefa")').count() === 1 && await p.locator('.sheet-item:has-text("Reagendar")').count() === 1, '⋯ tem Reagendar e Cancelar');
+  check(await p.locator('.sheet-item:has-text("Cancelar")').count() === 0 && await p.locator('.sheet-item:has-text("Pausar ou reagendar")').count() === 1, '⋯ não tem mais Cancelar: tem "Pausar ou reagendar"');
+  await tap('.sheet-item:has-text("Pausar ou reagendar")'); await W(300);
+  check(await p.locator(`${M} .rg-pausa`).count() === 1 && await p.locator(`${M} .rg-op`).count() >= 3, 'opções: só pausar, mais tarde hoje e outro dia');
+  await overflow('14-pausar-reagendar');
+  await tap(`${M} .rg-op:has-text("Amanhã")`); await W(300);
+  s = await st(); const re = s.tasks.find(t => t.title === 'Conferir estoque');
+  check(re.status === 'pendente' && re.dueDate === (await p.evaluate(() => U.addDays(U.today(), 1))), '"Amanhã" pausa e passa a tarefa para amanhã (ela continua na lista)');
+  await tap('.toast .link'); await W(300);
+  check((await st()).tasks.find(t => t.title === 'Conferir estoque').status === 'andamento', '"Desfazer" volta como estava');
+  await p.locator('.task', { hasText: 'Conferir estoque' }).locator('[data-act=tkMore]').tap(); await W(300);
   await p.keyboard.press('Escape'); await W(300);
   await p.fill('[data-input=tkSearch]', 'estoque'); await W(500); check(await p.locator('.task').count() === 1, 'busca');
   await p.fill('[data-input=tkSearch]', ''); await W(500);
