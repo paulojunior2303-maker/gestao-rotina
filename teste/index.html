@@ -1365,6 +1365,21 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 @keyframes andPulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent); } }
 .tk-ck.canc { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .tk-ck.and { animation: none; } }
+/* Pausar ou reagendar (no lugar de Cancelar: a tarefa nunca some) */
+.rg { display: flex; flex-direction: column; gap: 10px; }
+.rg-nome { margin: 0 0 2px; font-weight: 600; font-size: 15px; }
+.rg-l { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 6px; }
+.rg-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.rg-op { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; min-height: 48px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
+.rg-op:hover { border-color: var(--accent); }
+.rg-op:active { transform: scale(.98); }
+.rg-op strong { font-weight: 600; font-size: 14px; }
+.rg-op small { color: var(--muted); font-size: 12.5px; }
+.rg-pausa { background: color-mix(in srgb, var(--primary) 18%, var(--surface-2)); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.rg-linha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rg-linha label { font-size: 13px; color: var(--text-2); flex: 1 1 100%; }
+.rg-linha .cap-in { flex: 1; min-width: 0; }
+.rg-linha .btn { min-height: 40px; }
 
 </style>
 </head>
@@ -5645,24 +5660,49 @@ const Tasks = {
     if (s === 'concluida' && x.status !== 'andamento') { UI.toast('Comece a tarefa antes de concluir: toque no ▶.', 'warn'); return false; }
     return true;
   },
-  /* Reagendar: novo dia/horário; se estava em execução, para (volta para pendente) */
+  /* "Pausar ou reagendar" (pedido do usuário: no lugar de Cancelar, para a tarefa nunca sumir).
+     Um toque resolve: pausar (continua no mesmo dia), mais tarde hoje (+1 h, +2 h ou outro horário) ou outro dia. Sempre com "Desfazer". */
   reagendar(x) {
-    UI.form({
-      title: 'Reagendar tarefa',
-      submitLabel: 'Reagendar',
-      fields: [
-        { type: 'html', html: `<p><strong>${U.esc(x.title)}</strong></p>` },
-        { name: 'dueDate', label: 'Novo dia', type: 'date', value: x.dueDate && x.dueDate >= U.today() ? x.dueDate : U.today(), required: true, half: true },
-        { name: 'dueTime', label: 'Horário (opcional)', type: 'time', value: x.dueTime || '', half: true },
-      ],
-      onSubmit(v) {
-        const antes = { dueDate: x.dueDate, dueTime: x.dueTime, status: x.status };
-        Object.assign(x, { dueDate: v.dueDate, dueTime: v.dueTime || '' });
-        if (x.status === 'andamento') x.status = 'pendente';
-        if (!x.dueTime) x.dur = 0;
-        commit();
-        UI.toast(`Reagendada para ${v.dueDate === U.today() ? 'hoje' : U.fmtShort(v.dueDate)}${v.dueTime ? ' às ' + v.dueTime : ''}.`, 'ok', { label: 'Desfazer', onClick: () => { Object.assign(x, antes); commit(); } });
-      },
+    const t = U.today(), agora = Math.ceil(U.nowMin() / 15) * 15, fimExp = U.toMin(S.settings.workEnd || '18:00');
+    const hm = m => U.fromMin(Math.min(1439, m));
+    const amanha = U.addDays(t, 1), util = D.nextWorkday(t);
+    const seg = (() => { let k = U.addDays(t, 1); while (U.weekday(k) !== 1) k = U.addDays(k, 1); return k; })();
+    const dia = k => k === amanha ? 'Amanhã' : `${U.WD_SHORT[U.weekday(k)]} ${U.fmtShort(k)}`;
+    const op = (rot, sub, d, h) => `<button type="button" class="rg-op" data-d="${d}" data-h="${h || ''}"><strong>${rot}</strong>${sub ? `<small>${sub}</small>` : ''}</button>`;
+    const hoje = [agora + 60, agora + 120].filter(m => m < 1440).map((m, n) => op(n ? 'Daqui a 2 h' : 'Daqui a 1 h', 'às ' + hm(m), t, hm(m)));
+    if (fimExp - 60 > agora + 120) hoje.push(op('No fim do expediente', 'às ' + hm(fimExp - 60), t, hm(fimExp - 60)));
+    const dias = [op(dia(amanha), x.dueTime ? 'às ' + x.dueTime : 'sem horário', amanha, x.dueTime)];
+    if (util !== amanha) dias.push(op('Próximo dia útil', `${dia(util)}${x.dueTime ? ' às ' + x.dueTime : ''}`, util, x.dueTime));
+    if (seg !== amanha && seg !== util) dias.push(op('Segunda-feira', `${U.fmtShort(seg)}${x.dueTime ? ' às ' + x.dueTime : ''}`, seg, x.dueTime));
+    const m = UI.modal({
+      title: x.status === 'andamento' ? 'Pausar ou reagendar' : 'Reagendar',
+      body: `<div class="rg">
+        <p class="rg-nome">${U.esc(x.title)}</p>
+        ${x.status === 'andamento' ? `<button type="button" class="rg-op rg-pausa" data-pausa="1"><strong>Só pausar</strong><small>Para de executar agora e continua ${x.dueDate && x.dueDate !== t ? 'em ' + U.fmtShort(x.dueDate) : 'na lista de hoje'}</small></button>` : ''}
+        ${hoje.length ? `<span class="rg-l">Mais tarde, hoje</span><div class="rg-grade">${hoje.join('')}</div>` : ''}
+        <div class="rg-linha"><label for="rg-hora">Outro horário hoje</label><input type="time" id="rg-hora" class="cap-in"><button type="button" class="btn sm" data-hoje>Ok</button></div>
+        <span class="rg-l">Outro dia</span><div class="rg-grade">${dias.join('')}</div>
+        <div class="rg-linha"><label for="rg-data">Outra data</label><input type="date" id="rg-data" class="cap-in" min="${t}"><input type="time" id="rg-data-h" class="cap-in" value="${x.dueTime || ''}" aria-label="Horário (opcional)"><button type="button" class="btn sm" data-outra>Ok</button></div>
+        <div class="form-error" hidden></div>
+      </div>`,
+      footer: '<span class="grow"></span><button type="button" class="btn ghost" data-cancel>Fechar</button>',
+    });
+    const err = msg => { const e = m.el.querySelector('.form-error'); e.textContent = msg; e.hidden = !msg; };
+    const aplicar = (d, h, pausa) => {
+      const antes = { dueDate: x.dueDate, dueTime: x.dueTime, dur: x.dur, status: x.status };
+      if (x.status === 'andamento') x.status = 'pendente';
+      if (!pausa) { x.dueDate = d; x.dueTime = h || ''; if (!x.dueTime) x.dur = 0; }
+      commit(); m.close();
+      const quando = pausa ? '' : `${d === t ? 'hoje' : d === amanha ? 'amanhã' : U.fmtShort(d)}${h ? ' às ' + h : ''}`;
+      UI.toast(pausa ? 'Tarefa pausada. Continua na sua lista.' : `Reagendada para ${quando}.`, 'ok', { label: 'Desfazer', onClick: () => { Object.assign(x, antes); commit(); } });
+    };
+    m.el.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.hasAttribute('data-cancel')) return m.close();
+      if (b.dataset.pausa) return aplicar(null, null, true);
+      if (b.dataset.d) return aplicar(b.dataset.d, b.dataset.h);
+      if (b.hasAttribute('data-hoje')) { const h = m.el.querySelector('#rg-hora').value; return h ? aplicar(t, h) : err('Escolha o horário.'); }
+      if (b.hasAttribute('data-outra')) { const d = m.el.querySelector('#rg-data').value; return d ? aplicar(d, m.el.querySelector('#rg-data-h').value) : err('Escolha a data.'); }
     });
   },
   setStatus(x, s) {
@@ -5722,8 +5762,7 @@ Object.assign(Actions, {
     const aberta = OPEN(x.status);
     UI.sheet(x.title, [
       { label: 'Editar', icon: 'edit', onClick: () => Tasks.form(x) },
-      ...(aberta ? [{ label: 'Reagendar', hint: x.status === 'andamento' ? 'Para de executar agora e marca outro dia/horário' : 'Muda o dia e o horário', icon: 'calendar', onClick: () => Tasks.reagendar(x) }] : []),
-      ...(aberta ? [{ label: 'Cancelar tarefa', icon: 'x', onClick: () => Actions.tkSet({ id, s: 'cancelada' }) }] : []),
+      ...(aberta ? [{ label: x.status === 'andamento' ? 'Pausar ou reagendar' : 'Reagendar', hint: x.status === 'andamento' ? 'Para agora e continua mais tarde ou em outro dia' : 'Outro horário hoje ou outro dia', icon: 'calendar', onClick: () => Tasks.reagendar(x) }] : []),
       { label: 'Excluir', icon: 'trash', danger: true, onClick: () => Actions.tkDelete({ id }) },
     ]);
   },
