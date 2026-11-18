@@ -1404,6 +1404,22 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .task.pendente .tk-ck.play.bloq { opacity: .55; }
 .task.pendente .tk-title { font-weight: 550; }
 .task-list .tk-grp + .task.pendente, .tk-col .tk-grp + .task.pendente { margin-top: 2px; }
+/* Horários livres (dia e horário obrigatórios na tarefa) */
+.cap-obr { font-style: normal; font-weight: 500; color: var(--muted); font-size: 11px; margin-left: 4px; }
+.cap-livres .cap-chip, .tk-livres .cap-chip { font-variant-numeric: tabular-nums; min-width: 64px; justify-content: center; }
+.cap-chip.sobre i, .cap-ponto { font-style: normal; color: var(--yellow); margin-left: 2px; }
+.cap-nota { margin: -2px 0 0; }
+.tk-livres { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.tk-livres .lbl { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+/* Agenda e Tarefas numa tela só: modos Dia · Lista de tarefas */
+.ag-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.ag-modos a { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 14px; }
+.ag-modos a:hover { color: var(--text); }
+.ag-modos a.on { background: var(--surface-3); color: var(--text); box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset; }
+.ag-modos a.on .ic { color: var(--accent); }
+.ag-modos b { font-weight: 500; color: var(--muted); font-size: 13px; }
+.ag-modos-atr { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font-size: 11px; display: inline-grid; place-items: center; }
+@media (min-width: 901px) { .ag-modos { max-width: 420px; } }
 
 </style>
 </head>
@@ -4095,6 +4111,7 @@ Views.agenda = {
     const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
+    ${Agenda.modos('dia')}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
     <section class="ag-day">
@@ -4122,6 +4139,40 @@ Views.agenda = {
 
 const Agenda = {
   day() { return App.ui.agendaDate || U.today(); },
+  /* Topo da tela única (Tarefas + Agenda): Dia (linha do tempo) · Lista de tarefas (todas, por quando) */
+  modos(ativo) {
+    const abertas = S.tasks.filter(x => OPEN(x.status)).length, atr = S.tasks.filter(D.taskLate).length;
+    return `<nav class="ag-modos" aria-label="Agenda"><a href="#agenda" class="${ativo === 'dia' ? 'on' : ''}" ${ativo === 'dia' ? 'aria-current="page"' : ''}>${U.icon('clock', 16)} Dia</a>
+      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a></nav>`;
+  },
+  /* Horários livres de um dia para encaixar uma tarefa de "dur" minutos (pedido do usuário: toda tarefa entra na agenda).
+     Ocupado de verdade: outras tarefas com horário, compromissos/reuniões, intervalo e atividades com horário fixo.
+     Primeiro vêm os horários sem nada (nem rotina); depois os que caem sobre uma atividade da rotina (que pode ser reorganizada).
+     Devolve [{ h: 'HH:MM', sobre: 'nome da atividade da rotina' | '' }] (até "max"). */
+  livres(k, dur = 30, { ignorar, max = 6 } = {}) {
+    dur = Math.max(5, Number(dur) || 30);
+    const t = U.today(), passo = 15;
+    let ini = U.toMin(S.settings.workStart || '08:00'), fim = U.toMin(S.settings.workEnd || '18:00');
+    if (k === t) ini = Math.max(ini, Math.ceil(U.nowMin() / passo) * passo);
+    const seg = (a, b) => ({ a, b });
+    const duros = [
+      ...S.tasks.filter(x => x.id !== ignorar && OPEN(x.status) && x.dueDate === k && x.dueTime).map(x => seg(U.toMin(x.dueTime), U.toMin(x.dueTime) + (Number(x.dur) || 30))),
+      ...S.events.filter(e => e.date === k && e.time).map(e => seg(U.toMin(e.time), U.toMin(e.time) + 60)),
+      ...D.dayBlocks(k).filter(b => b.status !== 'cancelada' && (b.fixed || D.isBreak(b))).map(b => seg(U.toMin(b.start), U.toMin(b.end))),
+    ];
+    const rotina = D.dayBlocks(k).filter(b => b.status !== 'cancelada' && !b.fixed && !D.isBreak(b) && !D.blockDone(b));
+    const bate = (lista, a, b) => lista.find(x => a < (x.b ?? U.toMin(x.end)) && b > (x.a ?? U.toMin(x.start)));
+    const limpos = [], sobre = [];
+    for (let m = ini; m + dur <= fim; m += passo) {
+      if (bate(duros, m, m + dur)) continue;
+      const r = bate(rotina, m, m + dur);
+      (r ? sobre : limpos).push({ h: U.fromMin(m), sobre: r ? r.title : '' });
+    }
+    // Espalha as sugestões pelo dia (não só as primeiras da manhã)
+    const espalha = (l, n) => l.length <= n ? l : n <= 1 ? l.slice(0, n) : Array.from({ length: n }, (_, i) => l[Math.round(i * (l.length - 1) / (n - 1))]);
+    const out = espalha(limpos, max);
+    return out.length >= max ? out : [...out, ...espalha(sobre, max - out.length)].sort((a, b) => a.h.localeCompare(b.h));
+  },
   blockFields(b = {}, isNew) {
     const fields = [
       { name: 'title', label: 'Atividade', required: true, value: b.title },
@@ -5536,7 +5587,7 @@ Object.assign(Actions, {
 'use strict';
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
-  title: 'Gestão de tarefas', icon: 'tasks', nav: 'Tarefas',
+  title: 'Agenda', icon: 'tasks', nav: 'Tarefas',
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
@@ -5611,6 +5662,7 @@ Views.tarefas = {
       : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
+    ${Agenda.modos('lista')}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
@@ -5640,18 +5692,21 @@ const Tasks = {
     const isNew = !x;
     x = x || { priority: 'media', status: 'pendente', category: 'administrativo', startDate: U.today(), ...defaults };
     const obs = [x.description, x.notes].filter(Boolean).join('\n');
-    UI.form({
+    // Toda tarefa entra na agenda (pedido do usuário): dia e horário obrigatórios, com sugestões de horários livres
+    const dia0 = x.dueDate || U.today();
+    const m = UI.form({
       title: isNew ? 'Nova tarefa' : 'Editar tarefa',
       fields: [
         { name: 'title', label: 'O que precisa fazer?', required: true, value: x.title },
-        { name: 'dueDate', label: 'Dia', type: 'date', value: x.dueDate, half: true },
-        { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, half: true },
-        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS, value: String(x.dur || ''), half: true },
+        { name: 'dueDate', label: 'Dia', type: 'date', value: dia0, required: true, half: true },
+        { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, required: true, half: true },
+        { type: 'html', html: '<div class="tk-livres"></div>' },
+        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS.filter(([v]) => v), value: String(x.dur || 30), half: true },
         { name: 'responsible', label: 'Quem faz?', value: x.responsible, list: D.techNames(), placeholder: 'Você', half: true },
         { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
         { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true },
         { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
-        { type: 'html', html: `<p class="muted small tk-form-dica">Sem dia, a tarefa aparece hoje na Agenda até você concluir.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
+        { type: 'html', html: `<p class="muted small tk-form-dica">Dia e horário são obrigatórios: toda tarefa entra na agenda.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
       ],
       extra: isNew ? [] : [{ label: `${U.icon('trash', 15)} Excluir`, cls: 'ghost danger-text', onClick: (_, m) => { m.close(); Actions.tkDelete({ id: x.id }); } }],
       onSubmit(v) {
@@ -5663,6 +5718,16 @@ const Tasks = {
         commit(); UI.toast(isNew ? 'Tarefa criada.' : 'Tarefa atualizada.');
       },
     });
+    // Horários livres do dia escolhido (atualiza quando muda o dia ou a duração; um toque preenche o horário)
+    const fm = m.el.querySelector('form'), caixa = m.el.querySelector('.tk-livres');
+    const pinta = () => {
+      const d = fm.elements.dueDate.value || U.today(), h = fm.elements.dueTime.value;
+      const l = Agenda.livres(d, fm.elements.dur.value, { ignorar: x.id });
+      caixa.innerHTML = `<span class="lbl">Horários livres</span><div class="cap-chips">${l.length ? l.map(o => `<button type="button" class="cap-chip ${o.h === h ? 'on' : ''} ${o.sobre ? 'sobre' : ''}" data-livre="${o.h}" title="${o.sobre ? 'No horário de: ' + U.esc(o.sobre) : 'Horário livre'}">${o.h}${o.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente.</span>'}</div>`;
+    };
+    pinta();
+    fm.addEventListener('change', e => { if (['dueDate', 'dur', 'dueTime'].includes(e.target.name)) pinta(); });
+    caixa.addEventListener('click', e => { const b = e.target.closest('[data-livre]'); if (b) { fm.elements.dueTime.value = b.dataset.livre; pinta(); } });
   },
   /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
      Assim nada é concluído sem antes ser começado. */
@@ -6094,7 +6159,7 @@ Views.guia = {
     ]))}
     ${sec('calendario', 'calendar', 'Calendário', li([
       'A tela inicial mostra o mês inteiro. Toque num dia para ver as tarefas, gravações, reuniões e compromissos dele. Conclua uma tarefa ali mesmo, no ✓.',
-      'O <strong>+</strong> anota uma <strong>tarefa</strong> no dia que você escolheu: diga ou escolha o horário e quanto tempo leva, se quiser. Tarefa sem data e tarefa atrasada aparecem no dia de hoje até você concluir.',
+      'O <strong>+</strong> anota uma <strong>tarefa</strong>. Dia e horário são obrigatórios: toda tarefa entra na agenda. O app mostra os <strong>horários livres</strong> do dia; um toque escolhe.',
       'Reunião, feedback e relatório do dia ficam em <strong>Gravações</strong>.',
       CANAL_ENXUTO ? 'Esta cópia guarda os dados só neste aparelho, separados do FlowFire.' : 'Entre com a <strong>conta FlowFire</strong> (Configurações → Conta) para guardar os dados na nuvem. O áudio e a transcrição completa ficam no aparelho.',
     ]))}
@@ -6109,7 +6174,7 @@ Views.guia = {
       'No iPhone, os lembretes só aparecem com o app aberto, e o compartilhar áudio do WhatsApp direto para o FlowFire não existe: use <strong>Gravar → Áudio ou texto</strong>.',
     ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
-      'A tela Tarefas é a lista de tudo. As mesmas tarefas aparecem na Agenda e no Calendário, no dia delas.',
+      'Tarefas e Agenda são uma tela só. Na <strong>Agenda</strong>, use <strong>Dia</strong> para ver a linha do tempo e <strong>Lista de tarefas</strong> para ver tudo, agrupado por quando.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
       'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
       'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
@@ -6194,7 +6259,7 @@ const Capture = {
   /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
   open({ type, k } = {}) {
     const t = U.today(); k = k || t;
-    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 0, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
+    const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 30, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
     const nowStart = () => U.fromMin(Math.round(U.nowMin() / 5) * 5);
     const techs = D.techNames();
     const btn = (attr, v, label, on) => `<button type="button" class="cap-chip ${on ? 'on' : ''}" data-${attr}="${v}" aria-pressed="${on}">${label}</button>`;
@@ -6220,12 +6285,17 @@ const Capture = {
       // Tarefa: tudo numa tela só (pedido do usuário), sem "Mais detalhes"
       const tm = U.addDays(t, 1);
       const other = st.due && st.due !== t && st.due !== tm;
-      return `<span class="cap-l">Quando?</span>
+      // Toda tarefa entra na agenda (pedido do usuário): dia e horário obrigatórios, com sugestões de horários livres
+      const livres = Agenda.livres(st.due, st.tdur || 30);
+      return `<span class="cap-l">Quando? <em class="cap-obr">obrigatório</em></span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
-        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label>${btn('due', '', 'Sem data', !st.due)}</div>
-        ${st.due ? `<div class="cap-2"><label><span class="cap-l">Horário</span><input type="time" id="cap-time" class="cap-in" value="${st.time}"></label>
-          <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS, st.tdur || '', !st.time)}</label></div>`
-          : `<p class="muted small cap-nodate">Sem data, ela fica no dia de hoje da Agenda e do Calendário até você concluir.</p>`}
+        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
+        <div class="cap-2"><label><span class="cap-l">Horário <em class="cap-obr">obrigatório</em></span><input type="time" id="cap-time" class="cap-in" value="${st.time}" required></label>
+          <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS.filter(([v]) => v), st.tdur || 30)}</label></div>
+        <span class="cap-l">Horários livres ${st.due === t ? 'hoje' : st.due === tm ? 'amanhã' : 'em ' + U.fmtShort(st.due)}</span>
+        <div class="cap-chips cap-livres">${livres.length ? livres.map(l => `<button type="button" class="cap-chip ${st.time === l.h ? 'on' : ''} ${l.sobre ? 'sobre' : ''}" data-livre="${l.h}" title="${l.sobre ? 'No horário de: ' + U.esc(l.sobre) : 'Horário livre'}">${l.h}${l.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente. Escolha outro dia ou digite um horário.</span>'}</div>
+        ${livres.some(l => l.sobre) ? '<p class="muted small cap-nota"><i class="cap-ponto">•</i> cai sobre uma atividade da rotina: depois é só tocar em Reorganizar na Agenda.</p>' : ''}
+        ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>.</span></p>` : ''}
         ${whoField('Quem faz?')}
         <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
           <label><span class="cap-l">Repetir</span>${sel('cap-rep', 'repeat', Tasks.REPEAT, st.repeat)}</label></div>
@@ -6272,20 +6342,21 @@ const Capture = {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
-      if (b.dataset.due !== undefined) { st.due = b.dataset.due; st.touched.due = true; paint(); return; }
+      if (b.dataset.due !== undefined) { st.due = b.dataset.due || t; st.touched.due = true; paint(); return; }
+      if (b.dataset.livre) { st.time = b.dataset.livre; st.touched.time = true; err(''); paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
     });
     m.el.addEventListener('input', e => {
       const id = e.target.id;
       if (id === 'cap-who') { st.who = e.target.value.trim(); st.touched.who = true; }
-      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; const d = $('#cap-dur'); if (d) d.disabled = !st.time; }
+      if (id === 'cap-time') { st.time = e.target.value; st.touched.time = true; m.el.querySelectorAll('[data-livre]').forEach(c => c.classList.toggle('on', c.dataset.livre === st.time)); }
       if (id === 'cap-obs') st.obs = e.target.value;
     });
     m.el.addEventListener('change', e => {
       const id = e.target.id, v = e.target.value;
       if (id === 'cap-date' && v) { st.due = v; st.touched.due = true; paint(); }
-      if (id === 'cap-dur') { st.tdur = +v || 0; st.touched.tdur = true; }
+      if (id === 'cap-dur') { st.tdur = +v || 30; st.touched.tdur = true; paint(); }
       if (id === 'cap-prio') st.prio = v;
       if (id === 'cap-oprio') st.oprio = v;
       if (id === 'cap-odue') st.odue = v;
@@ -6306,6 +6377,7 @@ const Capture = {
   save(st, ta, k) {
     const d = Capture.read(st, ta);
     if (!d.title) return 'Escreva em poucas palavras o que é.';
+    if (st.type === 'tarefa' && !st.time) return 'Escolha o horário: toque num horário livre ou digite a hora.';
     const t = U.today();
     if (st.type === 'imprevisto') {
       const now = !!st.dur && k === t;
@@ -6479,11 +6551,13 @@ Object.assign(Actions, {
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral (no celular só o que não está na barra de baixo) e barra de baixo com o botão Gravar no meio */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'agenda', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'gravacoes', 'agenda', 'imprevistos']],
   ['Ajustes', ['config', 'guia']],
 ];
-const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'tarefas', 'agenda'];
-const routeVisible = id => NAV_GROUPS.some(([, ids]) => ids.includes(id));
+/* Tarefas e Agenda viraram uma tela só (pedido do usuário): "Agenda", com os modos Dia (#agenda) e Lista de tarefas (#tarefas) */
+const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'agenda', 'imprevistos'];
+const routeVisible = id => id === 'tarefas' || NAV_GROUPS.some(([, ids]) => ids.includes(id));
+const navAtual = r => r === 'tarefas' ? 'agenda' : r;
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
   act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
@@ -6514,12 +6588,12 @@ const App = {
   renderNav() {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
-    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
-    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${this.route === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${this.route === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
+    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'agenda' && late ? `<span class="nav-badge">${late}</span>` : '';
+    document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${navAtual(this.route) === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${navAtual(this.route) === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
     document.getElementById('menu-btn').classList.toggle('has-badge', occOpen + late > 0);
-    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => id === 'REC' ? `<button class="bn-rec ${Gravador.recording() ? 'on' : ''}" data-act="${Gravador.recording() ? 'gvTela' : 'gvRec'}" aria-label="${Gravador.recording() ? 'Abrir a gravação' : 'Gravar reunião ou feedback'}"><span class="bn-rec-c">${U.icon(Gravador.recording() ? 'stop' : 'mic', 24)}</span><span class="bn-rec-t">${Gravador.recording() ? Gravador.fmt(Gravador.elapsed()) : 'Gravar'}</span></button>` : `<a href="#${id}" class="${this.route === id ? 'active' : ''}"${this.route === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
+    document.getElementById('bottom-nav').innerHTML = BOTTOM.map(id => id === 'REC' ? `<button class="bn-rec ${Gravador.recording() ? 'on' : ''}" data-act="${Gravador.recording() ? 'gvTela' : 'gvRec'}" aria-label="${Gravador.recording() ? 'Abrir a gravação' : 'Gravar reunião ou feedback'}"><span class="bn-rec-c">${U.icon(Gravador.recording() ? 'stop' : 'mic', 24)}</span><span class="bn-rec-t">${Gravador.recording() ? Gravador.fmt(Gravador.elapsed()) : 'Gravar'}</span></button>` : `<a href="#${id}" class="${navAtual(this.route) === id ? 'active' : ''}"${navAtual(this.route) === id ? ' aria-current="page"' : ''}><span class="bn-ic">${U.icon(Views[id].icon, 20)}</span><span>${Views[id].bnav || Views[id].nav}</span>${badge(id)}</a>`).join('');
     FAB.render(this.route);
     const sub = document.getElementById('brand-sub'); if (sub) sub.textContent = (S.settings.empresa || '').trim() || 'Calma Pae!';
     document.getElementById('storage-status').innerHTML =
