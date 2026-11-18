@@ -99,7 +99,8 @@ e diga o que mudou e como testar no celular.
   um toque pausa e o aviso oferece "Reagendar"). **Não há mais "Cancelar"** na interface (pedido do usuário: a tarefa nunca some); as canceladas antigas ficam em "Todas" e reabrem pelo botão. Com uma em execução, o ▶ das outras fica apagado (`.bloq`). Calendário e Agenda usam o mesmo
   botão (`Cal.check` → `Tasks.botao`). Avisos do Android: `TAREFA` tem "Começar" (`comecar`), `TAREFA_RUN` (em execução) tem "Concluir" (`feito`). O ⋯ (`tkMore`) tem Pausar ou reagendar, Editar e Excluir.
   **Tarefa em execução destacada** (`.task.andamento`, `.calx-it.run`, `.blk-it.run`; `run` em `Cal.itemsOn`): fundo roxo, faixa à esquerda, "em execução" com ponto pulsando (`.run-dot`)
-  e grupo próprio no topo ("Em execução agora", `g-execucao`), também na lista do dia do Início e na Agenda. (2) Início com a data grande (`Views.dashboard.diaHero`: `.dh-n` + resumo de
+  e grupo próprio no topo ("Em execução agora", `g-execucao`), também na lista do dia do Início e na Agenda. **Tarefa esperando começar** (pedido do usuário): cartão discreto no mesmo estilo
+  (`.task.pendente`: superfície, borda, faixa à esquerda na cor da prioridade via `--fx`/classe `p-<prioridade>`, atrasada com fundo avermelhado, ▶ com fundo roxo-claro). (2) Início com a data grande (`Views.dashboard.diaHero`: `.dh-n` + resumo de
   três números que levam a Tarefas/Agenda); o topo mostra só a saudação. Calendário sem caixinhas. (3) Roxo só onde importa: lista do dia em grafite, `.calx-agora` (atividade da
   rotina em andamento) em destaque, vermelho só no atrasado; `Cal.check` usa o mesmo círculo. (4) Agenda proporcional: `min-height` de 1 px/min (54–220 px), tempo livre
   `.ag-livre`, linha da hora atual `.ag-agora`, itens sem horário no grupo `.ag-semhora`, tarefa com horário tracejada; concluir a rotina também é círculo. (5) Computador:

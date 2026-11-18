@@ -48,7 +48,7 @@ Views.tarefas = {
         x.status === 'andamento' ? '<span class="run-tag"><i class="run-dot"></i>em execução</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
-      return `<div class="task ${x.status} ${dl ? 'dl-row-' + dl.level : ''}">
+      return `<div class="task ${x.status} p-${x.priority || 'media'} ${dl ? 'dl-row-' + dl.level : ''}">
         ${Tasks.botao(x, late)}
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
           <div class="tk-title">${U.esc(x.title)}${H.demo(x)}</div>
