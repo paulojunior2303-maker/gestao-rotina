@@ -1453,6 +1453,9 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .ag-modos { grid-template-columns: 1fr 1fr auto; }
 .ag-modos-oc { width: 46px; border: 0; border-radius: 10px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
 .ag-modos-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }
+/* Botão ⚠ de imprevisto ao lado da busca, na tela Tarefas */
+.tk-oc { flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
+.tk-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }
 
 </style>
 </head>
@@ -4145,7 +4148,6 @@ Views.agenda = {
     const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
-    ${Agenda.modos('dia')}
     ${Occ.painel({ compacto: true })}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
@@ -5662,7 +5664,7 @@ Object.assign(Actions, {
 'use strict';
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
-  title: 'Agenda', icon: 'tasks', nav: 'Tarefas',
+  title: 'Tarefas', icon: 'tasks', nav: 'Tarefas',
   fab: { act: 'tkNew', label: 'Nova tarefa' },
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
@@ -5737,13 +5739,13 @@ Views.tarefas = {
       : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
-    ${Agenda.modos('lista')}
     ${Occ.painel({ compacto: true })}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
     <div class="tk-busca">
-      <input type="search" placeholder="Buscar tarefa ou responsável…" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      <input type="search" placeholder="Buscar tarefa ou pessoa" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
+      <button class="tk-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button>
       <button class="btn ghost tk-fbtn ${App.ui.taskFOpen ? 'on' : ''}" data-act="tkFiltros" aria-expanded="${App.ui.taskFOpen || nFiltros ? 'true' : 'false'}">${U.icon('filter', 16)} Filtros${nFiltros ? ` <b class="tk-fn">${nFiltros}</b>` : ''}</button>
     </div>
     <div class="filters card tk-filtros ${App.ui.taskFOpen || nFiltros ? 'aberto' : ''}">
@@ -6243,7 +6245,7 @@ Views.guia = {
     ]))}
     ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
       'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário: sua rotina e as tarefas, tudo junto.',
-      'Para registrar um imprevisto, toque no <strong>⚠</strong> vermelho da Agenda (ou em <strong>Registrar imprevisto</strong> no Início) e escreva em poucas palavras. Imprevisto não tem prazo.',
+      'Para registrar um imprevisto, toque no <strong>⚠</strong> vermelho em Tarefas (ou em <strong>Registrar imprevisto</strong> no Início) e escreva em poucas palavras. Imprevisto não tem prazo.',
       'Imprevisto aberto fica num quadro vermelho no topo do Início e da Agenda. <strong>Começar</strong> põe na agenda agora, empurra o resto do dia e pausa a tarefa que estava em execução. Enquanto ele não for <strong>Resolvido</strong>, nenhuma tarefa começa.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
@@ -6253,7 +6255,7 @@ Views.guia = {
       'No iPhone, os lembretes só aparecem com o app aberto, e o compartilhar áudio do WhatsApp direto para o FlowFire não existe: use <strong>Gravar → Áudio ou texto</strong>.',
     ]))}
     ${sec('tarefas', 'tasks', 'Tarefas', li([
-      'Tarefas e Agenda são uma tela só. Na <strong>Agenda</strong>, use <strong>Dia</strong> para ver a linha do tempo e <strong>Lista de tarefas</strong> para ver tudo, agrupado por quando.',
+      'Em <strong>Tarefas</strong> fica a lista de tudo, agrupada por quando. A linha do tempo do dia abre pelo <strong>Calendário</strong>, em <strong>Agenda do dia</strong>.',
       'Use ▶ para começar, ✓ para concluir e ✕ para cancelar. O ⋯ edita ou exclui.',
       'Os botões de cima filtram Abertas, Atrasadas e Concluídas. Em <strong>Filtros</strong> você escolhe categoria, prioridade e prazo.',
       'Uma tarefa que se repete (todo dia, toda semana, todo mês) cria a próxima quando você conclui.',
@@ -6630,13 +6632,14 @@ Object.assign(Actions, {
 /* Inicialização, navegação e delegação de eventos */
 /* Menu lateral (no celular só o que não está na barra de baixo) e barra de baixo com o botão Gravar no meio */
 const NAV_GROUPS = [
-  ['Dia a dia', ['dashboard', 'gravacoes', 'agenda', 'imprevistos']],
+  ['Dia a dia', ['dashboard', 'gravacoes', 'tarefas', 'imprevistos']],
   ['Ajustes', ['config', 'guia']],
 ];
-/* Tarefas e Agenda viraram uma tela só (pedido do usuário): "Agenda", com os modos Dia (#agenda) e Lista de tarefas (#tarefas) */
-const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'agenda', 'imprevistos'];
-const routeVisible = id => id === 'tarefas' || NAV_GROUPS.some(([, ids]) => ids.includes(id));
-const navAtual = r => r === 'tarefas' ? 'agenda' : r;
+/* Barra de baixo (pedido do usuário): Calendário, Gravações, Gravar, Tarefas e Imprevistos.
+   A agenda do dia (#agenda, linha do tempo) não tem botão: abre pelo Calendário ("Agenda do dia"), que já é a agenda inteira. */
+const BOTTOM = ['dashboard', 'gravacoes', 'REC', 'tarefas', 'imprevistos'];
+const routeVisible = id => id === 'agenda' || NAV_GROUPS.some(([, ids]) => ids.includes(id));
+const navAtual = r => r === 'agenda' ? 'dashboard' : r;
 /* Botão flutuante "+": o que ele cria depende da tela */
 const FAB = {
   act(route) { const v = Views[route]; return v && v.fab ? (typeof v.fab === 'function' ? v.fab() : v.fab) : null; },
@@ -6667,7 +6670,7 @@ const App = {
   renderNav() {
     const occOpen = S.occurrences.filter(o => OPEN(o.status)).length;
     const late = S.tasks.filter(D.taskLate).length;
-    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'agenda' && late ? `<span class="nav-badge">${late}</span>` : '';
+    const badge = id => id === 'imprevistos' && occOpen ? `<span class="nav-badge">${occOpen}</span>` : id === 'tarefas' && late ? `<span class="nav-badge">${late}</span>` : '';
     document.getElementById('nav').innerHTML = NAV_GROUPS.map(([g, ids]) => [g, ids.filter(routeVisible)]).filter(([, ids]) => ids.length).map(([g, ids]) => `<div class="nav-group"><span class="nav-g">${g}</span>${ids.map(id => `<a href="#${id}" class="${navAtual(this.route) === id ? 'active' : ''} ${BOTTOM.includes(id) ? 'in-bottom' : ''}"${navAtual(this.route) === id ? ' aria-current="page"' : ''}>${U.icon(Views[id].icon)}<span>${Views[id].nav}</span>${badge(id)}</a>`).join('')}</div>`).join('');
     const dv = typeof Drive !== 'undefined' && Drive.connected() ? Drive.state : '';
     const fv = typeof Fire !== 'undefined' && Fire.wanted() ? Fire.state : '';
