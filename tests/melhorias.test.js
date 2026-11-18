@@ -45,6 +45,26 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await p.evaluate(() => { const r = Replan.apply(U.today(), Replan.plan(U.today())); commit(); App.render(); });
   await W(300);
   check(await p.locator('.ag-bate').count() === 0, 'depois de reorganizar, o aviso some');
+  // Imprevistos em destaque (vêm antes de tudo)
+  await p.evaluate(() => { S.occurrences = []; S.tasks.forEach(t => { if (t.status === 'andamento') t.status = 'pendente'; });
+    S.tasks.push({ id: 'trun', title: 'Tarefa rodando', status: 'andamento', priority: 'media', category: 'administrativo', dueDate: U.today(), dueTime: '08:00', createdAt: '' }); commit(); location.hash = '#agenda'; });
+  await W(400);
+  check(await p.locator('.oc-card').count() === 0 && await p.locator('.ag-modos-oc').count() === 1, 'sem imprevisto: só o botão ⚠ na barra da Agenda');
+  await p.tap('.ag-modos-oc'); await W(300);
+  check(await p.locator(`${M} [data-type=imprevisto].active`).count() === 1 && await p.locator(`${M} #cap-odue`).count() === 0, '⚠ abre o registro de imprevisto, sem prazo');
+  await p.locator(`${M} #cap-t`).fill('Câmera do portão caiu'); await p.tap(`${M} [data-save]`); await W(400);
+  check(await p.locator('.oc-card', { hasText: 'Câmera do portão caiu' }).count() === 1, 'imprevisto registrado aparece em destaque no topo da Agenda');
+  await p.evaluate(() => { location.hash = '#tarefas'; }); await W(300);
+  check(await p.locator('.oc-card', { hasText: 'Câmera do portão caiu' }).count() === 1, '…e no topo da Lista de tarefas');
+  await p.evaluate(() => { location.hash = '#dashboard'; }); await W(300);
+  check(await p.locator('.oc-card', { hasText: 'Câmera do portão caiu' }).count() === 1 && await p.locator('.calx-d.today.has-occ').count() === 1, '…e no Início, com o dia de hoje marcado no calendário');
+  await p.tap('.oc-card [data-act=occComecar]'); await W(400);
+  let s9 = await p.evaluate(() => ({ o: S.occurrences.find(o => o.title === 'Câmera do portão caiu'), t: S.tasks.find(t => t.id === 'trun'), d: D.dayBlocks(U.today()) }));
+  check(s9.o.status === 'andamento' && s9.o.scheduled && s9.d.some(b => b.occurrenceId === s9.o.id) && s9.t.status === 'pendente', '"Começar": entra na agenda agora e pausa a tarefa que estava em execução');
+  await p.evaluate(() => Actions.tkSet({ id: 'trun', s: 'andamento' })); await W(200);
+  check((await p.evaluate(() => S.tasks.find(t => t.id === 'trun').status)) === 'pendente', 'enquanto o imprevisto está em andamento, nenhuma tarefa começa');
+  await p.tap('.oc-card.run [data-s=concluida]'); await W(400);
+  check(await p.locator('.oc-card').count() === 0 && (await p.evaluate(() => S.occurrences[0].status)) === 'concluida', '"Resolvido" tira o imprevisto do destaque');
   check(!errs.length, 'sem erros' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();
 })().catch(e => { console.error(e.message); process.exit(1); });

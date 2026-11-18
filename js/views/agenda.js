@@ -35,7 +35,7 @@ Views.agenda = {
         conflicts.has(b.id) || blocosBatendo.has(b.id) ? '<span class="badge b-yellow">Conflito</span>' : '',
         b.status === 'andamento' && !isNow ? H.status('andamento') : '',
       ].join('');
-      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''}" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}">${isNow ? linhaAgora(U.toMin(b.start), U.toMin(b.end)) : ''}
+      return `<div class="blk st-${b.status} ${isLate ? 'late' : ''} ${isNow ? 'now' : ''} ${b.occurrenceId && OPEN(b.status) ? 'blk-occ' : ''}" style="--c:${c.color};${alto(U.toMin(b.start), U.toMin(b.end))}">${isNow ? linhaAgora(U.toMin(b.start), U.toMin(b.end)) : ''}
         <div class="blk-time"><strong>${b.start}</strong><span>${b.end}</span></div>
         <div class="blk-body" data-act="agEdit" data-id="${b.id}">
           <div class="blk-head"><span class="blk-title">${U.esc(b.title)}</span>${badges}</div>
@@ -81,6 +81,7 @@ Views.agenda = {
 
     return `
     ${Agenda.modos('dia')}
+    ${Occ.painel({ compacto: true })}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
     <section class="ag-day">
@@ -112,7 +113,8 @@ const Agenda = {
   modos(ativo) {
     const abertas = S.tasks.filter(x => OPEN(x.status)).length, atr = S.tasks.filter(D.taskLate).length;
     return `<nav class="ag-modos" aria-label="Agenda"><a href="#agenda" class="${ativo === 'dia' ? 'on' : ''}" ${ativo === 'dia' ? 'aria-current="page"' : ''}>${U.icon('clock', 16)} Dia</a>
-      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a></nav>`;
+      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a>
+      <button class="ag-modos-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button></nav>`;
   },
   /* Horários livres de um dia para encaixar uma tarefa de "dur" minutos (pedido do usuário: toda tarefa entra na agenda).
      Ocupado de verdade: outras tarefas com horário, compromissos/reuniões, intervalo e atividades com horário fixo.

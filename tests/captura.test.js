@@ -94,14 +94,14 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check((await p.textContent('.occ-today')).includes('2 imprevistos') && (await p.textContent('.occ-today')).includes('1h tomados da agenda'), 'resumo de hoje: quantos imprevistos e quanto tempo tomaram');
   // Tudo numa tela só, sem "Mais detalhes"
   await p.tap('#fab'); await W();
-  check(await p.locator(`${M} [data-more]`).count() === 0 && await p.locator(`${M} #cap-oprio`).isVisible() && await p.locator(`${M} #cap-odue`).isVisible() && await p.locator(`${M} #cap-obs`).isVisible(), 'imprevisto: prioridade, prazo e observação já à vista, sem "Mais detalhes"');
+  check(await p.locator(`${M} [data-more]`).count() === 0 && await p.locator(`${M} #cap-oprio`).isVisible() && await p.locator(`${M} #cap-odue`).count() === 0 && await p.locator(`${M} #cap-obs`).isVisible(), 'imprevisto: prioridade e observação (sem prazo: imprevisto não tem prazo) e observação já à vista, sem "Mais detalhes"');
   await p.locator(`${M} #cap-t`).fill('Falta de energia no cliente Z');
-  await p.selectOption(`${M} #cap-oprio`, 'alta'); await p.fill(`${M} #cap-odue`, '2026-11-13'); await p.locator(`${M} #cap-obs`).fill('Aguardando a concessionária');
+  await p.selectOption(`${M} #cap-oprio`, 'alta'); await p.locator(`${M} #cap-obs`).fill('Aguardando a concessionária');
   await p.tap(`${M} [data-save]`); await W();
   const oz = (await st()).occurrences.find(x => x.title === 'Falta de energia no cliente Z');
-  check(oz && oz.priority === 'alta' && oz.dueDate === '2026-11-13' && oz.description === 'Aguardando a concessionária', 'imprevisto gravado com prioridade, prazo e observação');
+  check(oz && oz.priority === 'alta' && !oz.dueDate && oz.description === 'Aguardando a concessionária', 'imprevisto gravado com prioridade, prazo e observação');
   await p.locator('.occ', { hasText: 'Falta de energia' }).locator('[data-act=occEdit]').tap(); await W(400);
-  check(await p.locator(`${M} [data-more-tg]`).count() === 0 && await p.locator(`${M} [name=status]`).count() === 0 && await p.locator(`${M} [name=dueDate]`).isVisible() && await p.inputValue(`${M} [name=description]`) === 'Aguardando a concessionária', 'Editar imprevisto: tudo à vista, sem "Mais opções"');
+  check(await p.locator(`${M} [data-more-tg]`).count() === 0 && await p.locator(`${M} [name=status]`).count() === 0 && await p.locator(`${M} [name=dueDate]`).count() === 0 && await p.inputValue(`${M} [name=description]`) === 'Aguardando a concessionária', 'Editar imprevisto: tudo à vista, sem "Mais opções"');
   await p.tap(`${M} [data-cancel]`); await W();
 
   // ---- Tarefa com data do texto
@@ -152,6 +152,12 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(agTxt.includes('Organizar o almoxarifado') && agTxt.includes('Sem') && agTxt.includes('Relatório atrasado') && agTxt.includes('Era10/11'), 'Agenda de hoje mostra a tarefa sem data e a atrasada');
   check((await p.textContent('.ag-head')).includes('tarefas a fazer'), 'resumo do dia conta as tarefas a fazer');
   await p.screenshot({ path: OUT + '/captura-agenda-tarefas.png', fullPage: true });
+  // Imprevisto em andamento vem antes de tudo: com ele aberto, a tarefa não começa
+  const ocRun = await p.evaluate(() => (S.occurrences.find(o => o.status === 'andamento') || {}).title || '');
+  check(ocRun && await p.locator('.oc-card.run').count() === 1, 'imprevisto em andamento aparece em destaque no topo da Agenda');
+  await p.tap('.blk-it:has-text("Relatório atrasado") [data-act=tkSet]'); await W();
+  check((await st()).tasks.find(x => x.id === 'atr1').status === 'pendente' && (await p.locator('.toast').last().textContent()).includes('Resolva primeiro o imprevisto'), 'com imprevisto em andamento, a tarefa não começa');
+  await p.tap('.oc-card.run [data-s=concluida]'); await W();
   await p.tap('.blk-it:has-text("Relatório atrasado") [data-act=tkSet]'); await W();
   check((await st()).tasks.find(x => x.id === 'atr1').status === 'andamento' && await p.locator('.blk-it.run:has-text("Relatório atrasado")').count() === 1, '▶ na Agenda começa a tarefa e ela fica destacada');
   await p.tap('.blk-it:has-text("Relatório atrasado") [data-act=tkSet][data-s=concluida]'); await W();

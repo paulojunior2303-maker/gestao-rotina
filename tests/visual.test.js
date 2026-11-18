@@ -54,8 +54,8 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
 
   console.log('\n[3] Tarefas abre com a lista, filtros num botão');
   check(!(await p.locator('select[data-k=priority]').isVisible()) && await p.locator('[data-act=tkFiltros]').isVisible(), 'filtros escondidos; botão "Filtros" visível');
-  const y1 = await p.locator('.task').first().evaluate(e => e.getBoundingClientRect().top);
-  check(y1 < 420, `a primeira tarefa aparece logo (y=${Math.round(y1)})`);
+  const y1 = await p.locator('.oc-card, .task').first().evaluate(e => e.getBoundingClientRect().top);   // imprevisto aberto vem antes de tudo
+  check(y1 < 420, `o primeiro item (imprevisto ou tarefa) aparece logo (y=${Math.round(y1)})`);
   check(await p.evaluate(() => document.querySelector('.stat-chips').scrollHeight <= 60), 'situações numa linha só (rola para o lado)');
   await p.locator('[data-act=tkFiltros]').tap(); await W();
   check(await p.locator('select[data-k=priority]').isVisible(), '"Filtros" abre os filtros');

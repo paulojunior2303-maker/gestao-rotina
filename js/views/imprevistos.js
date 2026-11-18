@@ -50,6 +50,45 @@ Views.imprevistos = {
 };
 
 const Occ = {
+  /* Quadro de imprevistos em destaque (pedido do usuário: imprevisto vem antes de tudo).
+     Fica no topo do Início, da Agenda e da Lista de tarefas, com o botão de registrar sempre à vista. */
+  emAndamento(exceto) { return S.occurrences.find(o => o.status === 'andamento' && o.id !== exceto); },
+  painel({ compacto = false } = {}) {
+    const abertos = S.occurrences.filter(o => OPEN(o.status)).sort((a, b) => (b.status === 'andamento') - (a.status === 'andamento') || (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+    const novo = (curto) => `<button class="oc-novo" data-act="capture" data-type="imprevisto">${U.icon('plus', 15)} ${curto ? 'Imprevisto' : 'Registrar imprevisto'}</button>`;
+    if (!abertos.length) return compacto ? '' : `<div class="oc-painel vazio-oc">${novo(false)}</div>`;
+    const ha = iso => { const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
+    const card = o => {
+      const run = o.status === 'andamento';
+      const sch = o.scheduled && o.scheduled.date ? (S.days[o.scheduled.date] || []).find(b => b.id === o.scheduled.blockId) : null;
+      return `<div class="oc-card ${run ? 'run' : ''}">
+        <div class="oc-info" data-act="occEdit" data-id="${o.id}">
+          <span class="oc-tag">${run ? '<i class="run-dot"></i>resolvendo agora' : 'imprevisto'}</span>
+          <strong>${U.esc(o.title)}${H.demo(o)}</strong>
+          <small>${o.createdAt ? 'registrado ' + ha(o.createdAt) : U.fmtShort(o.date) + (o.time ? ' ' + o.time : '')}${o.responsible ? ' · ' + U.esc(o.responsible) : ''}${sch ? ` · na agenda ${sch.start}–${sch.end}` : ''}</small>
+        </div>
+        <div class="oc-acoes">${run
+          ? `<button class="oc-btn ghost" data-act="occStatus" data-id="${o.id}" data-s="pendente" aria-label="Pausar"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg></button><button class="oc-btn ok" data-act="occStatus" data-id="${o.id}" data-s="concluida">${U.icon('check', 16)} Resolvido</button>`
+          : `<button class="oc-btn go" data-act="occComecar" data-id="${o.id}">${U.icon('play', 14)} Começar</button>`}</div>
+      </div>`;
+    };
+    return `<section class="oc-painel"><div class="oc-h"><span>${U.icon('alert', 15)} ${U.plural(abertos.length, 'imprevisto aberto', 'imprevistos abertos')}</span>${novo(true)}</div>${abertos.map(card).join('')}</section>`;
+  },
+  /* Começar um imprevisto: vai para a agenda AGORA (30 min, empurrando o resto) e pausa o que estava em execução */
+  comecar(o, dur = 30) {
+    const t = U.today(), avisos = [];
+    const tk = typeof Tasks !== 'undefined' && Tasks.emExecucao();
+    if (tk) { tk.status = 'pendente'; avisos.push(`“${tk.title}” foi pausada`); }
+    const outro = this.emAndamento(o.id);
+    if (outro) { outro.status = 'pendente'; Occ.syncBlock(outro); }
+    if (!(o.scheduled && o.scheduled.date === t)) {
+      const r = Capture.encaixarAgora(o, dur);
+      o.status = 'andamento';
+      avisos.push(`entrou na agenda agora (${r.start}–${r.end})`);
+    } else { o.status = 'andamento'; const b = D.findBlock(t, o.scheduled.blockId); if (b) b.status = 'andamento'; }
+    commit();
+    UI.toast(`Imprevisto em andamento: ${avisos.join(' e ')}.`, 'ok');
+  },
   form(o, { scheduleAfter = false, defaults = {} } = {}) {
     const isNew = !o;
     o = o || { priority: 'urgente', status: 'pendente', date: U.today(), time: U.nowTime(), ...defaults };
@@ -61,8 +100,6 @@ const Occ = {
       { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: o.priority, half: true },
       { name: 'date', label: 'Aconteceu em', type: 'date', required: true, value: o.date, half: true },
       { name: 'time', label: 'Horário', type: 'time', value: o.time, half: true },
-      { name: 'dueDate', label: 'Prazo para resolver', type: 'date', value: o.dueDate, half: true },
-      { name: 'dueTime', label: 'Até que horas', type: 'time', value: o.dueTime, half: true },
       { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
       { type: 'html', html: '<span class="tk-form-dica" hidden></span>' },
     ];
@@ -97,9 +134,11 @@ Object.assign(Actions, {
   occFilter({ v }) { App.ui.occFilter = v; App.render(); },
   occNew() { Occ.form(null); },
   occEdit({ id }) { Occ.form(S.occurrences.find(o => o.id === id)); },
+  occComecar({ id }) { const o = S.occurrences.find(x => x.id === id); if (o) Occ.comecar(o); },
   occSchedule({ id }) { Agenda.scheduleDialog(S.occurrences.find(o => o.id === id)); },
   occStatus({ id, s }) {
     const o = S.occurrences.find(x => x.id === id); if (!o) return;
+    if (s === 'andamento') return Occ.comecar(o);
     o.status = s; if (s === 'concluida') o.resolvedAt = new Date().toISOString();
     let gap = 0;
     const t = U.today(), b = s === 'concluida' && o.scheduled && o.scheduled.date === t ? D.findBlock(t, o.scheduled.blockId) : null;

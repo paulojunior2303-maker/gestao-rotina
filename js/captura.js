@@ -80,8 +80,7 @@ const Capture = {
       if (st.type === 'imprevisto') {
         // Imprevisto: tudo numa tela só também (pedido do usuário), sem "Mais detalhes"
         const resto = `${whoField('Quem resolve?')}
-          <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-oprio', 'priority', H.prioOptions(), st.oprio)}</label>
-            <label><span class="cap-l">Prazo para resolver</span><input type="date" id="cap-odue" class="cap-in" value="${st.odue}"></label></div>
+          <label><span class="cap-l">Prioridade</span>${sel('cap-oprio', 'priority', H.prioOptions(), st.oprio)}</label>
           ${obsField}`;
         if (k !== t) return `<p class="muted small">O imprevisto fica registrado com a data de hoje. Para reservar um horário em ${U.fmtShort(k)}, use <strong>Encaixar na agenda</strong> na tela de Imprevistos.</p>${resto}`;
         const cur = Capture.current();
@@ -190,9 +189,10 @@ const Capture = {
     const t = U.today();
     if (st.type === 'imprevisto') {
       const now = !!st.dur && k === t;
-      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: (st.obs || '').trim(), priority: st.oprio || 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: st.odue || '', dueTime: '', responsible: d.who, notes: '' };
+      const o = { id: U.uid(), createdAt: new Date().toISOString(), scheduled: null, title: d.title, description: (st.obs || '').trim(), priority: st.oprio || 'urgente', status: now ? 'andamento' : 'pendente', date: t, time: U.nowTime(), dueDate: '', dueTime: '', responsible: d.who, notes: '' };
       S.occurrences.push(o);
       if (!now) { commit(); UI.toast('Imprevisto registrado.', 'ok', { label: 'Encaixar na agenda', onClick: () => Agenda.scheduleDialog(o) }); return; }
+      const tk = Tasks.emExecucao(); if (tk) tk.status = 'pendente';   // imprevisto vem antes de tudo: pausa a tarefa em execução
       const r = Capture.encaixarAgora(o, st.dur);
       commit();
       const over = D.overflowCount(t);

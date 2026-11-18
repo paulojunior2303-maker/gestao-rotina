@@ -1405,3 +1405,36 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .ag-modos b { font-weight: 500; color: var(--muted); font-size: 13px; }
 .ag-modos-atr { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font-size: 11px; display: inline-grid; place-items: center; }
 @media (min-width: 901px) { .ag-modos { max-width: 420px; } }
+/* Imprevistos em destaque (pedido do usuário: vêm antes de tudo) — quadro vermelho no topo do Início, da Agenda e da Lista de tarefas */
+.oc-painel { display: flex; flex-direction: column; gap: 8px; }
+.oc-painel.vazio-oc { align-items: flex-end; }
+.oc-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--red-text); }
+.oc-h > span { display: inline-flex; align-items: center; gap: 6px; }
+.oc-novo { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--red) 55%, transparent);
+  background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red-text); font: inherit; font-size: 13px; font-weight: 650; letter-spacing: 0; text-transform: none; cursor: pointer; }
+.oc-novo:hover { background: color-mix(in srgb, var(--red) 22%, transparent); }
+.oc-card { display: flex; align-items: center; gap: 12px; padding: 16px 14px 16px 18px; border-radius: 16px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--red) 26%, var(--surface)), color-mix(in srgb, var(--red) 9%, var(--surface)) 80%);
+  border: 1px solid color-mix(in srgb, var(--red) 45%, transparent); box-shadow: inset 4px 0 0 var(--red); }
+.oc-card.run { box-shadow: inset 4px 0 0 var(--red), 0 0 0 3px color-mix(in srgb, var(--red) 22%, transparent); animation: ocPulse 2.2s ease-in-out infinite; }
+@keyframes ocPulse { 50% { box-shadow: inset 4px 0 0 var(--red), 0 0 0 6px color-mix(in srgb, var(--red) 8%, transparent); } }
+.oc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; cursor: pointer; }
+.oc-info strong { font-size: 16.5px; font-weight: 650; line-height: 1.3; }
+.oc-info small { color: var(--text-2); font-size: 12.5px; opacity: .85; }
+.oc-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--red-text); display: inline-flex; align-items: center; }
+.oc-tag .run-dot { background: var(--red); }
+.oc-acoes { display: flex; gap: 6px; flex: none; }
+.oc-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 14px; border-radius: 12px; border: 0; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.oc-btn.go { background: var(--red); color: #fff; }
+.oc-btn.ok { background: var(--green); color: #08130e; }
+.oc-btn.ghost { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); padding: 0 12px; }
+.oc-btn:active { transform: scale(.96); }
+.dia-hero + .oc-painel, .ag-modos + .oc-painel { margin-top: -4px; }
+/* Bloco do imprevisto na linha do tempo e o dia de hoje no calendário */
+.blk.blk-occ { background: color-mix(in srgb, var(--red) 16%, var(--surface)) !important; box-shadow: inset 4px 0 0 var(--red) !important; }
+.blk.blk-occ .blk-title { font-weight: 700; }
+.calx-d.has-occ .calx-n { box-shadow: 0 0 0 2px var(--red); }
+@media (prefers-reduced-motion: reduce) { .oc-card.run { animation: none; } }
+.ag-modos { grid-template-columns: 1fr 1fr auto; }
+.ag-modos-oc { width: 46px; border: 0; border-radius: 10px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
+.ag-modos-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }

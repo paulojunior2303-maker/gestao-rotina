@@ -77,6 +77,7 @@ Views.tarefas = {
 
     return `
     ${Agenda.modos('lista')}
+    ${Occ.painel({ compacto: true })}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
@@ -159,6 +160,8 @@ const Tasks = {
   /* Regras: uma tarefa em execução por vez; só conclui o que foi começado */
   pode(x, s) {
     if (s === 'andamento') {
+      const oc = Occ.emAndamento();   // imprevisto vem antes de tudo
+      if (oc) { UI.toast(`Resolva primeiro o imprevisto “${oc.title}”.`, 'warn', { label: 'Ver', onClick: () => App.go('agenda') }); return false; }
       const outra = this.emExecucao(x.id);
       if (outra) { UI.toast(`Uma tarefa por vez: conclua ou reagende “${outra.title}” antes de começar outra.`, 'warn', { label: 'Ver', onClick: () => Actions.goTasks({ status: 'andamento' }) }); return false; }
     }

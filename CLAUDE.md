@@ -134,6 +134,11 @@ e diga o que mudou e como testar no celular.
 - `Store.migrateV2` (marca `meta.v2`) limpou o modelo antigo do planejamento, trocou a paleta e passou o tema para escuro uma única vez. Não remover.
 - **Lembretes ligados por padrão** (pedido do usuário; `meta.v6` liga uma vez para quem já usava; instalação nova já nasce com `v6`): no Android, `initNative` pede a permissão
   uma vez (`localStorage['ff-lem-pedido']`); no navegador, cartão "Quer ser avisado no horário?" no Calendário (`Reminders.webCard`, "Agora não" → `ff-lem-web`).
+- **Imprevistos em destaque (pedido do usuário: vêm antes de tudo)**: `Occ.painel()` = quadro vermelho no topo do Início, da Agenda (Dia) e da Lista de tarefas
+  (`.oc-card`; na Agenda/Lista só aparece com imprevisto aberto — `compacto` —, e o botão ⚠ `.ag-modos-oc` fica na barra Dia | Lista). **Sem prazo** no registro (`Capture` e `Occ.form`).
+  **Começar** (`Occ.comecar` / `occComecar`, também `occStatus` com `andamento`): encaixa na agenda agora (30 min, `Capture.encaixarAgora`, empurra o resto), põe em andamento e
+  **pausa a tarefa em execução**; só um imprevisto em andamento. Enquanto houver imprevisto em andamento, **nenhuma tarefa começa** (`Tasks.pode`). Bloco do imprevisto na linha do tempo
+  em vermelho (`.blk-occ`) e o dia de hoje com anel vermelho no calendário (`.has-occ`). Testes em `tests/melhorias.test.js`.
 - **Marcar reunião/compromisso/feedback sem gravar**: botão em Gravações (`gvMarcar` → `Events.form` / `FB.form`).
 - **Gravação com tela bloqueada (Android)**: `GravacaoService.java` (serviço em primeiro plano tipo microfone + wake lock parcial, aviso fixo "FlowFire está gravando"),
   ligado por `Sistema.gravando({ ligada })` a partir de `Recorder.keepScreen` (vale para o `Gravador` e o `Recorder`). Só liga com a permissão do microfone já dada.

@@ -55,7 +55,8 @@ Views.guia = {
     ]))}
     ${sec('agenda', 'clock', 'Agenda e imprevistos', li([
       'A Agenda mostra a semana em cima e, embaixo, o dia escolhido por horário: sua rotina e as tarefas, tudo junto.',
-      'Para registrar um imprevisto, toque no <strong>+</strong>, escreva em poucas palavras e diga quanto tempo vai levar. O app encaixa o imprevisto agora e empurra o resto do dia. Se errar, toque em <strong>Desfazer</strong>.',
+      'Para registrar um imprevisto, toque no <strong>⚠</strong> vermelho da Agenda (ou em <strong>Registrar imprevisto</strong> no Início) e escreva em poucas palavras. Imprevisto não tem prazo.',
+      'Imprevisto aberto fica num quadro vermelho no topo do Início e da Agenda. <strong>Começar</strong> põe na agenda agora, empurra o resto do dia e pausa a tarefa que estava em execução. Enquanto ele não for <strong>Resolvido</strong>, nenhuma tarefa começa.',
       'Se o dia atrasou, toque em <strong>Reorganizar</strong>: o app mostra como fica antes de mudar.',
     ]))}
     ${sec('iphone', 'info', 'No iPhone', li([

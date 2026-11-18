@@ -34,6 +34,7 @@ Views.dashboard = {
     return `
     ${Updater.banner()}
     ${Views.dashboard.diaHero()}
+    ${Occ.painel()}
     ${Views.dashboard.iphoneCard()}
     ${Reminders.webCard()}
     ${(S.settings.usuario || '').trim() ? '' : `<form class="card eu-card" data-submit="euNome">

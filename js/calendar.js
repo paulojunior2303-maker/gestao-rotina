@@ -66,7 +66,7 @@ const Cal = {
     const cell = k => {
       const items = this.itemsOn(k), inMonth = s.mode === 'week' || U.monthKey(k) === r.mk;
       const ag = S.days[k] || (D.isWorkday(k) && k >= t) ? D.progress(k) : null;
-      const cls = ['calx-d', inMonth ? '' : 'out', k === t ? 'today' : '', k === s.sel ? 'sel' : '', D.isWorkday(k) ? '' : 'off', items.some(i => i.late) ? 'has-late' : ''].join(' ');
+      const cls = ['calx-d', inMonth ? '' : 'out', k === t ? 'today' : '', k === t && S.occurrences.some(o => OPEN(o.status)) ? 'has-occ' : '', k === s.sel ? 'sel' : '', D.isWorkday(k) ? '' : 'off', items.some(i => i.late) ? 'has-late' : ''].join(' ');
       const max = s.mode === 'week' ? 5 : 3;
       return `<button class="${cls}" data-act="calSel" data-cal="${id}" data-k="${k}" aria-label="${U.fmtLong(k)}${items.length ? `, ${U.plural(items.length, 'item', 'itens')}` : ''}" ${k === s.sel ? 'aria-pressed="true"' : ''}>
         <span class="calx-n">${U.parse(k).getDate()}</span>
