@@ -1010,7 +1010,9 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .cap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cap-chip { position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 6px 13px; border-radius: 99px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 560; cursor: pointer; }
 .cap-chip.on { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); border-color: var(--accent); color: var(--text); }
-.cap-date input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.cap-date-w { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.cap-date-in { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.cap-date-in.vis { position: static; width: auto; height: 36px; opacity: 1; pointer-events: auto; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; }
 .cap-row { display: grid; grid-template-columns: 1fr 130px; align-items: center; gap: 8px; }
 .cap-prev { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 9px 11px; border-radius: 11px; font-size: 13px; background: color-mix(in srgb, var(--lilac) 14%, transparent); }
 .cap-prev .ic { flex: none; margin-top: 2px; }
@@ -1478,6 +1480,19 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .tk-simples:hover { color: var(--text); border-color: var(--accent); }
 .tk-grp.g-pr-urgente { color: var(--red-text); }
 .tk-grp.g-pr-alta { color: var(--yellow-text); }
+/* Rápidas (até 15 min) juntas e marca de tarefa grande (1 h+, alta/urgente) */
+.tk-grp.g-rapidas { color: var(--lilac); }
+.tk-grp.g-rapidas b { display: inline-flex; align-items: center; gap: 5px; font-weight: inherit; }
+.tk-grande { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 650; letter-spacing: .01em;
+  color: var(--text); background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+/* Tarefas sem data fora do calendário (pedido do usuário): uma linha só no dia de hoje */
+.calx-semdata { display: flex; align-items: center; gap: 10px; width: 100%; margin: 8px 0; padding: 10px 12px; min-height: 48px; border-radius: 11px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.calx-semdata:hover { border-color: var(--border-strong); }
+.calx-semdata > span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.calx-semdata strong { font-size: 14px; font-weight: 600; }
+.calx-semdata small { font-size: 12.5px; color: var(--muted); }
+.calx-semdata > .ic:first-child { color: var(--muted); }
 
 </style>
 </head>
@@ -3853,7 +3868,8 @@ const Cal = {
   /* Atividades da rotina (ainda por fazer) que batem com um horário ocupado */
   batem(k, o) { return D.dayBlocks(k).filter(b => !D.isBreak(b) && !D.blockDone(b) && b.status !== 'cancelada' && U.toMin(b.start) < U.toMin(o.end) && U.toMin(b.end) > U.toMin(o.start)); },
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda).
-     Hoje também mostra as tarefas abertas sem data e as atrasadas, para nada ficar esquecido fora do calendário. */
+     Hoje também mostra as atrasadas, para nada ficar esquecido. As tarefas SEM DATA não entram (pedido do usuário: poluíam o dia);
+     elas viram uma linha só no fim da lista do dia de hoje (Cal.semDataLinha), que leva para Tarefas → Sem data. */
   itemsOn(k) {
     const out = [];
     // Gravações (reunião/feedback gravado): a reunião ligada a ela não aparece de novo
@@ -3863,7 +3879,6 @@ const Cal = {
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => tk(x));
     if (k === U.today()) {
       S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueDate < k).forEach(x => tk(x, { semData: 'atrasada', era: U.fmtShort(x.dueDate), sub: `Tarefa atrasada · era para ${U.fmtShort(x.dueDate)}` }));
-      S.tasks.filter(x => OPEN(x.status) && !x.dueDate).forEach(x => tk(x, { semData: 'sem', sub: 'Tarefa sem data' }));
     }
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
     return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
@@ -3939,6 +3954,12 @@ const Cal = {
     return x ? (x.status === 'andamento' ? Tasks.pausaBtn(x) : '') + Tasks.botao(x, i.late) : '';
   },
 
+  /* Uma linha só com as tarefas sem data (no dia de hoje do Calendário e na Agenda de hoje) */
+  semDataLinha(k) {
+    if (k !== U.today()) return '';
+    const n = S.tasks.filter(x => OPEN(x.status) && !x.dueDate).length;
+    return n ? `<button class="calx-semdata" data-act="tkSemData">${U.icon('calendar', 16)}<span><strong>${U.plural(n, 'tarefa sem data', 'tarefas sem data')}</strong><small>Fora do calendário. Toque para dar dia e horário.</small></span>${U.icon('right', 15)}</button>` : '';
+  },
   /* Lista do dia escolhido */
   day(id) {
     const s = this.st(id), k = s.sel, t = U.today();
@@ -3959,6 +3980,7 @@ const Cal = {
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.sub(i)}</small></span>
           ${i.task ? this.check(i) : U.icon('right', 15)}</div>`).join('')}</div>`
         : agora ? '' : `<p class="calx-empty muted small">${D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia livre. Nada marcado.'}</p>`}
+      ${this.semDataLinha(k)}
       <button class="calx-agenda" data-act="goAgenda" data-d="${k}">
         ${U.icon('clock', 16)}<span><strong>Agenda do dia</strong><small class="muted">${ag.length ? `${U.plural(prog.total, 'atividade')}${prog.pct !== null ? ` · ${prog.pct}% concluído` : ''}` : D.isWorkday(k) ? 'Sem atividades' : 'Dia de folga'}</small></span>
         ${ag.length && prog.pct !== null ? H.bar(prog.pct) : ''}${U.icon('right', 15)}
@@ -4163,7 +4185,7 @@ Views.agenda = {
     }
     const nAtr = semHoraL.filter(i => i.semData === 'atrasada').length;
     const listaSem = semHoraL.length ? `<div class="ag-semhora"><div class="ag-semhora-h">${U.plural(semHoraL.length, 'item sem horário', 'itens sem horário')}${nAtr ? ` · <span class="c-red">${U.plural(nAtr, 'atrasado', 'atrasados')}</span>` : ''}</div>${semHoraL.map(item).join('')}</div>` : '';
-    const list = [listaSem, ...partes].filter(Boolean);
+    const list = [listaSem, ...partes, Cal.semDataLinha(k)].filter(Boolean);
     const breakOk = (S.settings.breakMode || 'fixo') === 'flexivel' && k >= t && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada');
     const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
       : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`
@@ -5725,7 +5747,7 @@ Views.tarefas = {
       const quando = !x.dueDate ? (porPrio ? 'sem data' : '') : x.dueDate === t ? (porPrio ? 'hoje' : '') : x.dueDate === tm ? (porPrio ? 'amanhã' : '') : x.dueDate === U.addDays(t, -1) ? 'ontem' : `${U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase()} ${U.fmtShort(x.dueDate)}`;
       const hora = x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? ' – ' + Cal.fimTarefa(x) : '') : '';
       const late = OPEN(x.status) && D.taskLate(x);
-      const meta = [late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
+      const meta = [Tasks.grande(x) ? '<span class="tk-grande">tarefa grande</span>' : '', late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
         x.status === 'andamento' ? '<span class="run-tag"><i class="run-dot"></i>em execução</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = !porPrio && OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
@@ -5740,10 +5762,10 @@ Views.tarefas = {
         <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
-    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
+    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : D.taskLate(x) ? 'atrasadas' : Tasks.rapida(x) ? 'rapidas' : !x.dueDate ? 'semdata'
       : x.dueDate <= t ? 'hoje' : x.dueDate === tm ? 'amanha' : x.dueDate <= d7 ? 'semana' : 'depois';
     const grupoP = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : 'pr-' + (PRIORITY_RANK[x.priority] === undefined ? 'media' : x.priority);
-    const NOMES = { 'pr-urgente': 'Urgente', 'pr-alta': 'Alta', 'pr-media': 'Média', 'pr-baixa': 'Baixa', execucao: 'Em execução agora', atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
+    const NOMES = { 'pr-urgente': 'Urgente', 'pr-alta': 'Alta', 'pr-media': 'Média', 'pr-baixa': 'Baixa', execucao: 'Em execução agora', rapidas: `<b>${U.icon('bolt', 13)} Rápidas · até 15 min</b>`, atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
     // Na visão por dia, as de prioridade baixa ficam recolhidas ("+ 3 tarefas de prioridade baixa") quando o grupo tem outras mais importantes
     const RECOLHE = ['hoje', 'amanha', 'semana', 'depois', 'semdata'];
     const grupos = (ks, l) => ks.map(k => {
@@ -5754,7 +5776,7 @@ Views.tarefas = {
       const aberto = (App.ui.tkSimples || {})[k];
       return head + imp.map(row).join('') + `<button class="tk-simples" data-act="tkSimples" data-g="${k}" aria-expanded="${!!aberto}">${aberto ? 'Esconder as de prioridade baixa' : `+ ${U.plural(baixas.length, 'tarefa', 'tarefas')} de prioridade baixa`}</button>` + (aberto ? baixas.map(row).join('') : '');
     }).join('');
-    const ORDEM = porPrio ? ['execucao', 'pr-urgente', 'pr-alta', 'pr-media', 'pr-baixa', 'feitas', 'canceladas'] : ['execucao', 'atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    const ORDEM = porPrio ? ['execucao', 'pr-urgente', 'pr-alta', 'pr-media', 'pr-baixa', 'feitas', 'canceladas'] : ['execucao', 'atrasadas', 'hoje', 'rapidas', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
     // Foco de hoje (as até 3 mais importantes) no topo da visão por dia; elas saem dos grupos de baixo para não repetir
     const foco = !porPrio && f.status === 'abertas' && !filtersOn ? Tasks.foco() : { itens: [] };
     const fIds = new Set(foco.itens.map(x => x.id));
@@ -5790,7 +5812,7 @@ Views.tarefas = {
     <div class="tk-visao" role="group" aria-label="Organizar as tarefas">${[['dia', 'calendar', 'Por dia'], ['prio', 'flag', 'Por prioridade']].map(([v, ic, l]) => `<button class="${(porPrio ? 'prio' : 'dia') === v ? 'on' : ''}" data-act="tkVisao" data-v="${v}" aria-pressed="${(porPrio ? 'prio' : 'dia') === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
     ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
     ${Tasks.focoHtml(foco)}
-    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['execucao', 'atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
+    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['execucao', 'atrasadas', 'hoje', 'rapidas'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
       : `<div class="task-list">${list.length ? grupos(ORDEM, lista) : vazio}</div>`}`;
   },
 };
@@ -5843,6 +5865,10 @@ const Tasks = {
   },
   /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
      Assim nada é concluído sem antes ser começado. */
+  /* Rápidas (até 15 min, prioridade média/baixa, de hoje ou sem data): ficam juntas para fazer nos intervalos.
+     Tarefa grande (1 h ou mais, prioridade alta/urgente): marca para não se perder entre as simples. */
+  rapida(x) { const d = Number(x.dur) || 0, t = U.today(); return x.status === 'pendente' && d > 0 && d <= 15 && !['alta', 'urgente'].includes(x.priority) && (!x.dueDate || x.dueDate === t) && !D.taskLate(x); },
+  grande(x) { return OPEN(x.status) && (Number(x.dur) || 0) >= 60 && ['alta', 'urgente'].includes(x.priority); },
   /* Foco de hoje (pedido do usuário): até 3 tarefas urgentes/altas de hoje, atrasadas ou sem data, ainda não começadas */
   foco() {
     const t = U.today();
@@ -5857,7 +5883,7 @@ const Tasks = {
       const late = D.taskLate(x);
       const q = late ? `<span class="dl-late">atrasada${x.dueDate !== t ? ' desde ' + U.fmtShort(x.dueDate) : ''}</span>` : x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : 'sem horário';
       return `<div class="fc-it p-${x.priority}">${this.botao(x, late)}<div class="fc-body" data-act="tkEdit" data-id="${x.id}"><strong>${U.esc(x.title)}${H.demo(x)}</strong>
-        <small><span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span> · ${q}${x.responsible ? ' · ' + U.esc(x.responsible) : ''}</small></div></div>`;
+        <small><span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>${this.grande(x) ? ' · <span class="tk-grande">tarefa grande</span>' : ''} · ${q}${x.responsible ? ' · ' + U.esc(x.responsible) : ''}</small></div></div>`;
     };
     return `<section class="tk-foco" aria-label="Foco de hoje"><div class="fc-h"><span>${U.icon('target', 15)} Foco de hoje</span><small>${itens.length === 1 ? 'a mais importante' : `as ${itens.length} mais importantes`}</small></div>
       ${itens.map(it).join('')}${mais ? `<button class="fc-mais" data-act="tkVerPrio">+ ${U.plural(mais, 'outra importante', 'outras importantes')} · ver por prioridade</button>` : ''}</section>`;
@@ -6009,6 +6035,8 @@ Object.assign(Actions, {
   tkFiltros() { App.ui.taskFOpen = !App.ui.taskFOpen; App.render(); },
   tkVisao({ v }) { App.ui.tkVisao = v === 'prio' ? 'prio' : 'dia'; try { localStorage.setItem('ff-tk-visao', App.ui.tkVisao); } catch (e) { /* ignora */ } App.render(); },
   tkSimples({ g }) { App.ui.tkSimples = { ...(App.ui.tkSimples || {}), [g]: !(App.ui.tkSimples || {})[g] }; App.render(); },
+  /* Tarefas sem data (saíram do Calendário): abre Tarefas só com elas */
+  tkSemData() { App.ui.tkVisao = 'dia'; App.ui.taskF = { q: '', status: 'abertas', priority: '', category: '', period: 'semprazo', from: '', to: '' }; App.go('tarefas'); },
   tkVerPrio() { Actions.tkVisao({ v: 'prio' }); Actions.goTasks({ status: 'abertas' }); },
   tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });
@@ -6434,7 +6462,7 @@ const Capture = {
       const livres = Agenda.livres(st.due, st.tdur || 30, { prio: st.prio });
       return `<span class="cap-l">Quando? <em class="cap-obr">obrigatório</em></span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
-        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
+        <span class="cap-date-w"><button type="button" class="cap-chip cap-date ${other ? 'on' : ''}" data-outra-data aria-pressed="${!!other}">${U.icon('calendar', 14)}${other ? U.fmtShort(st.due) : 'Outra data'}</button><input type="date" id="cap-date" class="cap-date-in" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data" tabindex="-1"></span></div>
         <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
           <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS.filter(([v]) => v), st.tdur || 30)}</label></div>
         <span class="cap-l">Horários livres ${st.due === t ? 'hoje' : st.due === tm ? 'amanhã' : 'em ' + U.fmtShort(st.due)}${Tasks.livresDica(st.prio)}</span>
@@ -6489,6 +6517,9 @@ const Capture = {
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due || t; st.touched.due = true; paint(); return; }
+      // "Outra data": abre o calendário do aparelho direto (o campo invisível por cima do botão não abria em alguns Android).
+      // Sem showPicker (navegador antigo), mostra o campo de data ao lado do botão.
+      if (b.hasAttribute('data-outra-data')) { const i = $('#cap-date'); try { i.showPicker(); } catch (er) { i.classList.add('vis'); i.focus(); try { i.click(); } catch (e2) { /* ignora */ } } return; }
       if (b.dataset.livre) { st.time = b.dataset.livre; st.touched.time = true; err(''); paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
