@@ -122,6 +122,26 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await p.evaluate(() => Actions.quickAdd({ k: U.addDays(U.today(), 2) })); await W(300);
   await p.selectOption(`${M} #cap-prio`, 'baixa'); await W(200);
   check((await p.locator(`${M} [data-livre]`).first().getAttribute('data-livre')) > '15:00' && (await p.textContent(`${M} .cap-opts`)).includes('fim do dia'), 'no "+", trocar a prioridade muda os horários sugeridos');
+  // "Outra data" no "+" abre o calendário do aparelho (antes o campo invisível não abria em alguns Android)
+  await p.evaluate(() => { window.__pk = 0; HTMLInputElement.prototype.showPicker = function () { window.__pk++; }; });
+  await p.tap(`${M} .cap-date`); await W(200);
+  check(await p.evaluate(() => window.__pk) === 1, '"Outra data" abre o calendário do aparelho');
+  await p.evaluate(() => { const i = document.querySelector('.modal-wrap.open #cap-date'); i.value = U.addDays(U.today(), 9); i.dispatchEvent(new Event('change', { bubbles: true })); }); await W(200);
+  check((await p.textContent(`${M} .cap-date`)).includes(await p.evaluate(() => U.fmtShort(U.addDays(U.today(), 9)))) && await p.locator(`${M} .cap-date.on`).count() === 1, '…e a data escolhida aparece no botão');
+  await p.evaluate(() => { delete HTMLInputElement.prototype.showPicker; HTMLInputElement.prototype.showPicker = function () { throw new Error('sem suporte'); }; });
+  await p.tap(`${M} .cap-date`); await W(200);
+  check(await p.locator(`${M} #cap-date.vis`).isVisible(), 'sem suporte ao calendário: o campo de data aparece ao lado');
+  await p.keyboard.press('Escape'); await W(200);
+  // Rápidas (até 15 min) juntas e marca de tarefa grande
+  await p.evaluate(() => {
+    const t = U.today(); S.tasks = [];
+    const mk = (id, title, priority, dueTime, dur) => S.tasks.push({ id, title, priority, status: 'pendente', category: 'administrativo', dueDate: t, dueTime, dur, createdAt: '' });
+    mk('r1', 'Rápida média', 'media', '10:00', 15); mk('r2', 'Rápida urgente', 'urgente', '10:30', 15); mk('r3', 'Normal', 'media', '11:00', 30);
+    mk('g1', 'Grande alta', 'alta', '13:00', 120); mk('g2', 'Longa média', 'media', '15:00', 60);
+    commit(); App.ui.tkVisao = 'dia'; location.hash = '#tarefas'; App.render();
+  }); await W(400);
+  check(await p.locator('.tk-grp.g-rapidas + .task .tk-title', { hasText: 'Rápida média' }).count() === 1 && await p.locator('.tk-grp.g-rapidas ~ .task', { hasText: 'Rápida urgente' }).count() === 0, 'Rápidas (até 15 min) juntas; urgente/alta continua entre as importantes');
+  check(await p.locator('.tk-foco .fc-it', { hasText: 'Grande alta' }).locator('.tk-grande').count() === 1 && await p.locator('.task', { hasText: 'Longa média' }).locator('.tk-grande').count() === 0, '"tarefa grande" só nas de 1 h ou mais com prioridade alta/urgente');
   check(!errs.length, 'sem erros' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();
 })().catch(e => { console.error(e.message); process.exit(1); });

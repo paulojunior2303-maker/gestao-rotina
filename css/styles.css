@@ -995,7 +995,9 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .cap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cap-chip { position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 6px 13px; border-radius: 99px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 560; cursor: pointer; }
 .cap-chip.on { background: color-mix(in srgb, var(--accent) 22%, var(--surface-2)); border-color: var(--accent); color: var(--text); }
-.cap-date input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.cap-date-w { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.cap-date-in { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.cap-date-in.vis { position: static; width: auto; height: 36px; opacity: 1; pointer-events: auto; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; }
 .cap-row { display: grid; grid-template-columns: 1fr 130px; align-items: center; gap: 8px; }
 .cap-prev { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 9px 11px; border-radius: 11px; font-size: 13px; background: color-mix(in srgb, var(--lilac) 14%, transparent); }
 .cap-prev .ic { flex: none; margin-top: 2px; }
@@ -1463,3 +1465,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .tk-simples:hover { color: var(--text); border-color: var(--accent); }
 .tk-grp.g-pr-urgente { color: var(--red-text); }
 .tk-grp.g-pr-alta { color: var(--yellow-text); }
+/* Rápidas (até 15 min) juntas e marca de tarefa grande (1 h+, alta/urgente) */
+.tk-grp.g-rapidas { color: var(--lilac); }
+.tk-grp.g-rapidas b { display: inline-flex; align-items: center; gap: 5px; font-weight: inherit; }
+.tk-grande { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 650; letter-spacing: .01em;
+  color: var(--text); background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }

@@ -151,7 +151,11 @@ e diga o que mudou e como testar no celular.
   (4) Troca **"Por dia / Por prioridade"** (`.tk-visao`, `tkVisao`, guardada em `localStorage['ff-tk-visao']`, sempre com try: no link do claude.ai o LocalStorage é bloqueado):
   grupos Urgente · Alta · Média · Baixa, cada tarefa com o dia ("hoje", "amanhã"…); sem colunas no computador nem Foco. (5) `Agenda.livres(..., { prio })`: urgente = os mais cedo
   (mesmo sobre a rotina), alta = os livres mais cedo, média = espalhados, baixa = fim do expediente; no "+" e no `Tasks.form` a Prioridade fica antes do horário e refaz as
-  sugestões (`Tasks.livresDica`). Testes no fim de `tests/melhorias.test.js`.
+  sugestões (`Tasks.livresDica`). (3) **Rápidas** (`Tasks.rapida`: pendente, até 15 min, média/baixa, de hoje ou sem data) ficam juntas no grupo `g-rapidas`
+  ("Rápidas · até 15 min", depois de Hoje) e **tarefa grande** (`Tasks.grande`: 1 h ou mais e alta/urgente) ganha a marca `.tk-grande` na lista e no Foco.
+  Testes no fim de `tests/melhorias.test.js`.
+- **"Outra data" no "+"**: botão (`data-outra-data`) que chama `showPicker()` no `#cap-date` escondido (`.cap-date-in`); sem suporte, o campo aparece ao lado (`.vis`).
+  Antes era um campo invisível por cima do botão, que não abria o calendário em alguns Android.
 - **Marcar reunião/compromisso/feedback sem gravar**: pelo "+" (`Capture.OUTROS` → `Events.form(null, dia, { reuniao, title, time })` / `FB.form(null, pessoa, { date, notas })`).
 - **Gravação com tela bloqueada (Android)**: `GravacaoService.java` (serviço em primeiro plano tipo microfone + wake lock parcial, aviso fixo "FlowFire está gravando"),
   ligado por `Sistema.gravando({ ligada })` a partir de `Recorder.keepScreen` (vale para o `Gravador` e o `Recorder`). Só liga com a permissão do microfone já dada.

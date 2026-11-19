@@ -49,7 +49,7 @@ Views.tarefas = {
       const quando = !x.dueDate ? (porPrio ? 'sem data' : '') : x.dueDate === t ? (porPrio ? 'hoje' : '') : x.dueDate === tm ? (porPrio ? 'amanhã' : '') : x.dueDate === U.addDays(t, -1) ? 'ontem' : `${U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase()} ${U.fmtShort(x.dueDate)}`;
       const hora = x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? ' – ' + Cal.fimTarefa(x) : '') : '';
       const late = OPEN(x.status) && D.taskLate(x);
-      const meta = [late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
+      const meta = [Tasks.grande(x) ? '<span class="tk-grande">tarefa grande</span>' : '', late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
         x.status === 'andamento' ? '<span class="run-tag"><i class="run-dot"></i>em execução</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
       const prio = !porPrio && OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
@@ -64,10 +64,10 @@ Views.tarefas = {
         <button class="icon-btn tk-mais" data-act="tkMore" data-id="${x.id}" title="Mais opções" aria-label="Mais opções">${U.icon('more', 16)}</button>
       </div>`;
     };
-    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
+    const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : D.taskLate(x) ? 'atrasadas' : Tasks.rapida(x) ? 'rapidas' : !x.dueDate ? 'semdata'
       : x.dueDate <= t ? 'hoje' : x.dueDate === tm ? 'amanha' : x.dueDate <= d7 ? 'semana' : 'depois';
     const grupoP = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : 'pr-' + (PRIORITY_RANK[x.priority] === undefined ? 'media' : x.priority);
-    const NOMES = { 'pr-urgente': 'Urgente', 'pr-alta': 'Alta', 'pr-media': 'Média', 'pr-baixa': 'Baixa', execucao: 'Em execução agora', atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
+    const NOMES = { 'pr-urgente': 'Urgente', 'pr-alta': 'Alta', 'pr-media': 'Média', 'pr-baixa': 'Baixa', execucao: 'Em execução agora', rapidas: `<b>${U.icon('bolt', 13)} Rápidas · até 15 min</b>`, atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
     // Na visão por dia, as de prioridade baixa ficam recolhidas ("+ 3 tarefas de prioridade baixa") quando o grupo tem outras mais importantes
     const RECOLHE = ['hoje', 'amanha', 'semana', 'depois', 'semdata'];
     const grupos = (ks, l) => ks.map(k => {
@@ -78,7 +78,7 @@ Views.tarefas = {
       const aberto = (App.ui.tkSimples || {})[k];
       return head + imp.map(row).join('') + `<button class="tk-simples" data-act="tkSimples" data-g="${k}" aria-expanded="${!!aberto}">${aberto ? 'Esconder as de prioridade baixa' : `+ ${U.plural(baixas.length, 'tarefa', 'tarefas')} de prioridade baixa`}</button>` + (aberto ? baixas.map(row).join('') : '');
     }).join('');
-    const ORDEM = porPrio ? ['execucao', 'pr-urgente', 'pr-alta', 'pr-media', 'pr-baixa', 'feitas', 'canceladas'] : ['execucao', 'atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    const ORDEM = porPrio ? ['execucao', 'pr-urgente', 'pr-alta', 'pr-media', 'pr-baixa', 'feitas', 'canceladas'] : ['execucao', 'atrasadas', 'hoje', 'rapidas', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
     // Foco de hoje (as até 3 mais importantes) no topo da visão por dia; elas saem dos grupos de baixo para não repetir
     const foco = !porPrio && f.status === 'abertas' && !filtersOn ? Tasks.foco() : { itens: [] };
     const fIds = new Set(foco.itens.map(x => x.id));
@@ -114,7 +114,7 @@ Views.tarefas = {
     <div class="tk-visao" role="group" aria-label="Organizar as tarefas">${[['dia', 'calendar', 'Por dia'], ['prio', 'flag', 'Por prioridade']].map(([v, ic, l]) => `<button class="${(porPrio ? 'prio' : 'dia') === v ? 'on' : ''}" data-act="tkVisao" data-v="${v}" aria-pressed="${(porPrio ? 'prio' : 'dia') === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
     ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
     ${Tasks.focoHtml(foco)}
-    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['execucao', 'atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
+    ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['execucao', 'atrasadas', 'hoje', 'rapidas'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
       : `<div class="task-list">${list.length ? grupos(ORDEM, lista) : vazio}</div>`}`;
   },
 };
@@ -167,6 +167,10 @@ const Tasks = {
   },
   /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
      Assim nada é concluído sem antes ser começado. */
+  /* Rápidas (até 15 min, prioridade média/baixa, de hoje ou sem data): ficam juntas para fazer nos intervalos.
+     Tarefa grande (1 h ou mais, prioridade alta/urgente): marca para não se perder entre as simples. */
+  rapida(x) { const d = Number(x.dur) || 0, t = U.today(); return x.status === 'pendente' && d > 0 && d <= 15 && !['alta', 'urgente'].includes(x.priority) && (!x.dueDate || x.dueDate === t) && !D.taskLate(x); },
+  grande(x) { return OPEN(x.status) && (Number(x.dur) || 0) >= 60 && ['alta', 'urgente'].includes(x.priority); },
   /* Foco de hoje (pedido do usuário): até 3 tarefas urgentes/altas de hoje, atrasadas ou sem data, ainda não começadas */
   foco() {
     const t = U.today();
@@ -181,7 +185,7 @@ const Tasks = {
       const late = D.taskLate(x);
       const q = late ? `<span class="dl-late">atrasada${x.dueDate !== t ? ' desde ' + U.fmtShort(x.dueDate) : ''}</span>` : x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : 'sem horário';
       return `<div class="fc-it p-${x.priority}">${this.botao(x, late)}<div class="fc-body" data-act="tkEdit" data-id="${x.id}"><strong>${U.esc(x.title)}${H.demo(x)}</strong>
-        <small><span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span> · ${q}${x.responsible ? ' · ' + U.esc(x.responsible) : ''}</small></div></div>`;
+        <small><span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>${this.grande(x) ? ' · <span class="tk-grande">tarefa grande</span>' : ''} · ${q}${x.responsible ? ' · ' + U.esc(x.responsible) : ''}</small></div></div>`;
     };
     return `<section class="tk-foco" aria-label="Foco de hoje"><div class="fc-h"><span>${U.icon('target', 15)} Foco de hoje</span><small>${itens.length === 1 ? 'a mais importante' : `as ${itens.length} mais importantes`}</small></div>
       ${itens.map(it).join('')}${mais ? `<button class="fc-mais" data-act="tkVerPrio">+ ${U.plural(mais, 'outra importante', 'outras importantes')} · ver por prioridade</button>` : ''}</section>`;

@@ -105,7 +105,7 @@ const Capture = {
       const livres = Agenda.livres(st.due, st.tdur || 30, { prio: st.prio });
       return `<span class="cap-l">Quando? <em class="cap-obr">obrigatório</em></span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
-        <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
+        <span class="cap-date-w"><button type="button" class="cap-chip cap-date ${other ? 'on' : ''}" data-outra-data aria-pressed="${!!other}">${U.icon('calendar', 14)}${other ? U.fmtShort(st.due) : 'Outra data'}</button><input type="date" id="cap-date" class="cap-date-in" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data" tabindex="-1"></span></div>
         <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
           <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS.filter(([v]) => v), st.tdur || 30)}</label></div>
         <span class="cap-l">Horários livres ${st.due === t ? 'hoje' : st.due === tm ? 'amanhã' : 'em ' + U.fmtShort(st.due)}${Tasks.livresDica(st.prio)}</span>
@@ -160,6 +160,9 @@ const Capture = {
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due || t; st.touched.due = true; paint(); return; }
+      // "Outra data": abre o calendário do aparelho direto (o campo invisível por cima do botão não abria em alguns Android).
+      // Sem showPicker (navegador antigo), mostra o campo de data ao lado do botão.
+      if (b.hasAttribute('data-outra-data')) { const i = $('#cap-date'); try { i.showPicker(); } catch (er) { i.classList.add('vis'); i.focus(); try { i.click(); } catch (e2) { /* ignora */ } } return; }
       if (b.dataset.livre) { st.time = b.dataset.livre; st.touched.time = true; err(''); paint(); return; }
       if (b.hasAttribute('data-cancel')) { m.close(); return; }
       if (b.hasAttribute('data-save')) { const msg = Capture.save(st, ta, k); if (msg) { err(msg); ta.focus(); } else m.close(); return; }
