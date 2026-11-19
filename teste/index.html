@@ -993,9 +993,18 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .cap-in { min-height: 40px; font-size: 15px; }
 .cap-text:focus, .cap-in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .cap-tip { display: flex; align-items: center; gap: 6px; margin: -4px 0 0; }
-.cap-types { display: flex; width: 100%; flex-wrap: nowrap; }
-.cap-types .tab { flex: 1; justify-content: center; padding: 8px 6px; font-size: 13.5px; }
-.cap-types .tab.active { background: var(--primary); color: #fff; }
+/* "+" com tudo num lugar só (pedido do usuário): cinco tipos lado a lado, ícone em cima do nome */
+.cap-types { display: flex; gap: 5px; width: 100%; }
+.cap-tipo { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 auto; min-width: 0; gap: 4px; min-height: 58px; padding: 8px 4px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); font: inherit; font-size: 11.5px; font-weight: 600; line-height: 1.1; cursor: pointer; }
+.cap-tipo span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cap-tipo svg { color: var(--accent); }
+.cap-tipo:hover { border-color: var(--border-strong); color: var(--text); }
+.cap-tipo.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.cap-tipo.active svg { color: #fff; }
+.cap-tipo.ct-imprevisto svg { color: var(--red-text); }
+.cap-tipo.ct-imprevisto.active { background: var(--red); border-color: var(--red); }
+.cap-tipo.ct-imprevisto.active svg { color: #fff; }
 .cap-opts { display: flex; flex-direction: column; gap: 8px; }
 .cap-l { font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .cap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1412,17 +1421,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .tk-livres { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
 .tk-livres .lbl { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 /* Agenda e Tarefas numa tela só: modos Dia · Lista de tarefas */
-.ag-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
-.ag-modos a { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 14px; }
-.ag-modos a:hover { color: var(--text); }
-.ag-modos a.on { background: var(--surface-3); color: var(--text); box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset; }
-.ag-modos a.on .ic { color: var(--accent); }
-.ag-modos b { font-weight: 500; color: var(--muted); font-size: 13px; }
-.ag-modos-atr { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font-size: 11px; display: inline-grid; place-items: center; }
-@media (min-width: 901px) { .ag-modos { max-width: 420px; } }
 /* Imprevistos em destaque (pedido do usuário: vêm antes de tudo) — quadro vermelho no topo do Início, da Agenda e da Lista de tarefas */
 .oc-painel { display: flex; flex-direction: column; gap: 8px; }
-.oc-painel.vazio-oc { align-items: flex-end; }
 .oc-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--red-text); }
 .oc-h > span { display: inline-flex; align-items: center; gap: 6px; }
 .oc-novo { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--red) 55%, transparent);
@@ -1444,18 +1444,13 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .oc-btn.ok { background: var(--green); color: #08130e; }
 .oc-btn.ghost { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); padding: 0 12px; }
 .oc-btn:active { transform: scale(.96); }
-.dia-hero + .oc-painel, .ag-modos + .oc-painel { margin-top: -4px; }
+.dia-hero + .oc-painel { margin-top: -4px; }
 /* Bloco do imprevisto na linha do tempo e o dia de hoje no calendário */
 .blk.blk-occ { background: color-mix(in srgb, var(--red) 16%, var(--surface)) !important; box-shadow: inset 4px 0 0 var(--red) !important; }
 .blk.blk-occ .blk-title { font-weight: 700; }
 .calx-d.has-occ .calx-n { box-shadow: 0 0 0 2px var(--red); }
 @media (prefers-reduced-motion: reduce) { .oc-card.run { animation: none; } }
-.ag-modos { grid-template-columns: 1fr 1fr auto; }
-.ag-modos-oc { width: 46px; border: 0; border-radius: 10px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
-.ag-modos-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }
 /* Botão ⚠ de imprevisto ao lado da busca, na tela Tarefas */
-.tk-oc { flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
-.tk-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }
 
 </style>
 </head>
@@ -4148,7 +4143,7 @@ Views.agenda = {
     const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
-    ${Occ.painel({ compacto: true })}
+    ${Occ.painel()}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
     <section class="ag-day">
@@ -4176,13 +4171,6 @@ Views.agenda = {
 
 const Agenda = {
   day() { return App.ui.agendaDate || U.today(); },
-  /* Topo da tela única (Tarefas + Agenda): Dia (linha do tempo) · Lista de tarefas (todas, por quando) */
-  modos(ativo) {
-    const abertas = S.tasks.filter(x => OPEN(x.status)).length, atr = S.tasks.filter(D.taskLate).length;
-    return `<nav class="ag-modos" aria-label="Agenda"><a href="#agenda" class="${ativo === 'dia' ? 'on' : ''}" ${ativo === 'dia' ? 'aria-current="page"' : ''}>${U.icon('clock', 16)} Dia</a>
-      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a>
-      <button class="ag-modos-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button></nav>`;
-  },
   /* Horários livres de um dia para encaixar uma tarefa de "dur" minutos (pedido do usuário: toda tarefa entra na agenda).
      Ocupado de verdade: outras tarefas com horário, compromissos/reuniões, intervalo e atividades com horário fixo.
      Primeiro vêm os horários sem nada (nem rotina); depois os que caem sobre uma atividade da rotina (que pode ser reorganizada).
@@ -4464,12 +4452,12 @@ Views.imprevistos = {
 
 const Occ = {
   /* Quadro de imprevistos em destaque (pedido do usuário: imprevisto vem antes de tudo).
-     Fica no topo do Início, da Agenda e da Lista de tarefas, com o botão de registrar sempre à vista. */
+     Fica no topo do Início, da Agenda e da Lista de tarefas, só quando há imprevisto aberto (registrar é pelo "+" de qualquer tela). */
   emAndamento(exceto) { return S.occurrences.find(o => o.status === 'andamento' && o.id !== exceto); },
-  painel({ compacto = false } = {}) {
+  painel() {
     const abertos = S.occurrences.filter(o => OPEN(o.status)).sort((a, b) => (b.status === 'andamento') - (a.status === 'andamento') || (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
-    const novo = (curto) => `<button class="oc-novo" data-act="capture" data-type="imprevisto">${U.icon('plus', 15)} ${curto ? 'Imprevisto' : 'Registrar imprevisto'}</button>`;
-    if (!abertos.length) return compacto ? '' : `<div class="oc-painel vazio-oc">${novo(false)}</div>`;
+    const novo = () => `<button class="oc-novo" data-act="capture" data-type="imprevisto">${U.icon('plus', 15)} Imprevisto</button>`;
+    if (!abertos.length) return '';
     const ha = iso => { const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
     const card = o => {
       const run = o.status === 'andamento';
@@ -4485,7 +4473,7 @@ const Occ = {
           : `<button class="oc-btn go" data-act="occComecar" data-id="${o.id}">${U.icon('play', 14)} Começar</button>`}</div>
       </div>`;
     };
-    return `<section class="oc-painel"><div class="oc-h"><span>${U.icon('alert', 15)} ${U.plural(abertos.length, 'imprevisto aberto', 'imprevistos abertos')}</span>${novo(true)}</div>${abertos.map(card).join('')}</section>`;
+    return `<section class="oc-painel"><div class="oc-h"><span>${U.icon('alert', 15)} ${U.plural(abertos.length, 'imprevisto aberto', 'imprevistos abertos')}</span>${novo()}</div>${abertos.map(card).join('')}</section>`;
   },
   /* Começar um imprevisto: vai para a agenda AGORA (30 min, empurrando o resto) e pausa o que estava em execução */
   comecar(o, dur = 30) {
@@ -4585,7 +4573,7 @@ const Events = {
   },
   form(e, date, opts = {}) {
     const isNew = !e;
-    e = e || { date: date || U.today(), reuniao: !!opts.reuniao };
+    e = e || { date: date || U.today(), reuniao: !!opts.reuniao, title: opts.title || '', time: opts.time || '' };
     const meet = Meetings.isMeeting(e);
     const noun = meet ? 'reunião' : 'compromisso';
     const pend = Events.pendencias(e.id);
@@ -4876,9 +4864,9 @@ const FB = {
 
 
 Object.assign(FB, {
-  form(f, pessoa) {
+  form(f, pessoa, opts = {}) {
     const isNew = !f;
-    const r = f || { pessoa: pessoa || '', date: U.today(), tipo: 'feedback', tom: 'neutro', notas: '', resumo: '', acordos: '' };
+    const r = f || { pessoa: pessoa || '', date: opts.date || U.today(), tipo: 'feedback', tom: 'neutro', notas: opts.notas || '', resumo: IA.supported() ? '' : (opts.notas || ''), acordos: '' };
     let dirty = false, warned = false;
     Recorder.reset();
     const iaBox = !IA.supported() ? '' : `<div class="ia-box">
@@ -5528,7 +5516,6 @@ Views.gravacoes = {
       ${pend.length ? `<div class="alert a-yellow">${U.icon('clock')} <span>${U.plural(pend.length, 'gravação esperando', 'gravações esperando')} para transcrever: ${U.esc(pend[0].motivo || '')}</span> <button class="link" data-act="gvRetry">Tentar agora</button></div>` : ''}
       ${Gravador.recording() ? '' : `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fale o que fez hoje e o que vem amanhã: o app escreve o relatório e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Áudio ou texto</strong><small>Envie áudios (do WhatsApp ou outros) e/ou um texto: a IA resume e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
-      <button class="gv-rel-btn gv-arq-btn gv-marcar" data-act="gvMarcar">${U.icon('calendar', 20)}<span><strong>Marcar reunião ou compromisso</strong><small>Para uma data futura, com pauta. Também registra um feedback sem gravar.</small></span>${U.icon('right', 16)}</button>
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
       ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : '<div class="vazio-menor">' + H.vazio('Nenhuma gravação.', 'É só apertar e falar.', 'Grave uma reunião, um feedback ou o relatório do dia. A IA escreve o resumo e anota o que for combinado.', [['mic', 'Toque em <strong>Gravar</strong>, na barra de baixo'], ['upload', 'Ou envie um áudio do WhatsApp']]) + '</div>'}`;
   },
@@ -5623,14 +5610,6 @@ Object.assign(Actions, {
     ]);
   },
   gvArq() { Gravador.pedido(); },
-  /* Marcar para depois (sem gravar agora): saiu do "+" a pedido do usuário e ficou aqui, em Gravações */
-  gvMarcar() {
-    UI.sheet('O que você quer marcar?', [
-      { label: 'Reunião', hint: 'Com data, horário e pauta. Na hora, é só gravar', icon: 'users', onClick: () => Events.form(null, U.today(), { reuniao: true }) },
-      { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, U.today()) },
-      { label: 'Feedback sem gravar', hint: 'Anotar uma conversa individual que já aconteceu', icon: 'chat', onClick: () => FB.form(null) },
-    ]);
-  },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {
@@ -5665,7 +5644,7 @@ Object.assign(Actions, {
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
   title: 'Tarefas', icon: 'tasks', nav: 'Tarefas',
-  fab: { act: 'tkNew', label: 'Nova tarefa' },
+  fab: { act: 'quickAdd', label: 'Adicionar' },   // o mesmo "+" de todas as telas (Capture)
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
     const t = U.today(), ws = Cal.inicioSemana(t), we = U.addDays(ws, 6);
@@ -5730,7 +5709,7 @@ Views.tarefas = {
     // Sugestão 5: no computador, as abertas em três colunas (Hoje · Depois · Sem data)
     const pc = window.matchMedia && matchMedia('(min-width: 901px)').matches;
     const colunas = pc && f.status === 'abertas' && list.length;
-    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="tkNew">+ Adicionar</button></section>`; };
+    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="quickAdd">+ Adicionar</button></section>`; };
     const nome = ((S.settings.usuario || '').trim().split(' ')[0]) || '';
     // Sugestão 6: tela vazia com a voz do app
     const vazio = !all.length || (f.status === 'abertas' && !filtersOn && !list.length)
@@ -5739,13 +5718,12 @@ Views.tarefas = {
       : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
-    ${Occ.painel({ compacto: true })}
+    ${Occ.painel()}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
     <div class="tk-busca">
       <input type="search" placeholder="Buscar tarefa ou pessoa" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
-      <button class="tk-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button>
       <button class="btn ghost tk-fbtn ${App.ui.taskFOpen ? 'on' : ''}" data-act="tkFiltros" aria-expanded="${App.ui.taskFOpen || nFiltros ? 'true' : 'false'}">${U.icon('filter', 16)} Filtros${nFiltros ? ` <b class="tk-fn">${nFiltros}</b>` : ''}</button>
     </div>
     <div class="filters card tk-filtros ${App.ui.taskFOpen || nFiltros ? 'aberto' : ''}">
@@ -5916,7 +5894,6 @@ const Tasks = {
 };
 
 Object.assign(Actions, {
-  tkNew() { Tasks.form(null); },
   tkEdit({ id }) { Tasks.form(S.tasks.find(x => x.id === id)); },
   /* Botões da lista (como na Agenda): ✓ conclui, ↶ reabre, ⋯ mais opções */
   tkSet({ id, s }) {
@@ -6271,7 +6248,7 @@ Object.assign(Actions, {
 </script>
   <script>/* js/captura.js */
 'use strict';
-/* Anotação rápida (botão "+" do Início, da Agenda e dos Imprevistos).
+/* Anotação rápida (botão "+" de todas as telas: Calendário, Agenda, Tarefas e Imprevistos).
    Um campo só: a pessoa escreve (ou dita pelo microfone do teclado) e escolhe o tipo.
    O texto é lido aqui mesmo, sem internet: datas ("amanhã", "sexta", "20/11"), horário ("às 15h"),
    duração ("30 min", "1h") e nomes da equipe. Imprevisto com tempo é encaixado AGORA na agenda
@@ -6279,7 +6256,15 @@ Object.assign(Actions, {
 const Capture = {
   /* Tarefa e "Na agenda" viraram uma coisa só (pedido do usuário): a tarefa tem dia, horário e duração opcionais
      e aparece na Agenda e no Calendário. Tipo 'agenda' antigo é tratado como tarefa. */
-  TYPES: [['tarefa', 'Tarefa', 'tasks'], ['imprevisto', 'Imprevisto', 'alert']],
+  TYPES: [['tarefa', 'Tarefa', 'tasks'], ['imprevisto', 'Imprevisto', 'alert'], ['reuniao', 'Reunião', 'users'], ['compromisso', 'Compromisso', 'calendar'], ['feedback', 'Feedback', 'chat']],
+  /* Tudo pelo "+" (pedido do usuário: escolhe o dia no calendário e adiciona o que quiser, num lugar só).
+     Tarefa e Imprevisto são preenchidos aqui; Reunião, Compromisso e Feedback abrem o formulário próprio, já no dia escolhido
+     e com o texto digitado. */
+  OUTROS: {
+    reuniao: (k, txt, p) => Events.form(null, p.date || k, { reuniao: true, title: txt, time: p.time }),
+    compromisso: (k, txt, p) => Events.form(null, p.date || k, { title: txt, time: p.time }),
+    feedback: (k, txt, p) => FB.form(null, p.who || '', { date: k, notas: txt }),
+  },
   DURS: [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
   WD: ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
 
@@ -6337,7 +6322,7 @@ const Capture = {
     return out;
   },
 
-  /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
+  /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto (reunião, compromisso e feedback abrem o próprio formulário). k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
   open({ type, k } = {}) {
     const t = U.today(); k = k || t;
     const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 30, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
@@ -6387,9 +6372,9 @@ const Capture = {
     const m = UI.modal({
       title: k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`,
       body: `<div class="cap">
+        <div class="cap-types" role="tablist" aria-label="O que você quer adicionar?">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="cap-tipo ${st.type === v ? 'active' : ''} ct-${v}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 18)}<span>${l}</span></button>`).join('')}</div>
         <textarea id="cap-t" class="cap-text" rows="2" placeholder="${ph()}" aria-label="Descreva em poucas palavras"></textarea>
         <p class="hint cap-tip">${U.icon('chat', 13)} Dica: toque no microfone do teclado para falar em vez de digitar.</p>
-        <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
         <div class="cap-opts"></div>
         <div class="form-error" hidden></div>
       </div>`,
@@ -6420,6 +6405,7 @@ const Capture = {
     });
     m.el.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.type && Capture.OUTROS[b.dataset.type]) { const txt = ta.value.trim(), p = Capture.parse(txt, t); if (st.who) p.who = st.who; m.close(); Capture.OUTROS[b.dataset.type](k, txt, p); return; }
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due || t; st.touched.due = true; paint(); return; }
