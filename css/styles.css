@@ -1436,3 +1436,30 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .calx-d.has-occ .calx-n { box-shadow: 0 0 0 2px var(--red); }
 @media (prefers-reduced-motion: reduce) { .oc-card.run { animation: none; } }
 /* Botão ⚠ de imprevisto ao lado da busca, na tela Tarefas */
+
+/* ---- Prioridade (pedido do usuário: as importantes não se perdem no meio das simples) ----
+   Foco de hoje (até 3, no topo de Tarefas e do Início), troca "Por dia / Por prioridade" e as de prioridade baixa recolhidas. */
+.tk-foco { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 18px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), var(--surface) 70%);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent); }
+.fc-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 0 2px 2px; }
+.fc-h > span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--lilac); }
+.fc-h small { font-size: 12px; color: var(--muted); }
+.fc-it { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 13px; background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--fx, var(--yellow)); }
+.fc-it.p-urgente { --fx: var(--red); }
+.fc-it .tk-ck.play { width: 32px; height: 32px; flex: none; border: 0; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--lilac); }
+.fc-body { flex: 1; min-width: 0; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.fc-body strong { font-weight: 600; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+.fc-body small { font-size: 12.5px; color: var(--muted); }
+.fc-body .tk-prio { margin: 0; font-size: 12.5px; font-weight: 650; }
+.fc-mais { align-self: flex-start; border: 0; background: none; color: var(--lilac); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 4px; min-height: 36px; cursor: pointer; }
+.tk-visao { display: inline-flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); align-self: flex-start; }
+.tk-visao button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.tk-visao button.on { background: var(--surface-3); color: var(--text); }
+.tk-visao button.on .ic { color: var(--accent); }
+.tk-simples { display: block; width: 100%; margin: 4px 0; padding: 10px 14px; min-height: 42px; text-align: left; border: 1px dashed var(--border-strong); border-radius: 12px;
+  background: none; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 560; cursor: pointer; }
+.tk-simples:hover { color: var(--text); border-color: var(--accent); }
+.tk-grp.g-pr-urgente { color: var(--red-text); }
+.tk-grp.g-pr-alta { color: var(--yellow-text); }

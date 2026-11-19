@@ -104,7 +104,7 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.evaluate(() => Tasks.form(null)); await p.waitForTimeout(200);
   await fill('title', 'Cobrar relatório do técnico'); await fill('dueDate', '2026-11-05'); await fill('dueTime', '09:00');
   await p.selectOption('.modal-wrap.open [name=priority]', 'alta'); await submit();
-  assert(await p.locator('.task .dl-late').count() === 1, 'tarefa vencida exibe alerta Atrasada');
+  assert(await p.locator('.task .dl-late, .fc-it .dl-late').count() === 1, 'tarefa vencida exibe alerta Atrasada (alta: no Foco de hoje)');
   await p.evaluate(() => Tasks.form(null)); await p.waitForTimeout(200);
   await fill('title', 'Atualizar planilha de materiais'); await fill('dueDate', '2026-12-20'); await fill('dueTime', '10:00'); await submit();
   await p.selectOption('select[data-k=priority]', 'alta'); await p.waitForTimeout(150);
@@ -113,11 +113,11 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
   await p.fill('[data-input=tkSearch]', 'planilha'); await p.waitForTimeout(500);
   assert(await p.locator('.task').count() === 1 && await p.evaluate(() => document.activeElement.dataset.input) === 'tkSearch', 'busca filtra e mantém o foco');
   await p.fill('[data-input=tkSearch]', ''); await p.waitForTimeout(500);
-  assert(await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').count() === 0, 'tarefa parada não tem botão de concluir: primeiro começa');
+  assert(await p.locator('.task, .fc-it', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').count() === 0, 'tarefa parada não tem botão de concluir: primeiro começa');
   await p.evaluate(() => Actions.tkSet({ id: S.tasks.find(t => t.title === 'Cobrar relatório do técnico').id, s: 'concluida' })); await p.waitForTimeout(200);
   assert((await state()).tasks.find(t => t.title === 'Cobrar relatório do técnico').status !== 'concluida' && (await p.locator('.toast').last().textContent()).includes('Comece a tarefa'), 'não conclui uma tarefa que não foi começada');
-  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=andamento]').click(); await p.waitForTimeout(200);
-  await p.locator('.task', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(200);
+  await p.locator('.task, .fc-it', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=andamento]').click(); await p.waitForTimeout(200);
+  await p.locator('.task, .fc-it', { hasText: 'Cobrar relatório' }).locator('[data-act=tkSet][data-s=concluida]').click(); await p.waitForTimeout(200);
   s = await state();
   assert(s.tasks.find(t => t.title === 'Cobrar relatório do técnico').status === 'concluida' && s.tasks.find(t => t.title === 'Cobrar relatório do técnico').completedAt, 'concluir tarefa registra data de conclusão');
   await p.click('[data-act=tkStatusF][data-v=concluida]'); await p.waitForTimeout(150);

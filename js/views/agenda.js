@@ -111,8 +111,10 @@ const Agenda = {
   /* Horários livres de um dia para encaixar uma tarefa de "dur" minutos (pedido do usuário: toda tarefa entra na agenda).
      Ocupado de verdade: outras tarefas com horário, compromissos/reuniões, intervalo e atividades com horário fixo.
      Primeiro vêm os horários sem nada (nem rotina); depois os que caem sobre uma atividade da rotina (que pode ser reorganizada).
-     Devolve [{ h: 'HH:MM', sobre: 'nome da atividade da rotina' | '' }] (até "max"). */
-  livres(k, dur = 30, { ignorar, max = 6 } = {}) {
+     Devolve [{ h: 'HH:MM', sobre: 'nome da atividade da rotina' | '' }] (até "max").
+     Prioridade (pedido do usuário): urgente → os mais cedo, mesmo sobre a rotina; alta → os livres mais cedo;
+     média → espalhados pelo dia; baixa → os do fim do expediente. */
+  livres(k, dur = 30, { ignorar, max = 6, prio = 'media' } = {}) {
     dur = Math.max(5, Number(dur) || 30);
     const t = U.today(), passo = 15;
     let ini = U.toMin(S.settings.workStart || '08:00'), fim = U.toMin(S.settings.workEnd || '18:00');
@@ -131,6 +133,10 @@ const Agenda = {
       const r = bate(rotina, m, m + dur);
       (r ? sobre : limpos).push({ h: U.fromMin(m), sobre: r ? r.title : '' });
     }
+    const porHora = (a, b) => a.h.localeCompare(b.h);
+    if (prio === 'urgente') return [...limpos, ...sobre].sort(porHora).slice(0, max);
+    if (prio === 'alta') { const o = limpos.slice(0, max); return [...o, ...sobre.slice(0, max - o.length)].sort(porHora); }
+    if (prio === 'baixa') { const o = limpos.slice(-max), n = max - o.length; return [...(n ? sobre.slice(-n) : []), ...o].sort(porHora); }
     // Espalha as sugestões pelo dia (não só as primeiras da manhã)
     const espalha = (l, n) => l.length <= n ? l : n <= 1 ? l.slice(0, n) : Array.from({ length: n }, (_, i) => l[Math.round(i * (l.length - 1) / (n - 1))]);
     const out = espalha(limpos, max);

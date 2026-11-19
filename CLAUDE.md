@@ -53,8 +53,8 @@ e diga o que mudou e como testar no celular.
   a duração padrão é 30 min; `Agenda.livres(dia, dur)` sugere até 6 horários (livres de tarefas, compromissos, intervalo e horário fixo; primeiro os sem rotina,
   depois os que caem sobre uma atividade da rotina, marcados com "•"). `Tasks.form` também exige dia e horário e mostra os mesmos horários livres (`.tk-livres`).
   Tarefas antigas sem data/horário continuam aparecendo (hoje / "Sem horário").
-- **Formulário de tarefa enxuto (pedido do usuário)**: tudo numa tela só, sem "Mais detalhes"/"Mais opções". No "+" (`Capture`, aba Tarefa): Quando, Horário + Duração
-  (`#cap-dur`, `Tasks.DURS`), Quem faz, Prioridade + Repetir (`#cap-prio`, `#cap-rep`) e Observação (`#cap-obs` → `description`). Aba Imprevisto: tempo agora,
+- **Formulário de tarefa enxuto (pedido do usuário)**: tudo numa tela só, sem "Mais detalhes"/"Mais opções". No "+" (`Capture`, aba Tarefa): Quando, Prioridade + Duração
+  (`#cap-prio`, `#cap-dur`, `Tasks.DURS`), horários livres, Horário + Repetir (`#cap-time`, `#cap-rep`), Quem faz e Observação (`#cap-obs` → `description`). Aba Imprevisto: tempo agora,
   Quem resolve, Prioridade + Prazo para resolver (`#cap-oprio`, `#cap-odue`) e Observação. **Não há mais "Mais detalhes"** (nem `Capture.details`).
   `Occ.form` (Registrar/Editar imprevisto) também é uma tela só, dois campos por linha, sem status (botões Iniciar/Resolver/Reabrir do cartão).
   `Tasks.form` (Nova tarefa da tela Tarefas e Editar): os mesmos campos, dois por linha também no celular (`.form-grid:has(.tk-form-dica)`); **sem** categoria,
@@ -144,6 +144,14 @@ e diga o que mudou e como testar no celular.
   **Começar** (`Occ.comecar` / `occComecar`, também `occStatus` com `andamento`): encaixa na agenda agora (30 min, `Capture.encaixarAgora`, empurra o resto), põe em andamento e
   **pausa a tarefa em execução**; só um imprevisto em andamento. Enquanto houver imprevisto em andamento, **nenhuma tarefa começa** (`Tasks.pode`). Bloco do imprevisto na linha do tempo
   em vermelho (`.blk-occ`) e o dia de hoje com anel vermelho no calendário (`.has-occ`). Testes em `tests/melhorias.test.js`.
+- **Prioridade das tarefas (pedido do usuário: as importantes não se perdem no meio das simples)**: (1) **Foco de hoje** (`Tasks.foco`/`focoHtml`, `.tk-foco`):
+  até 3 tarefas **pendentes** urgentes/altas de hoje, atrasadas ou sem data, com ▶; no topo de Tarefas (visão por dia, aba Abertas, sem filtro; elas saem dos grupos de baixo)
+  e no Início; "+ N outras importantes · ver por prioridade" (`tkVerPrio`). (2) A lista ordena por prioridade **dentro de cada grupo** (depois atraso, dia e horário);
+  na visão por dia as de prioridade **baixa** ficam recolhidas (`.tk-simples`, `tkSimples`, `App.ui.tkSimples`) quando o grupo tem outras mais importantes (não em Atrasadas/Em execução).
+  (4) Troca **"Por dia / Por prioridade"** (`.tk-visao`, `tkVisao`, guardada em `localStorage['ff-tk-visao']`, sempre com try: no link do claude.ai o LocalStorage é bloqueado):
+  grupos Urgente · Alta · Média · Baixa, cada tarefa com o dia ("hoje", "amanhã"…); sem colunas no computador nem Foco. (5) `Agenda.livres(..., { prio })`: urgente = os mais cedo
+  (mesmo sobre a rotina), alta = os livres mais cedo, média = espalhados, baixa = fim do expediente; no "+" e no `Tasks.form` a Prioridade fica antes do horário e refaz as
+  sugestões (`Tasks.livresDica`). Testes no fim de `tests/melhorias.test.js`.
 - **Marcar reunião/compromisso/feedback sem gravar**: pelo "+" (`Capture.OUTROS` → `Events.form(null, dia, { reuniao, title, time })` / `FB.form(null, pessoa, { date, notas })`).
 - **Gravação com tela bloqueada (Android)**: `GravacaoService.java` (serviço em primeiro plano tipo microfone + wake lock parcial, aviso fixo "FlowFire está gravando"),
   ligado por `Sistema.gravando({ ligada })` a partir de `Recorder.keepScreen` (vale para o `Gravador` e o `Recorder`). Só liga com a permissão do microfone já dada.

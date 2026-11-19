@@ -29,7 +29,12 @@ Views.tarefas = {
       if (f.to && !(x.dueDate && x.dueDate <= f.to)) return false;
       return true;
     });
-    list.sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || (D.taskLate(b) - D.taskLate(a)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
+    // Prioridade (pedido do usuário: as importantes não podem se perder no meio das simples).
+    // Visão "Por dia" (grupos por quando, importantes primeiro em cada grupo) ou "Por prioridade" (Urgente · Alta · Média · Baixa).
+    if (!App.ui.tkVisao) { try { App.ui.tkVisao = localStorage.getItem('ff-tk-visao'); } catch (e) { /* sem LocalStorage (link do claude.ai) */ } }
+    const porPrio = (App.ui.tkVisao = App.ui.tkVisao || 'dia') === 'prio';
+    const P = x => PRIORITY_RANK[x.priority] ?? 2;
+    list.sort((a, b) => (OPEN(b.status) - OPEN(a.status)) || P(a) - P(b) || (D.taskLate(b) - D.taskLate(a)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (a.dueTime || '99').localeCompare(b.dueTime || '99'));
 
     const stat = (k, l, cls = '') => `<button class="stat-chip ${cls} ${f.status === k ? 'active' : ''}" aria-pressed="${f.status === k}" data-act="tkStatusF" data-v="${k}"><strong>${counts[k]}</strong><span>${l}</span></button>`;
     const sel = (name, opts, label) => `<select data-change="tkFilter" data-k="${name}" aria-label="${label}"><option value="">${label}</option>${UI.opts(opts, f[name])}</select>`;
@@ -41,13 +46,13 @@ Views.tarefas = {
     const row = x => {
       const dl = D.deadline(x.dueDate, x.dueTime, !OPEN(x.status));
       const fechada = x.status === 'concluida' || x.status === 'cancelada';
-      const quando = !x.dueDate ? '' : x.dueDate === t || x.dueDate === tm ? '' : x.dueDate === U.addDays(t, -1) ? 'ontem' : `${U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase()} ${U.fmtShort(x.dueDate)}`;
+      const quando = !x.dueDate ? (porPrio ? 'sem data' : '') : x.dueDate === t ? (porPrio ? 'hoje' : '') : x.dueDate === tm ? (porPrio ? 'amanhã' : '') : x.dueDate === U.addDays(t, -1) ? 'ontem' : `${U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase()} ${U.fmtShort(x.dueDate)}`;
       const hora = x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? ' – ' + Cal.fimTarefa(x) : '') : '';
       const late = OPEN(x.status) && D.taskLate(x);
       const meta = [late ? `<span class="dl-late">${x.dueDate === t ? 'venceu hoje' : x.dueDate === U.addDays(t, -1) ? 'era ontem' : 'era ' + U.WD_SHORT[U.weekday(x.dueDate)].toLowerCase() + ' ' + U.fmtShort(x.dueDate)}${x.dueTime ? ', ' + x.dueTime : ''}</span>` : [quando, hora].filter(Boolean).join(', '),
         x.status === 'andamento' ? '<span class="run-tag"><i class="run-dot"></i>em execução</span>' : '', x.status === 'cancelada' ? 'cancelada' : '',
         x.responsible ? U.esc(x.responsible) : '', x.repeat ? `<span class="tk-rep">${U.icon('undo', 12)} ${Tasks.repeatLabel(x.repeat)}</span>` : ''].filter(Boolean).join(' · ');
-      const prio = OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
+      const prio = !porPrio && OPEN(x.status) && (x.priority === 'alta' || x.priority === 'urgente') ? `<span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span>` : '';
       return `<div class="task ${x.status} p-${x.priority || 'media'} ${dl ? 'dl-row-' + dl.level : ''}">
         ${Tasks.botao(x, late)}
         <div class="tk-body" data-act="tkEdit" data-id="${x.id}">
@@ -61,13 +66,27 @@ Views.tarefas = {
     };
     const grupoDe = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : D.taskLate(x) ? 'atrasadas' : !x.dueDate ? 'semdata'
       : x.dueDate <= t ? 'hoje' : x.dueDate === tm ? 'amanha' : x.dueDate <= d7 ? 'semana' : 'depois';
-    const NOMES = { execucao: 'Em execução agora', atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
-    const grupos = (ks, l) => ks.map(k => { const it = l.filter(x => grupoDe(x) === k); return it.length ? `<div class="tk-grp g-${k}">${NOMES[k]}<span>${it.length}</span></div>${it.map(row).join('')}` : ''; }).join('');
-    const ORDEM = ['execucao', 'atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    const grupoP = x => !OPEN(x.status) ? (x.status === 'concluida' ? 'feitas' : 'canceladas') : x.status === 'andamento' ? 'execucao' : 'pr-' + (PRIORITY_RANK[x.priority] === undefined ? 'media' : x.priority);
+    const NOMES = { 'pr-urgente': 'Urgente', 'pr-alta': 'Alta', 'pr-media': 'Média', 'pr-baixa': 'Baixa', execucao: 'Em execução agora', atrasadas: 'Atrasadas', hoje: `Hoje · ${U.WD[U.weekday(t)].replace('-feira', '').toLowerCase()}, ${+t.slice(8)}`, amanha: 'Amanhã', semana: 'Próximos 7 dias', depois: 'Mais adiante', semdata: 'Sem data', feitas: 'Concluídas', canceladas: 'Canceladas' };
+    // Na visão por dia, as de prioridade baixa ficam recolhidas ("+ 3 tarefas de prioridade baixa") quando o grupo tem outras mais importantes
+    const RECOLHE = ['hoje', 'amanha', 'semana', 'depois', 'semdata'];
+    const grupos = (ks, l) => ks.map(k => {
+      const it = l.filter(x => (porPrio ? grupoP : grupoDe)(x) === k); if (!it.length) return '';
+      const head = `<div class="tk-grp g-${k}">${NOMES[k]}<span>${it.length}</span></div>`;
+      const imp = it.filter(x => x.priority !== 'baixa'), baixas = it.filter(x => x.priority === 'baixa');
+      if (porPrio || !RECOLHE.includes(k) || !imp.length || !baixas.length) return head + it.map(row).join('');
+      const aberto = (App.ui.tkSimples || {})[k];
+      return head + imp.map(row).join('') + `<button class="tk-simples" data-act="tkSimples" data-g="${k}" aria-expanded="${!!aberto}">${aberto ? 'Esconder as de prioridade baixa' : `+ ${U.plural(baixas.length, 'tarefa', 'tarefas')} de prioridade baixa`}</button>` + (aberto ? baixas.map(row).join('') : '');
+    }).join('');
+    const ORDEM = porPrio ? ['execucao', 'pr-urgente', 'pr-alta', 'pr-media', 'pr-baixa', 'feitas', 'canceladas'] : ['execucao', 'atrasadas', 'hoje', 'amanha', 'semana', 'depois', 'semdata', 'feitas', 'canceladas'];
+    // Foco de hoje (as até 3 mais importantes) no topo da visão por dia; elas saem dos grupos de baixo para não repetir
+    const foco = !porPrio && f.status === 'abertas' && !filtersOn ? Tasks.foco() : { itens: [] };
+    const fIds = new Set(foco.itens.map(x => x.id));
+    const lista = list.filter(x => !fIds.has(x.id));
     // Sugestão 5: no computador, as abertas em três colunas (Hoje · Depois · Sem data)
     const pc = window.matchMedia && matchMedia('(min-width: 901px)').matches;
-    const colunas = pc && f.status === 'abertas' && list.length;
-    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="quickAdd">+ Adicionar</button></section>`; };
+    const colunas = pc && !porPrio && f.status === 'abertas' && list.length;
+    const col = (titulo, sub, ks) => { const n = lista.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, lista) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="quickAdd">+ Adicionar</button></section>`; };
     const nome = ((S.settings.usuario || '').trim().split(' ')[0]) || '';
     // Sugestão 6: tela vazia com a voz do app
     const vazio = !all.length || (f.status === 'abertas' && !filtersOn && !list.length)
@@ -92,9 +111,11 @@ Views.tarefas = {
       <label class="inline">Até <input type="date" value="${f.to}" data-change="tkFilter" data-k="to"></label>
       ${filtersOn ? '<button class="btn sm ghost" data-act="tkClear">Limpar filtros</button>' : ''}
     </div>
+    <div class="tk-visao" role="group" aria-label="Organizar as tarefas">${[['dia', 'calendar', 'Por dia'], ['prio', 'flag', 'Por prioridade']].map(([v, ic, l]) => `<button class="${(porPrio ? 'prio' : 'dia') === v ? 'on' : ''}" data-act="tkVisao" data-v="${v}" aria-pressed="${(porPrio ? 'prio' : 'dia') === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
     ${filtersOn ? `<p class="muted small">${U.plural(list.length, 'tarefa encontrada', 'tarefas encontradas')}</p>` : ''}
+    ${Tasks.focoHtml(foco)}
     ${colunas ? `<div class="tk-cols">${col('Hoje', U.fmtShort(t), ['execucao', 'atrasadas', 'hoje'])}${col('Depois', 'próximos dias', ['amanha', 'semana', 'depois'])}${col('Sem data', 'quando der', ['semdata'])}</div>`
-      : `<div class="task-list">${list.length ? grupos(ORDEM, list) : vazio}</div>`}`;
+      : `<div class="task-list">${list.length ? grupos(ORDEM, lista) : vazio}</div>`}`;
   },
 };
 
@@ -112,12 +133,12 @@ const Tasks = {
       title: isNew ? 'Nova tarefa' : 'Editar tarefa',
       fields: [
         { name: 'title', label: 'O que precisa fazer?', required: true, value: x.title },
+        { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
+        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS.filter(([v]) => v), value: String(x.dur || 30), half: true },
         { name: 'dueDate', label: 'Dia', type: 'date', value: dia0, required: true, half: true },
         { name: 'dueTime', label: 'Horário', type: 'time', value: x.dueTime, required: true, half: true },
         { type: 'html', html: '<div class="tk-livres"></div>' },
-        { name: 'dur', label: 'Duração', type: 'select', options: Tasks.DURS.filter(([v]) => v), value: String(x.dur || 30), half: true },
         { name: 'responsible', label: 'Quem faz?', value: x.responsible, list: D.techNames(), placeholder: 'Você', half: true },
-        { name: 'priority', label: 'Prioridade', type: 'select', options: H.prioOptions(), value: x.priority, half: true },
         { name: 'repeat', label: 'Repetir', type: 'select', options: Tasks.REPEAT, value: x.repeat || '', half: true },
         { name: 'description', label: 'Observação', type: 'textarea', rows: 2, value: obs, placeholder: 'Opcional' },
         { type: 'html', html: `<p class="muted small tk-form-dica">Dia e horário são obrigatórios: toda tarefa entra na agenda.${isNew ? '' : ` Criada em ${U.fmtDateTime(x.createdAt)}${x.completedAt ? ` · concluída em ${U.fmtDateTime(x.completedAt)}` : ''}.`}</p>` },
@@ -136,15 +157,37 @@ const Tasks = {
     const fm = m.el.querySelector('form'), caixa = m.el.querySelector('.tk-livres');
     const pinta = () => {
       const d = fm.elements.dueDate.value || U.today(), h = fm.elements.dueTime.value;
-      const l = Agenda.livres(d, fm.elements.dur.value, { ignorar: x.id });
-      caixa.innerHTML = `<span class="lbl">Horários livres</span><div class="cap-chips">${l.length ? l.map(o => `<button type="button" class="cap-chip ${o.h === h ? 'on' : ''} ${o.sobre ? 'sobre' : ''}" data-livre="${o.h}" title="${o.sobre ? 'No horário de: ' + U.esc(o.sobre) : 'Horário livre'}">${o.h}${o.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente.</span>'}</div>`;
+      const pr = fm.elements.priority.value || 'media';
+      const l = Agenda.livres(d, fm.elements.dur.value, { ignorar: x.id, prio: pr });
+      caixa.innerHTML = `<span class="lbl">Horários livres${Tasks.livresDica(pr)}</span><div class="cap-chips">${l.length ? l.map(o => `<button type="button" class="cap-chip ${o.h === h ? 'on' : ''} ${o.sobre ? 'sobre' : ''}" data-livre="${o.h}" title="${o.sobre ? 'No horário de: ' + U.esc(o.sobre) : 'Horário livre'}">${o.h}${o.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente.</span>'}</div>`;
     };
     pinta();
-    fm.addEventListener('change', e => { if (['dueDate', 'dur', 'dueTime'].includes(e.target.name)) pinta(); });
+    fm.addEventListener('change', e => { if (['dueDate', 'dur', 'dueTime', 'priority'].includes(e.target.name)) pinta(); });
     caixa.addEventListener('click', e => { const b = e.target.closest('[data-livre]'); if (b) { fm.elements.dueTime.value = b.dataset.livre; pinta(); } });
   },
   /* Botão único (pedido do usuário): ▶ começa; na tarefa em execução vira ✓ e conclui; concluída/cancelada reabre.
      Assim nada é concluído sem antes ser começado. */
+  /* Foco de hoje (pedido do usuário): até 3 tarefas urgentes/altas de hoje, atrasadas ou sem data, ainda não começadas */
+  foco() {
+    const t = U.today();
+    const l = S.tasks.filter(x => x.status === 'pendente' && (x.priority === 'urgente' || x.priority === 'alta') && (!x.dueDate || x.dueDate <= t))
+      .sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || D.taskLate(b) - D.taskLate(a) || (a.dueDate || t).localeCompare(b.dueDate || t) || (a.dueTime || '99').localeCompare(b.dueTime || '99'));
+    return { itens: l.slice(0, 3), mais: Math.max(0, l.length - 3) };
+  },
+  focoHtml({ itens, mais } = this.foco()) {
+    if (!itens.length) return '';
+    const t = U.today();
+    const it = x => {
+      const late = D.taskLate(x);
+      const q = late ? `<span class="dl-late">atrasada${x.dueDate !== t ? ' desde ' + U.fmtShort(x.dueDate) : ''}</span>` : x.dueTime ? x.dueTime + (Cal.fimTarefa(x) ? '–' + Cal.fimTarefa(x) : '') : 'sem horário';
+      return `<div class="fc-it p-${x.priority}">${this.botao(x, late)}<div class="fc-body" data-act="tkEdit" data-id="${x.id}"><strong>${U.esc(x.title)}${H.demo(x)}</strong>
+        <small><span class="tk-prio p-${x.priority}">${D.prio(x.priority).label.toLowerCase()}</span> · ${q}${x.responsible ? ' · ' + U.esc(x.responsible) : ''}</small></div></div>`;
+    };
+    return `<section class="tk-foco" aria-label="Foco de hoje"><div class="fc-h"><span>${U.icon('target', 15)} Foco de hoje</span><small>${itens.length === 1 ? 'a mais importante' : `as ${itens.length} mais importantes`}</small></div>
+      ${itens.map(it).join('')}${mais ? `<button class="fc-mais" data-act="tkVerPrio">+ ${U.plural(mais, 'outra importante', 'outras importantes')} · ver por prioridade</button>` : ''}</section>`;
+  },
+  /* Explica por que os horários sugeridos mudam com a prioridade (Agenda.livres) */
+  livresDica(p) { return p === 'urgente' ? ' <em class="cap-obr">o quanto antes</em>' : p === 'alta' ? ' <em class="cap-obr">mais cedo</em>' : p === 'baixa' ? ' <em class="cap-obr">fim do dia</em>' : ''; },
   emExecucao(exceto) { return S.tasks.find(y => y.status === 'andamento' && y.id !== exceto); },
   botao(x, late, extra = '') {
     const nome = U.esc(x.title);
@@ -288,5 +331,8 @@ Object.assign(Actions, {
   tkFilter({ k }, el) { App.ui.taskF[k] = el.value; App.render(); },
   tkSearch(_, el) { App.ui.taskF.q = el.value; App.render({ keepFocus: true }); },
   tkFiltros() { App.ui.taskFOpen = !App.ui.taskFOpen; App.render(); },
+  tkVisao({ v }) { App.ui.tkVisao = v === 'prio' ? 'prio' : 'dia'; try { localStorage.setItem('ff-tk-visao', App.ui.tkVisao); } catch (e) { /* ignora */ } App.render(); },
+  tkSimples({ g }) { App.ui.tkSimples = { ...(App.ui.tkSimples || {}), [g]: !(App.ui.tkSimples || {})[g] }; App.render(); },
+  tkVerPrio() { Actions.tkVisao({ v: 'prio' }); Actions.goTasks({ status: 'abertas' }); },
   tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });

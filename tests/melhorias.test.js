@@ -85,6 +85,43 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check((await p.evaluate(() => S.tasks.find(t => t.id === 'trun').status)) === 'pendente', 'enquanto o imprevisto está em andamento, nenhuma tarefa começa');
   await p.tap('.oc-card.run [data-s=concluida]'); await W(400);
   check(await p.locator('.oc-card').count() === 0 && (await p.evaluate(() => S.occurrences[0].status)) === 'concluida', '"Resolvido" tira o imprevisto do destaque');
+  // Prioridade (pedido do usuário: as importantes não se perdem no meio das simples)
+  await p.evaluate(() => {
+    const t = U.today(), tm = U.addDays(t, 1);
+    const mk = (id, title, priority, dueDate, dueTime) => S.tasks.push({ id, title, priority, status: 'pendente', category: 'administrativo', dueDate, dueTime, dur: 30, createdAt: '' });
+    S.tasks = []; S.days = {};
+    mk('pb1', 'Simples hoje 1', 'baixa', t, '09:00'); mk('pm1', 'Média hoje', 'media', t, '09:30'); mk('pa1', 'Alta hoje', 'alta', t, '16:00');
+    mk('pu1', 'Urgente hoje', 'urgente', t, '17:00'); mk('pa2', 'Alta atrasada', 'alta', U.addDays(t, -1), '10:00'); mk('pa3', 'Alta sem hora', 'alta', t, '');
+    mk('pa4', 'Alta quatro', 'alta', t, '15:00'); mk('pb2', 'Simples hoje 2', 'baixa', t, '11:00'); mk('pb3', 'Simples amanhã', 'baixa', tm, '09:00');
+    localStorage.removeItem('ff-tk-visao'); App.ui.tkVisao = ''; commit(); location.hash = '#tarefas';
+  }); await W(400);
+  const foco = await p.locator('.tk-foco .fc-body strong').allTextContents();
+  check(foco.length === 3 && foco[0].startsWith('Urgente hoje') && foco[1].startsWith('Alta atrasada'), 'Foco de hoje: as 3 mais importantes (urgente primeiro, depois a alta atrasada)');
+  check((await p.textContent('.tk-foco .fc-mais')).includes('2 outras importantes'), '…e avisa quantas importantes ficaram de fora');
+  const hoje = await p.locator('.task-list .task .tk-title').allTextContents();
+  check(!hoje.some(x => foco.includes(x)) && hoje[0].startsWith('Alta hoje') && hoje[1].startsWith('Alta sem hora') && hoje[2].startsWith('Média hoje'), 'no grupo de hoje as importantes vêm primeiro e o que está no foco não se repete');
+  check(await p.locator('.task-list .tk-simples').count() === 1 && !hoje.some(x => x.startsWith('Simples hoje')), 'as de prioridade baixa ficam recolhidas quando há mais importantes no dia');
+  check((await p.textContent('.task-list .tk-simples')).includes('2 tarefas de prioridade baixa'), '…com a contagem');
+  check(await p.locator('.tk-grp.g-amanha + .task .tk-title', { hasText: 'Simples amanhã' }).count() === 1, 'num dia só com tarefas de prioridade baixa, elas aparecem normalmente');
+  await p.tap('.task-list .tk-simples'); await W(300);
+  check(await p.locator('.task-list .task .tk-title', { hasText: 'Simples hoje 1' }).count() === 1, 'um toque mostra as de prioridade baixa');
+  await p.tap('[data-act=tkVisao][data-v=prio]'); await W(300);
+  const grps = await p.locator('.task-list .tk-grp').evaluateAll(l => l.map(g => g.className.match(/g-(\S+)/)[1]));
+  check(grps.join() === 'pr-urgente,pr-alta,pr-media,pr-baixa' && await p.locator('.tk-foco').count() === 0, '"Por prioridade": grupos Urgente, Alta, Média e Baixa (sem o quadro do foco)');
+  check((await p.textContent('.task-list .task:has-text("Média hoje") .tk-meta')).includes('hoje'), '…e cada tarefa mostra o dia');
+  await p.reload(); await W(600);
+  check(await p.locator('[data-act=tkVisao][data-v=prio].on').count() === 1, 'a escolha da visão fica guardada');
+  await p.tap('[data-act=tkVisao][data-v=dia]'); await W(200);
+  await p.evaluate(() => { location.hash = '#dashboard'; }); await W(400);
+  check(await p.locator('.tk-foco .fc-it').count() === 3, 'o Foco de hoje também aparece no Início');
+  await p.tap('.tk-foco .fc-mais'); await W(400);
+  check(await p.evaluate(() => location.hash) === '#tarefas' && await p.locator('[data-act=tkVisao][data-v=prio].on').count() === 1, '"ver por prioridade" abre Tarefas por prioridade');
+  // Horários livres conforme a prioridade
+  const L = await p.evaluate(() => { const k = U.addDays(U.today(), 2); S.tasks = []; return ['urgente', 'alta', 'media', 'baixa'].map(pr => Agenda.livres(k, 30, { prio: pr }).map(x => x.h)); });
+  check(L[0][0] === '08:00' && L[1][0] === '08:00' && L[3][L[3].length - 1] === '17:30' && L[3][0] > '15:00' && L[2][0] === '08:00' && L[2][5] > '15:00', 'horários livres: urgente/alta começam o mais cedo, baixa no fim do dia, média espalhada');
+  await p.evaluate(() => Actions.quickAdd({ k: U.addDays(U.today(), 2) })); await W(300);
+  await p.selectOption(`${M} #cap-prio`, 'baixa'); await W(200);
+  check((await p.locator(`${M} [data-livre]`).first().getAttribute('data-livre')) > '15:00' && (await p.textContent(`${M} .cap-opts`)).includes('fim do dia'), 'no "+", trocar a prioridade muda os horários sugeridos');
   check(!errs.length, 'sem erros' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();
 })().catch(e => { console.error(e.message); process.exit(1); });

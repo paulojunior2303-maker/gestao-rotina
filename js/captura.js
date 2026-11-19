@@ -102,19 +102,19 @@ const Capture = {
       const tm = U.addDays(t, 1);
       const other = st.due && st.due !== t && st.due !== tm;
       // Toda tarefa entra na agenda (pedido do usuário): dia e horário obrigatórios, com sugestões de horários livres
-      const livres = Agenda.livres(st.due, st.tdur || 30);
+      const livres = Agenda.livres(st.due, st.tdur || 30, { prio: st.prio });
       return `<span class="cap-l">Quando? <em class="cap-obr">obrigatório</em></span>
         <div class="cap-chips">${btn('due', t, 'Hoje', st.due === t)}${btn('due', tm, 'Amanhã', st.due === tm)}
         <label class="cap-chip cap-date ${other ? 'on' : ''}">${U.icon('calendar', 14)}<input type="date" id="cap-date" min="${t}" value="${other ? st.due : ''}" aria-label="Outra data">${other ? U.fmtShort(st.due) : 'Outra data'}</label></div>
-        <div class="cap-2"><label><span class="cap-l">Horário <em class="cap-obr">obrigatório</em></span><input type="time" id="cap-time" class="cap-in" value="${st.time}" required></label>
+        <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
           <label><span class="cap-l">Duração</span>${sel('cap-dur', 'dur', Tasks.DURS.filter(([v]) => v), st.tdur || 30)}</label></div>
-        <span class="cap-l">Horários livres ${st.due === t ? 'hoje' : st.due === tm ? 'amanhã' : 'em ' + U.fmtShort(st.due)}</span>
+        <span class="cap-l">Horários livres ${st.due === t ? 'hoje' : st.due === tm ? 'amanhã' : 'em ' + U.fmtShort(st.due)}${Tasks.livresDica(st.prio)}</span>
         <div class="cap-chips cap-livres">${livres.length ? livres.map(l => `<button type="button" class="cap-chip ${st.time === l.h ? 'on' : ''} ${l.sobre ? 'sobre' : ''}" data-livre="${l.h}" title="${l.sobre ? 'No horário de: ' + U.esc(l.sobre) : 'Horário livre'}">${l.h}${l.sobre ? '<i>•</i>' : ''}</button>`).join('') : '<span class="muted small">Nada livre neste dia no expediente. Escolha outro dia ou digite um horário.</span>'}</div>
         ${livres.some(l => l.sobre) ? '<p class="muted small cap-nota"><i class="cap-ponto">•</i> cai sobre uma atividade da rotina: depois é só tocar em Reorganizar na Agenda.</p>' : ''}
         ${st.repeat ? `<p class="cap-prev">${U.icon('undo', 14)} <span>Repete: <strong>${Tasks.repeatLabel(st.repeat).toLowerCase()}</strong>.</span></p>` : ''}
-        ${whoField('Quem faz?')}
-        <div class="cap-2"><label><span class="cap-l">Prioridade</span>${sel('cap-prio', 'priority', H.prioOptions(), st.prio)}</label>
+        <div class="cap-2"><label><span class="cap-l">Horário <em class="cap-obr">obrigatório</em></span><input type="time" id="cap-time" class="cap-in" value="${st.time}" required></label>
           <label><span class="cap-l">Repetir</span>${sel('cap-rep', 'repeat', Tasks.REPEAT, st.repeat)}</label></div>
+        ${whoField('Quem faz?')}
         ${obsField}`;
     };
     const saveLabel = () => st.type === 'imprevisto' ? (st.dur && k === t ? 'Registrar e encaixar' : 'Registrar') : 'Criar tarefa';
@@ -174,7 +174,7 @@ const Capture = {
       const id = e.target.id, v = e.target.value;
       if (id === 'cap-date' && v) { st.due = v; st.touched.due = true; paint(); }
       if (id === 'cap-dur') { st.tdur = +v || 30; st.touched.tdur = true; paint(); }
-      if (id === 'cap-prio') st.prio = v;
+      if (id === 'cap-prio') { st.prio = v; paint(); }
       if (id === 'cap-oprio') st.oprio = v;
       if (id === 'cap-odue') st.odue = v;
       if (id === 'cap-rep') { st.repeat = v; st.touched.repeat = true; }
