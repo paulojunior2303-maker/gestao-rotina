@@ -51,12 +51,12 @@ Views.imprevistos = {
 
 const Occ = {
   /* Quadro de imprevistos em destaque (pedido do usuário: imprevisto vem antes de tudo).
-     Fica no topo do Início, da Agenda e da Lista de tarefas, com o botão de registrar sempre à vista. */
+     Fica no topo do Início, da Agenda e da Lista de tarefas, só quando há imprevisto aberto (registrar é pelo "+" de qualquer tela). */
   emAndamento(exceto) { return S.occurrences.find(o => o.status === 'andamento' && o.id !== exceto); },
-  painel({ compacto = false } = {}) {
+  painel() {
     const abertos = S.occurrences.filter(o => OPEN(o.status)).sort((a, b) => (b.status === 'andamento') - (a.status === 'andamento') || (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
-    const novo = (curto) => `<button class="oc-novo" data-act="capture" data-type="imprevisto">${U.icon('plus', 15)} ${curto ? 'Imprevisto' : 'Registrar imprevisto'}</button>`;
-    if (!abertos.length) return compacto ? '' : `<div class="oc-painel vazio-oc">${novo(false)}</div>`;
+    const novo = () => `<button class="oc-novo" data-act="capture" data-type="imprevisto">${U.icon('plus', 15)} Imprevisto</button>`;
+    if (!abertos.length) return '';
     const ha = iso => { const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
     const card = o => {
       const run = o.status === 'andamento';
@@ -72,7 +72,7 @@ const Occ = {
           : `<button class="oc-btn go" data-act="occComecar" data-id="${o.id}">${U.icon('play', 14)} Começar</button>`}</div>
       </div>`;
     };
-    return `<section class="oc-painel"><div class="oc-h"><span>${U.icon('alert', 15)} ${U.plural(abertos.length, 'imprevisto aberto', 'imprevistos abertos')}</span>${novo(true)}</div>${abertos.map(card).join('')}</section>`;
+    return `<section class="oc-painel"><div class="oc-h"><span>${U.icon('alert', 15)} ${U.plural(abertos.length, 'imprevisto aberto', 'imprevistos abertos')}</span>${novo()}</div>${abertos.map(card).join('')}</section>`;
   },
   /* Começar um imprevisto: vai para a agenda AGORA (30 min, empurrando o resto) e pausa o que estava em execução */
   comecar(o, dur = 30) {

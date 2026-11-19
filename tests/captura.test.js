@@ -42,13 +42,13 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(P[6].who === 'João' && P[6].time === '14:30', 'nome sem acento e "14:30"');
   check(!P[7].date && !P[7].time && !P[7].dur && !P[7].who, 'texto comum não inventa nada');
 
-  // ---- Início: + abre a anotação só com Tarefa e Imprevisto (sem "Na agenda" e sem "Ou escolha")
+  // ---- Início: + abre a anotação com todos os tipos (Tarefa, Imprevisto, Reunião, Compromisso, Feedback)
   await go('dashboard');
   await p.tap('#fab'); await W();
   check(await p.locator(`${M} #cap-t`).isVisible(), '+ abre a anotação rápida com campo de texto');
   check(await p.locator(`${M} [data-type=tarefa].active`).count() === 1 && await p.locator(`${M} [data-due="${today}"].on`).count() === 1, 'o tipo padrão é Tarefa, no dia escolhido (hoje)');
-  check(await p.locator(`${M} [data-type]`).count() === 2 && await p.locator(`${M} [data-type=agenda]`).count() === 0, 'só dois tipos: Tarefa e Imprevisto (Na agenda virou Tarefa)');
-  check(await p.locator(`${M} .cap-others`).count() === 0 && await p.locator(`${M} .sheet-item`).count() === 0, 'sem a lista "Ou escolha" (reunião e feedback ficam em Gravações)');
+  check(await p.locator(`${M} [data-type]`).count() === 5 && await p.locator(`${M} [data-type=agenda]`).count() === 0, 'cinco tipos no "+" (Na agenda virou Tarefa)');
+  check(await p.locator(`${M} .cap-others`).count() === 0 && await p.locator(`${M} .sheet-item`).count() === 0, 'sem a lista "Ou escolha"');
   await p.tap(`${M} [data-type=imprevisto]`); await W(100);
   await p.tap(`${M} [data-save]`); await W(150);
   check(await p.locator(`${M} .form-error:not([hidden])`).count() === 1, 'sem texto não grava');

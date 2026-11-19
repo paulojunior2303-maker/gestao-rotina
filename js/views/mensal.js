@@ -7,7 +7,7 @@ const Events = {
   },
   form(e, date, opts = {}) {
     const isNew = !e;
-    e = e || { date: date || U.today(), reuniao: !!opts.reuniao };
+    e = e || { date: date || U.today(), reuniao: !!opts.reuniao, title: opts.title || '', time: opts.time || '' };
     const meet = Meetings.isMeeting(e);
     const noun = meet ? 'reunião' : 'compromisso';
     const pend = Events.pendencias(e.id);

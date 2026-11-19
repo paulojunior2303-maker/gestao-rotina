@@ -101,11 +101,11 @@ const assert = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log(
 
   // ---- Tarefas
   await go('tarefas');
-  await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);
+  await p.evaluate(() => Tasks.form(null)); await p.waitForTimeout(200);
   await fill('title', 'Cobrar relatório do técnico'); await fill('dueDate', '2026-11-05'); await fill('dueTime', '09:00');
   await p.selectOption('.modal-wrap.open [name=priority]', 'alta'); await submit();
   assert(await p.locator('.task .dl-late').count() === 1, 'tarefa vencida exibe alerta Atrasada');
-  await p.click('[data-act=tkNew]'); await p.waitForTimeout(200);
+  await p.evaluate(() => Tasks.form(null)); await p.waitForTimeout(200);
   await fill('title', 'Atualizar planilha de materiais'); await fill('dueDate', '2026-12-20'); await fill('dueTime', '10:00'); await submit();
   await p.selectOption('select[data-k=priority]', 'alta'); await p.waitForTimeout(150);
   assert(await p.locator('.task').count() === 1, 'filtro por prioridade');

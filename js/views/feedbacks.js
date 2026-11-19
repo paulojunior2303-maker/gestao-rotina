@@ -24,9 +24,9 @@ const FB = {
 
 
 Object.assign(FB, {
-  form(f, pessoa) {
+  form(f, pessoa, opts = {}) {
     const isNew = !f;
-    const r = f || { pessoa: pessoa || '', date: U.today(), tipo: 'feedback', tom: 'neutro', notas: '', resumo: '', acordos: '' };
+    const r = f || { pessoa: pessoa || '', date: opts.date || U.today(), tipo: 'feedback', tom: 'neutro', notas: opts.notas || '', resumo: IA.supported() ? '' : (opts.notas || ''), acordos: '' };
     let dirty = false, warned = false;
     Recorder.reset();
     const iaBox = !IA.supported() ? '' : `<div class="ia-box">

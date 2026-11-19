@@ -80,7 +80,7 @@ Views.agenda = {
     const resumo = `${summary}${abertas ? ` · ${U.plural(abertas, 'tarefa a fazer', 'tarefas a fazer')}` : ''}`;
 
     return `
-    ${Occ.painel({ compacto: true })}
+    ${Occ.painel()}
     <section class="card cal-card ag-cal">${Cal.render('agenda')}</section>
 
     <section class="ag-day">
@@ -108,13 +108,6 @@ Views.agenda = {
 
 const Agenda = {
   day() { return App.ui.agendaDate || U.today(); },
-  /* Topo da tela única (Tarefas + Agenda): Dia (linha do tempo) · Lista de tarefas (todas, por quando) */
-  modos(ativo) {
-    const abertas = S.tasks.filter(x => OPEN(x.status)).length, atr = S.tasks.filter(D.taskLate).length;
-    return `<nav class="ag-modos" aria-label="Agenda"><a href="#agenda" class="${ativo === 'dia' ? 'on' : ''}" ${ativo === 'dia' ? 'aria-current="page"' : ''}>${U.icon('clock', 16)} Dia</a>
-      <a href="#tarefas" class="${ativo === 'lista' ? 'on' : ''}" ${ativo === 'lista' ? 'aria-current="page"' : ''}>${U.icon('tasks', 16)} Lista de tarefas <b>${abertas}</b>${atr ? `<i class="ag-modos-atr">${atr}</i>` : ''}</a>
-      <button class="ag-modos-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button></nav>`;
-  },
   /* Horários livres de um dia para encaixar uma tarefa de "dur" minutos (pedido do usuário: toda tarefa entra na agenda).
      Ocupado de verdade: outras tarefas com horário, compromissos/reuniões, intervalo e atividades com horário fixo.
      Primeiro vêm os horários sem nada (nem rotina); depois os que caem sobre uma atividade da rotina (que pode ser reorganizada).

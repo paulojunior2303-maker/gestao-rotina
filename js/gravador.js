@@ -550,7 +550,6 @@ Views.gravacoes = {
       ${pend.length ? `<div class="alert a-yellow">${U.icon('clock')} <span>${U.plural(pend.length, 'gravação esperando', 'gravações esperando')} para transcrever: ${U.esc(pend[0].motivo || '')}</span> <button class="link" data-act="gvRetry">Tentar agora</button></div>` : ''}
       ${Gravador.recording() ? '' : `<button class="gv-rel-btn" data-act="gvRec" data-tipo="relatorio">${U.icon('spark', 20)}<span><strong>Gravar o relatório do dia</strong><small>Fale o que fez hoje e o que vem amanhã: o app escreve o relatório e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
       ${`<button class="gv-rel-btn gv-arq-btn" data-act="gvArq">${U.icon('upload', 20)}<span><strong>Áudio ou texto</strong><small>Envie áudios (do WhatsApp ou outros) e/ou um texto: a IA resume e anota na agenda.</small></span>${U.icon('right', 16)}</button>`}
-      <button class="gv-rel-btn gv-arq-btn gv-marcar" data-act="gvMarcar">${U.icon('calendar', 20)}<span><strong>Marcar reunião ou compromisso</strong><small>Para uma data futura, com pauta. Também registra um feedback sem gravar.</small></span>${U.icon('right', 16)}</button>
       ${semDesc.length ? `<p class="muted small">${U.plural(semDesc.length, 'gravação sem descrição', 'gravações sem descrição')}. Toque para dizer se foi reunião, feedback ou relatório.</p>` : ''}
       ${all.length ? `<div class="gv-list">${all.map(card).join('')}</div>` : '<div class="vazio-menor">' + H.vazio('Nenhuma gravação.', 'É só apertar e falar.', 'Grave uma reunião, um feedback ou o relatório do dia. A IA escreve o resumo e anota o que for combinado.', [['mic', 'Toque em <strong>Gravar</strong>, na barra de baixo'], ['upload', 'Ou envie um áudio do WhatsApp']]) + '</div>'}`;
   },
@@ -645,14 +644,6 @@ Object.assign(Actions, {
     ]);
   },
   gvArq() { Gravador.pedido(); },
-  /* Marcar para depois (sem gravar agora): saiu do "+" a pedido do usuário e ficou aqui, em Gravações */
-  gvMarcar() {
-    UI.sheet('O que você quer marcar?', [
-      { label: 'Reunião', hint: 'Com data, horário e pauta. Na hora, é só gravar', icon: 'users', onClick: () => Events.form(null, U.today(), { reuniao: true }) },
-      { label: 'Compromisso', hint: 'Visita, consulta, entrega…', icon: 'calendar', onClick: () => Events.form(null, U.today()) },
-      { label: 'Feedback sem gravar', hint: 'Anotar uma conversa individual que já aconteceu', icon: 'chat', onClick: () => FB.form(null) },
-    ]);
-  },
   gvItSel({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.sel = el.checked; commit(); } },
   gvItTipo({ id, it }, el) { const i = ((Gravador.find(id) || {}).itens || []).find(x => x.id === it); if (i) { i.tipo = el.value; commit(); } },
   gvItApply({ id }) {

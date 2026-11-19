@@ -34,13 +34,17 @@ e diga o que mudou e como testar no celular.
   `S.checks`, `S.diario`…), em `Store.migrate` e nos `split/join` da nuvem, para não perder nada de quem já usava. Endereços antigos caem na tela mais próxima.
 - **Navegação**: **barra inferior** no celular (`BOTTOM` em `app.js`: Calendário, Gravações, **Gravar** no meio, **Tarefas**, Imprevistos), **sem** botão Menu.
   **Sem botão "Agenda"** (pedido do usuário: o Calendário já é a agenda inteira). A agenda do dia (`#agenda`, linha do tempo) abre pelo Calendário ("Agenda do dia");
-  continua sendo rota (`routeVisible`), fora do menu, e `navAtual` acende o Calendário nela. **Tarefas** mostra só a lista (sem o seletor `Agenda.modos`, que ficou sem uso),
-  com o ⚠ de imprevisto (`.tk-oc`) ao lado da busca. O selo de atrasadas fica em Tarefas.
+  continua sendo rota (`routeVisible`), fora do menu, e `navAtual` acende o Calendário nela. **Tarefas** mostra só a lista (o seletor `Agenda.modos` e o ⚠ `.tk-oc` foram apagados).
+  O selo de atrasadas fica em Tarefas.
   Menu lateral (☰ ou arrastar da borda): no celular mostra só o que **não** está na barra de baixo (Configurações, Guia; classe `in-bottom`);
   no computador (sem barra de baixo) mostra tudo e o Calendário tem o botão grande de gravar (`.gv-rec-big`, escondido no celular).
-- **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). Calendário e Agenda usam `quickAdd`
-  (só a anotação rápida, **sem** a lista "Ou escolha": reunião/feedback/relatório ficam em Gravações, a pedido do usuário). Tarefas usa o formulário de tarefa.
-- **Tarefa e agenda são uma coisa só (pedido do usuário, v1.1.23)**: o "+" tem só **Tarefa** (padrão, já no dia escolhido) e **Imprevisto**; o antigo "Na agenda" virou
+- **Botão flutuante "+"** (`#fab`, `FAB` em `app.js`): cada view declara `fab` (objeto ou função `{ act, label, data }`). **Um "+" só para tudo** (pedido do usuário:
+  escolhe o dia no calendário e adiciona o que quiser): Calendário, Agenda e Tarefas usam `quickAdd` → `Capture.open`, com cinco tipos (`Capture.TYPES`, `.cap-tipo`):
+  **Tarefa** e **Imprevisto** preenchidos ali; **Reunião**, **Compromisso** e **Feedback** (`Capture.OUTROS`) fecham o "+" e abrem `Events.form` / `FB.form` já no dia
+  escolhido, com o texto digitado (título da reunião/compromisso, anotações do feedback) e a data/horário lidos do texto. Imprevistos usa `capture` com `type: 'imprevisto'`.
+  Repetidos que saíram: "Marcar reunião ou compromisso" de Gravações (`gvMarcar`), o ⚠ de Tarefas, o "Registrar imprevisto" vazio do Início e a ação `tkNew`
+  (o `Tasks.form` continua para editar; "+ Adicionar" das colunas do computador também abre o `Capture`).
+- **Tarefa e agenda são uma coisa só (pedido do usuário, v1.1.23)**: no "+" a **Tarefa** é o padrão, já no dia escolhido; o antigo "Na agenda" virou
   tarefa com `dueDate` + `dueTime` + `dur` (minutos, opcional; `Cal.fimTarefa`). Não criar bloco em `S.days` a partir do "+" nem do relatório/áudio (`Gravador.aplicar`
   e `IA.itensNorm` convertem `tipo: 'agenda'` em tarefa). `Cal.itemsOn(hoje)` também traz as tarefas abertas **sem data** e as **atrasadas** (`semData`), para tudo aparecer
   no Calendário e na Agenda; nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
@@ -55,8 +59,8 @@ e diga o que mudou e como testar no celular.
   `Occ.form` (Registrar/Editar imprevisto) também é uma tela só, dois campos por linha, sem status (botões Iniciar/Resolver/Reabrir do cartão).
   `Tasks.form` (Nova tarefa da tela Tarefas e Editar): os mesmos campos, dois por linha também no celular (`.form-grid:has(.tk-form-dica)`); **sem** categoria,
   status e data de início (ficam como estão; status pelos botões da lista). Ao editar, `description` + `notes` antigas viram um campo só ("Observação").
-- **Anotação rápida** (`js/captura.js`, `Capture`): o "+" do Início, da Agenda e dos Imprevistos abre um campo de texto único com o tipo
-  (Tarefa · Imprevisto). `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
+- **Anotação rápida** (`js/captura.js`, `Capture`): o "+" de todas as telas abre o tipo em cima (Tarefa · Imprevisto · Reunião · Compromisso · Feedback)
+  e um campo de texto único. `Capture.parse` lê, sem internet, data/horário/duração/nome da equipe. Imprevisto com tempo
   (`Capture.encaixarAgora`) entra na agenda **agora** e empurra o resto (a atividade em andamento continua depois), com "Desfazer". Testes: `tests/captura.test.js`.
 - **Recursos do dia a dia que ficaram**: `js/replan.js` (`Replan`, "Reorganizar meu dia" no menu da Agenda; `Replan.fromNow` adianta a agenda quando um imprevisto
   termina antes); tarefas que se repetem (`task.repeat` diaria|semanal|quinzenal|mensal, `repeatDay`; `Tasks.setStatus` cria a próxima e a apaga ao reabrir);
@@ -136,11 +140,11 @@ e diga o que mudou e como testar no celular.
 - **Lembretes ligados por padrão** (pedido do usuário; `meta.v6` liga uma vez para quem já usava; instalação nova já nasce com `v6`): no Android, `initNative` pede a permissão
   uma vez (`localStorage['ff-lem-pedido']`); no navegador, cartão "Quer ser avisado no horário?" no Calendário (`Reminders.webCard`, "Agora não" → `ff-lem-web`).
 - **Imprevistos em destaque (pedido do usuário: vêm antes de tudo)**: `Occ.painel()` = quadro vermelho no topo do Início, da Agenda (Dia) e da Lista de tarefas
-  (`.oc-card`; na agenda do dia e em Tarefas só aparece com imprevisto aberto — `compacto` —, e o botão ⚠ `.tk-oc` fica ao lado da busca de Tarefas). **Sem prazo** no registro (`Capture` e `Occ.form`).
+  (`.oc-card`; só aparece com imprevisto aberto; registrar é pelo "+" de qualquer tela ou pelo "+ Imprevisto" do quadro). **Sem prazo** no registro (`Capture` e `Occ.form`).
   **Começar** (`Occ.comecar` / `occComecar`, também `occStatus` com `andamento`): encaixa na agenda agora (30 min, `Capture.encaixarAgora`, empurra o resto), põe em andamento e
   **pausa a tarefa em execução**; só um imprevisto em andamento. Enquanto houver imprevisto em andamento, **nenhuma tarefa começa** (`Tasks.pode`). Bloco do imprevisto na linha do tempo
   em vermelho (`.blk-occ`) e o dia de hoje com anel vermelho no calendário (`.has-occ`). Testes em `tests/melhorias.test.js`.
-- **Marcar reunião/compromisso/feedback sem gravar**: botão em Gravações (`gvMarcar` → `Events.form` / `FB.form`).
+- **Marcar reunião/compromisso/feedback sem gravar**: pelo "+" (`Capture.OUTROS` → `Events.form(null, dia, { reuniao, title, time })` / `FB.form(null, pessoa, { date, notas })`).
 - **Gravação com tela bloqueada (Android)**: `GravacaoService.java` (serviço em primeiro plano tipo microfone + wake lock parcial, aviso fixo "FlowFire está gravando"),
   ligado por `Sistema.gravando({ ligada })` a partir de `Recorder.keepScreen` (vale para o `Gravador` e o `Recorder`). Só liga com a permissão do microfone já dada.
 - **Tarefa com horário x rotina**: tarefa aberta com `dueTime` + `dur` ocupa o horário (`Cal.ocupados`, `Cal.batem`): a Agenda mostra "Conflito" e o aviso `.ag-bate`,

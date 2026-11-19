@@ -1,5 +1,5 @@
 'use strict';
-/* Anotação rápida (botão "+" do Início, da Agenda e dos Imprevistos).
+/* Anotação rápida (botão "+" de todas as telas: Calendário, Agenda, Tarefas e Imprevistos).
    Um campo só: a pessoa escreve (ou dita pelo microfone do teclado) e escolhe o tipo.
    O texto é lido aqui mesmo, sem internet: datas ("amanhã", "sexta", "20/11"), horário ("às 15h"),
    duração ("30 min", "1h") e nomes da equipe. Imprevisto com tempo é encaixado AGORA na agenda
@@ -7,7 +7,15 @@
 const Capture = {
   /* Tarefa e "Na agenda" viraram uma coisa só (pedido do usuário): a tarefa tem dia, horário e duração opcionais
      e aparece na Agenda e no Calendário. Tipo 'agenda' antigo é tratado como tarefa. */
-  TYPES: [['tarefa', 'Tarefa', 'tasks'], ['imprevisto', 'Imprevisto', 'alert']],
+  TYPES: [['tarefa', 'Tarefa', 'tasks'], ['imprevisto', 'Imprevisto', 'alert'], ['reuniao', 'Reunião', 'users'], ['compromisso', 'Compromisso', 'calendar'], ['feedback', 'Feedback', 'chat']],
+  /* Tudo pelo "+" (pedido do usuário: escolhe o dia no calendário e adiciona o que quiser, num lugar só).
+     Tarefa e Imprevisto são preenchidos aqui; Reunião, Compromisso e Feedback abrem o formulário próprio, já no dia escolhido
+     e com o texto digitado. */
+  OUTROS: {
+    reuniao: (k, txt, p) => Events.form(null, p.date || k, { reuniao: true, title: txt, time: p.time }),
+    compromisso: (k, txt, p) => Events.form(null, p.date || k, { title: txt, time: p.time }),
+    feedback: (k, txt, p) => FB.form(null, p.who || '', { date: k, notas: txt }),
+  },
   DURS: [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
   WD: ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
 
@@ -65,7 +73,7 @@ const Capture = {
     return out;
   },
 
-  /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto. k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
+  /* Abre a anotação rápida. type: tarefa (padrão) | imprevisto (reunião, compromisso e feedback abrem o próprio formulário). k: dia escolhido no Calendário/Agenda (a tarefa já vai para ele) */
   open({ type, k } = {}) {
     const t = U.today(); k = k || t;
     const st = { type: type === 'imprevisto' ? 'imprevisto' : 'tarefa', dur: 0, due: k >= t ? k : t, time: '', tdur: 30, who: '', repeat: '', prio: 'media', oprio: 'urgente', odue: '', obs: '', touched: {} };
@@ -115,9 +123,9 @@ const Capture = {
     const m = UI.modal({
       title: k === t ? 'Adicionar' : `Adicionar em ${U.fmtShort(k)}`,
       body: `<div class="cap">
+        <div class="cap-types" role="tablist" aria-label="O que você quer adicionar?">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="cap-tipo ${st.type === v ? 'active' : ''} ct-${v}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 18)}<span>${l}</span></button>`).join('')}</div>
         <textarea id="cap-t" class="cap-text" rows="2" placeholder="${ph()}" aria-label="Descreva em poucas palavras"></textarea>
         <p class="hint cap-tip">${U.icon('chat', 13)} Dica: toque no microfone do teclado para falar em vez de digitar.</p>
-        <div class="cap-types tabs" role="tablist">${Capture.TYPES.map(([v, l, ic]) => `<button type="button" class="tab ${st.type === v ? 'active' : ''}" data-type="${v}" role="tab" aria-selected="${st.type === v}">${U.icon(ic, 14)} ${l}</button>`).join('')}</div>
         <div class="cap-opts"></div>
         <div class="form-error" hidden></div>
       </div>`,
@@ -148,6 +156,7 @@ const Capture = {
     });
     m.el.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.type && Capture.OUTROS[b.dataset.type]) { const txt = ta.value.trim(), p = Capture.parse(txt, t); if (st.who) p.who = st.who; m.close(); Capture.OUTROS[b.dataset.type](k, txt, p); return; }
       if (b.dataset.type) { st.type = b.dataset.type; st.touched.type = true; err(''); paint(); return; }
       if (b.dataset.dur !== undefined) { st.dur = +b.dataset.dur; st.touched.dur = true; paint(); return; }
       if (b.dataset.due !== undefined) { st.due = b.dataset.due || t; st.touched.due = true; paint(); return; }

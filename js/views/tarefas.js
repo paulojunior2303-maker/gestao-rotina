@@ -2,7 +2,7 @@
 /* Gestão de tarefas — cadastro, filtros e alertas de prazo */
 Views.tarefas = {
   title: 'Tarefas', icon: 'tasks', nav: 'Tarefas',
-  fab: { act: 'tkNew', label: 'Nova tarefa' },
+  fab: { act: 'quickAdd', label: 'Adicionar' },   // o mesmo "+" de todas as telas (Capture)
   render(params) {
     const f = App.ui.taskF = App.ui.taskF || { q: '', status: 'abertas', priority: '', category: '', period: '', from: '', to: '' };
     const t = U.today(), ws = Cal.inicioSemana(t), we = U.addDays(ws, 6);
@@ -67,7 +67,7 @@ Views.tarefas = {
     // Sugestão 5: no computador, as abertas em três colunas (Hoje · Depois · Sem data)
     const pc = window.matchMedia && matchMedia('(min-width: 901px)').matches;
     const colunas = pc && f.status === 'abertas' && list.length;
-    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="tkNew">+ Adicionar</button></section>`; };
+    const col = (titulo, sub, ks) => { const n = list.filter(x => ks.includes(grupoDe(x))).length; return `<section class="tk-col"><header><b>${titulo}</b><span>${sub}</span></header>${n ? grupos(ks, list) : `<p class="tk-col-vazio">${titulo === 'Hoje' ? 'Nada para hoje.' : 'Nada por aqui.'}</p>`}<button class="tk-add" data-act="quickAdd">+ Adicionar</button></section>`; };
     const nome = ((S.settings.usuario || '').trim().split(' ')[0]) || '';
     // Sugestão 6: tela vazia com a voz do app
     const vazio = !all.length || (f.status === 'abertas' && !filtersOn && !list.length)
@@ -76,13 +76,12 @@ Views.tarefas = {
       : H.empty(f.status === 'atrasadas' && !filtersOn ? 'Nada atrasado. Tudo em dia.' : 'Nenhuma tarefa com esses filtros.');
 
     return `
-    ${Occ.painel({ compacto: true })}
+    ${Occ.painel()}
     <div class="toolbar">
       <div class="stat-chips tk-abas" role="tablist">${stat('abertas', 'Abertas')}${stat('andamento', 'Em andamento', 'c-blue')}${stat('atrasadas', 'Atrasadas', 'c-red')}${stat('concluida', 'Concluídas', 'c-green')}${stat('todas', 'Todas')}</div>
     </div>
     <div class="tk-busca">
       <input type="search" placeholder="Buscar tarefa ou pessoa" value="${U.esc(f.q)}" data-input="tkSearch" aria-label="Buscar">
-      <button class="tk-oc" data-act="capture" data-type="imprevisto" aria-label="Registrar imprevisto" title="Registrar imprevisto">${U.icon('alert', 18)}</button>
       <button class="btn ghost tk-fbtn ${App.ui.taskFOpen ? 'on' : ''}" data-act="tkFiltros" aria-expanded="${App.ui.taskFOpen || nFiltros ? 'true' : 'false'}">${U.icon('filter', 16)} Filtros${nFiltros ? ` <b class="tk-fn">${nFiltros}</b>` : ''}</button>
     </div>
     <div class="filters card tk-filtros ${App.ui.taskFOpen || nFiltros ? 'aberto' : ''}">
@@ -253,7 +252,6 @@ const Tasks = {
 };
 
 Object.assign(Actions, {
-  tkNew() { Tasks.form(null); },
   tkEdit({ id }) { Tasks.form(S.tasks.find(x => x.id === id)); },
   /* Botões da lista (como na Agenda): ✓ conclui, ↶ reabre, ⋯ mais opções */
   tkSet({ id, s }) {

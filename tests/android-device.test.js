@@ -94,7 +94,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(await p.locator('#bottom-nav a').count() === 4 && await p.locator('#bottom-nav [data-act=openMenu]').count() === 0 && await p.locator('#bottom-nav a[href="#agenda"]').count() === 0, 'barra de baixo com Calendário, Gravações, Tarefas e Imprevistos (sem o botão Agenda)');
   check(await p.locator('#bottom-nav .bn-rec').count() === 1, 'botão Gravar no meio da barra de baixo');
   await tap('#bottom-nav a[href="#tarefas"]');
-  check(await p.textContent('#page-title') === 'Tarefas' && await p.locator('.ag-modos').count() === 0 && await p.locator('.tk-oc').count() === 1, 'barra de baixo → Tarefas (só a lista, com o ⚠ de imprevisto)');
+  check(await p.textContent('#page-title') === 'Tarefas' && await p.locator('.ag-modos').count() === 0 && await p.locator('.tk-oc').count() === 0, 'barra de baixo → Tarefas (só a lista)');
   await go('agenda'); check(await p.locator('#bottom-nav a.active[href="#dashboard"]').count() === 1, 'a agenda do dia (aberta pelo Calendário) acende o Calendário');
   await tap('#bottom-nav a[href="#dashboard"]');
   check(await p.locator('.cal-home .calx-grid').count() === 1, 'calendário em destaque na tela inicial');
@@ -190,8 +190,8 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
 
   console.log('\n[4] Tarefas');
   await go('tarefas');
-  await tap('[data-act=tkNew]'); await fill('title', 'Cobrar relatório'); await fill('responsible', 'Carlos'); await fill('dueDate', today); await fill('dueTime', '16:00'); await save();
-  await tap('[data-act=tkNew]'); await fill('title', 'Conferir estoque'); await save();
+  await p.evaluate(() => Tasks.form(null)); await W(); await fill('title', 'Cobrar relatório'); await fill('responsible', 'Carlos'); await fill('dueDate', today); await fill('dueTime', '16:00'); await save();
+  await p.evaluate(() => Tasks.form(null)); await W(); await fill('title', 'Conferir estoque'); await save();
   check(await p.locator(`${M} .form-error:not([hidden]), ${M} :invalid`).count() > 0 || await p.locator(M).count() === 1, 'tarefa sem horário não é salva (horário obrigatório)');
   await fill('dueDate', await p.evaluate(() => U.addDays(U.today(), 1))); await W(200);   // o teste roda à noite: hoje já passou do expediente
   check(await p.locator(`${M} .tk-livres [data-livre]`).count() > 0, 'o formulário mostra horários livres');
@@ -285,7 +285,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   await tap('[data-act=lemTest]'); await W(300); check(calls.some(c => c[0] === 'schedule' && c[1].some(n => n.id === 999)), 'aviso de teste agendado');
   calls.length = 0;
   const amanha = await p.evaluate(() => U.addDays(U.today(), 1));
-  await go('tarefas'); await tap('[data-act=tkNew]'); await fill('title', 'Entregar relatório'); await fill('dueDate', amanha); await fill('dueTime', '10:00'); await save();
+  await go('tarefas'); await p.evaluate(() => Tasks.form(null)); await W(); await fill('title', 'Entregar relatório'); await fill('dueDate', amanha); await fill('dueTime', '10:00'); await save();
   await W(1600);
   let sch = calls.filter(c => c[0] === 'schedule').pop();
   const tAviso = sch && sch[1].find(n => n.body.includes('Entregar relatório'));
@@ -320,8 +320,7 @@ const check = (c, m) => { if (c) { pass++; console.log('  ok -', m); } else { fa
   check(sf.settings.technicians.some(t => t.name === 'Natan Krainer'), 'colaborador novo entra na lista da equipe');
 
   console.log('\n[9] Botão voltar, persistência e recuperação');
-  await tap('[data-act=tkNew]').catch(() => {});
-  await go('tarefas'); await tap('[data-act=tkNew]'); await p.evaluate(() => __fire('backButton')); await W(300);
+  await go('tarefas'); await tap('#fab'); await p.evaluate(() => __fire('backButton')); await W(300);
   check(await p.locator('.modal-wrap').count() === 0, 'voltar fecha formulário');
   await p.evaluate(() => __fire('backButton')); await W(300); check(await p.evaluate(() => location.hash) === '#dashboard', 'voltar → Início');
   await go('agenda'); const progBefore = (await dayProgressText()).replace(/\s+/g, ' ').trim();

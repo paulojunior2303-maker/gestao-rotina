@@ -978,9 +978,18 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .cap-in { min-height: 40px; font-size: 15px; }
 .cap-text:focus, .cap-in:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
 .cap-tip { display: flex; align-items: center; gap: 6px; margin: -4px 0 0; }
-.cap-types { display: flex; width: 100%; flex-wrap: nowrap; }
-.cap-types .tab { flex: 1; justify-content: center; padding: 8px 6px; font-size: 13.5px; }
-.cap-types .tab.active { background: var(--primary); color: #fff; }
+/* "+" com tudo num lugar só (pedido do usuário): cinco tipos lado a lado, ícone em cima do nome */
+.cap-types { display: flex; gap: 5px; width: 100%; }
+.cap-tipo { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 auto; min-width: 0; gap: 4px; min-height: 58px; padding: 8px 4px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); font: inherit; font-size: 11.5px; font-weight: 600; line-height: 1.1; cursor: pointer; }
+.cap-tipo span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cap-tipo svg { color: var(--accent); }
+.cap-tipo:hover { border-color: var(--border-strong); color: var(--text); }
+.cap-tipo.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.cap-tipo.active svg { color: #fff; }
+.cap-tipo.ct-imprevisto svg { color: var(--red-text); }
+.cap-tipo.ct-imprevisto.active { background: var(--red); border-color: var(--red); }
+.cap-tipo.ct-imprevisto.active svg { color: #fff; }
 .cap-opts { display: flex; flex-direction: column; gap: 8px; }
 .cap-l { font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .cap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1397,17 +1406,8 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .tk-livres { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
 .tk-livres .lbl { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 /* Agenda e Tarefas numa tela só: modos Dia · Lista de tarefas */
-.ag-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
-.ag-modos a { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: 14px; }
-.ag-modos a:hover { color: var(--text); }
-.ag-modos a.on { background: var(--surface-3); color: var(--text); box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset; }
-.ag-modos a.on .ic { color: var(--accent); }
-.ag-modos b { font-weight: 500; color: var(--muted); font-size: 13px; }
-.ag-modos-atr { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--red); color: #fff; font-size: 11px; display: inline-grid; place-items: center; }
-@media (min-width: 901px) { .ag-modos { max-width: 420px; } }
 /* Imprevistos em destaque (pedido do usuário: vêm antes de tudo) — quadro vermelho no topo do Início, da Agenda e da Lista de tarefas */
 .oc-painel { display: flex; flex-direction: column; gap: 8px; }
-.oc-painel.vazio-oc { align-items: flex-end; }
 .oc-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--red-text); }
 .oc-h > span { display: inline-flex; align-items: center; gap: 6px; }
 .oc-novo { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--red) 55%, transparent);
@@ -1429,15 +1429,10 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .oc-btn.ok { background: var(--green); color: #08130e; }
 .oc-btn.ghost { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); padding: 0 12px; }
 .oc-btn:active { transform: scale(.96); }
-.dia-hero + .oc-painel, .ag-modos + .oc-painel { margin-top: -4px; }
+.dia-hero + .oc-painel { margin-top: -4px; }
 /* Bloco do imprevisto na linha do tempo e o dia de hoje no calendário */
 .blk.blk-occ { background: color-mix(in srgb, var(--red) 16%, var(--surface)) !important; box-shadow: inset 4px 0 0 var(--red) !important; }
 .blk.blk-occ .blk-title { font-weight: 700; }
 .calx-d.has-occ .calx-n { box-shadow: 0 0 0 2px var(--red); }
 @media (prefers-reduced-motion: reduce) { .oc-card.run { animation: none; } }
-.ag-modos { grid-template-columns: 1fr 1fr auto; }
-.ag-modos-oc { width: 46px; border: 0; border-radius: 10px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
-.ag-modos-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }
 /* Botão ⚠ de imprevisto ao lado da busca, na tela Tarefas */
-.tk-oc { flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red-text); display: grid; place-items: center; cursor: pointer; }
-.tk-oc:hover { background: color-mix(in srgb, var(--red) 26%, transparent); }

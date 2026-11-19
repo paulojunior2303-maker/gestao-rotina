@@ -46,8 +46,8 @@ let pass = 0, fail = 0; const check = (c, m) => { if (c) { pass++; console.log('
     await p.screenshot({ path: `${OUT}/escuro-${r}.png` });
   }
   await p.evaluate(() => location.hash = '#tarefas'); await W(300);
-  await p.locator('[data-act=tkNew]').tap(); await W(300);
-  const inBg = await p.evaluate(() => getComputedStyle(document.querySelector('.modal-wrap.open [name=title]')).backgroundColor);
+  await p.locator('#fab').tap(); await W(300);
+  const inBg = await p.evaluate(() => getComputedStyle(document.querySelector('.modal-wrap.open #cap-t')).backgroundColor);
   check(inBg !== 'rgb(255, 255, 255)', 'campos dos formulários escuros também');
   await p.screenshot({ path: `${OUT}/escuro-formulario.png` });
   await p.keyboard.press('Escape'); await W(200);

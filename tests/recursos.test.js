@@ -89,7 +89,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await p.keyboard.press('Escape'); await W();
 
   console.log('\n[8] Formulários mais curtos');
-  await go('tarefas'); await tap('#fab');
+  await go('tarefas'); await p.evaluate(() => Tasks.form(null)); await W();
   const vis = async n => p.locator(`${M} [name=${n}]`).isVisible();
   check(await vis('title') && await vis('dueDate') && await vis('dueTime') && await vis('dur') && await vis('responsible') && await vis('priority') && await vis('repeat') && await vis('description'), 'tarefa nova: tudo numa tela só (sem "Mais opções")');
   check(await p.locator(`${M} [data-more-tg]`).count() === 0 && await p.locator(`${M} [name=category]`).count() === 0 && await p.locator(`${M} [name=status]`).count() === 0 && await p.locator(`${M} [name=startDate]`).count() === 0, 'sem categoria, status e data de início no formulário');

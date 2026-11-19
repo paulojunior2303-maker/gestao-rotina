@@ -21,15 +21,33 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(await p.locator('.lem-card [data-act=lemWebOn]').count() === 1, 'navegador: cartão "Quer ser avisado no horário?" com "Permitir avisos"');
   await p.tap('.lem-card [data-act=lemWebNao]'); await W();
   check(await p.locator('.lem-card').count() === 0, '"Agora não" esconde o cartão');
-  // 2. Marcar reunião / compromisso / feedback em Gravações
+  // 2. Tudo pelo "+" do calendário (pedido do usuário): reunião, compromisso e feedback no dia escolhido
   await p.evaluate(() => { location.hash = '#gravacoes'; }); await W(400);
-  await p.tap('[data-act=gvMarcar]'); await W();
-  const op = await p.locator('.sheet-item').allTextContents();
-  check(op.some(t => t.includes('Reunião')) && op.some(t => t.includes('Compromisso')) && op.some(t => t.includes('Feedback sem gravar')), 'Gravações → "Marcar reunião ou compromisso": reunião, compromisso e feedback');
-  await p.tap('.sheet-item:has-text("Reunião")'); await W(400);
-  await p.fill(`${M} [name=title]`, 'Reunião de metas'); await p.fill(`${M} [name=date]`, '2026-11-13'); await p.fill(`${M} [name=time]`, '10:00');
+  check(await p.locator('[data-act=gvMarcar]').count() === 0, 'Gravações sem o botão repetido "Marcar reunião ou compromisso"');
+  await p.evaluate(() => { location.hash = '#dashboard'; }); await W(400);
+  await p.evaluate(() => Actions.quickAdd({ k: '2026-11-13' })); await W(300);
+  const tipos = await p.locator(`${M} [data-type]`).evaluateAll(l => l.map(b => b.dataset.type));
+  check(tipos.join() === 'tarefa,imprevisto,reuniao,compromisso,feedback', '"+" com Tarefa, Imprevisto, Reunião, Compromisso e Feedback');
+  check(await p.evaluate(() => { const r = document.querySelector('.modal-wrap.open .cap-types').getBoundingClientRect(); return [...document.querySelectorAll('.modal-wrap.open .cap-tipo span')].every(s => s.scrollWidth <= s.clientWidth + 1) && r.right <= innerWidth; }), 'os cinco tipos cabem em 393 px, sem cortar o nome');
+  await p.locator(`${M} #cap-t`).fill('Reunião de metas às 10h');
+  await p.tap(`${M} [data-type=reuniao]`); await W(400);
+  check(await p.textContent(`${M} .modal-title, ${M} h2`).then(t => t.includes('Nova reunião')) && await p.inputValue(`${M} [name=title]`) === 'Reunião de metas às 10h' && await p.inputValue(`${M} [name=date]`) === '2026-11-13' && await p.inputValue(`${M} [name=time]`) === '10:00', 'Reunião abre o formulário já no dia escolhido, com o texto e o horário');
   await p.tap(`${M} [data-submit]`); await W(400);
-  check(await p.evaluate(() => S.events.some(e => e.title === 'Reunião de metas' && e.date === '2026-11-13' && e.reuniao)), 'reunião futura marcada (aparece no calendário)');
+  check(await p.evaluate(() => S.events.some(e => e.date === '2026-11-13' && e.time === '10:00' && e.reuniao)), 'reunião futura marcada (aparece no calendário)');
+  await p.evaluate(() => Actions.quickAdd({ k: '2026-11-13' })); await W(300);
+  await p.tap(`${M} [data-type=compromisso]`); await W(400);
+  check(await p.textContent(`${M} .modal-title, ${M} h2`).then(t => t.includes('Novo compromisso')) && await p.inputValue(`${M} [name=date]`) === '2026-11-13', 'Compromisso abre o formulário no dia escolhido');
+  await p.fill(`${M} [name=title]`, 'Visita técnica'); await p.tap(`${M} [data-submit]`); await W(400);
+  check(await p.evaluate(() => S.events.some(e => e.title === 'Visita técnica' && e.date === '2026-11-13' && !e.reuniao)), 'compromisso salvo');
+  await p.evaluate(() => Actions.quickAdd({ k: '2026-11-12' })); await W(300);
+  await p.locator(`${M} #cap-t`).fill('Conversa sobre atrasos');
+  await p.tap(`${M} [data-type=feedback]`); await W(400);
+  check(await p.textContent(`${M} .modal-title, ${M} h2`).then(t => t.includes('Novo feedback')) && await p.inputValue(`${M} [name=date]`) === '2026-11-12', 'Feedback abre o formulário no dia escolhido');
+  check((await p.inputValue(`${M} [name=iaNotas]`)) === 'Conversa sobre atrasos', '…com o texto nas anotações');
+  await p.evaluate(() => document.querySelector('.modal-wrap.open [data-close], .modal-wrap.open .modal-x') && document.querySelector('.modal-wrap.open [data-close], .modal-wrap.open .modal-x').click()); await W(300);
+  await p.evaluate(() => document.querySelector('.modal-wrap.open [data-close], .modal-wrap.open .modal-x') && document.querySelector('.modal-wrap.open [data-close], .modal-wrap.open .modal-x').click()); await W(300);
+  await p.evaluate(() => { location.hash = '#tarefas'; }); await W(400);
+  check(await p.evaluate(() => document.querySelector('#fab').dataset.act) === 'quickAdd', 'o "+" de Tarefas é o mesmo das outras telas');
   // 4. Tarefa com horário x rotina
   await useRoutine12(p);
   await p.evaluate(() => { S.days = {}; S.settings.breakMode = 'fixo'; commit(); location.hash = '#agenda'; App.ui.agendaDate = U.today(); });
@@ -50,9 +68,10 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
     S.tasks.push({ id: 'trun', title: 'Tarefa rodando', status: 'andamento', priority: 'media', category: 'administrativo', dueDate: U.today(), dueTime: '08:00', createdAt: '' }); commit(); location.hash = '#agenda'; });
   await W(400);
   await p.evaluate(() => { location.hash = '#tarefas'; }); await W(300);
-  check(await p.locator('.oc-card').count() === 0 && await p.locator('.tk-oc').count() === 1, 'sem imprevisto: só o botão ⚠ em Tarefas');
-  await p.tap('.tk-oc'); await W(300);
-  check(await p.locator(`${M} [data-type=imprevisto].active`).count() === 1 && await p.locator(`${M} #cap-odue`).count() === 0, '⚠ abre o registro de imprevisto, sem prazo');
+  check(await p.locator('.oc-card').count() === 0 && await p.locator('.oc-painel').count() === 0 && await p.locator('.tk-oc').count() === 0, 'sem imprevisto: nada de quadro nem botão repetido em Tarefas');
+  await p.evaluate(() => Actions.quickAdd({})); await W(300);
+  await p.tap(`${M} [data-type=imprevisto]`); await W(200);
+  check(await p.locator(`${M} [data-type=imprevisto].active`).count() === 1 && await p.locator(`${M} #cap-odue`).count() === 0, '"+" → Imprevisto, sem prazo');
   await p.locator(`${M} #cap-t`).fill('Câmera do portão caiu'); await p.tap(`${M} [data-save]`); await W(400);
   check(await p.locator('.oc-card', { hasText: 'Câmera do portão caiu' }).count() === 1, 'imprevisto registrado aparece em destaque no topo de Tarefas');
   await p.evaluate(() => { location.hash = '#agenda'; }); await W(300);
