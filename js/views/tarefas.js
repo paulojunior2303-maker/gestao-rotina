@@ -337,6 +337,8 @@ Object.assign(Actions, {
   tkFiltros() { App.ui.taskFOpen = !App.ui.taskFOpen; App.render(); },
   tkVisao({ v }) { App.ui.tkVisao = v === 'prio' ? 'prio' : 'dia'; try { localStorage.setItem('ff-tk-visao', App.ui.tkVisao); } catch (e) { /* ignora */ } App.render(); },
   tkSimples({ g }) { App.ui.tkSimples = { ...(App.ui.tkSimples || {}), [g]: !(App.ui.tkSimples || {})[g] }; App.render(); },
+  /* Tarefas sem data (saíram do Calendário): abre Tarefas só com elas */
+  tkSemData() { App.ui.tkVisao = 'dia'; App.ui.taskF = { q: '', status: 'abertas', priority: '', category: '', period: 'semprazo', from: '', to: '' }; App.go('tarefas'); },
   tkVerPrio() { Actions.tkVisao({ v: 'prio' }); Actions.goTasks({ status: 'abertas' }); },
   tkClear() { Object.assign(App.ui.taskF, { q: '', priority: '', category: '', period: '', from: '', to: '' }); App.render(); },
 });

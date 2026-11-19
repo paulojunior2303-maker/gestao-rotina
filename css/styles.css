@@ -1470,3 +1470,11 @@ body.intro .rail-now { animation: introFade .4s 1.05s both; }
 .tk-grp.g-rapidas b { display: inline-flex; align-items: center; gap: 5px; font-weight: inherit; }
 .tk-grande { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 650; letter-spacing: .01em;
   color: var(--text); background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+/* Tarefas sem data fora do calendário (pedido do usuário): uma linha só no dia de hoje */
+.calx-semdata { display: flex; align-items: center; gap: 10px; width: 100%; margin: 8px 0; padding: 10px 12px; min-height: 48px; border-radius: 11px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.calx-semdata:hover { border-color: var(--border-strong); }
+.calx-semdata > span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.calx-semdata strong { font-size: 14px; font-weight: 600; }
+.calx-semdata small { font-size: 12.5px; color: var(--muted); }
+.calx-semdata > .ic:first-child { color: var(--muted); }

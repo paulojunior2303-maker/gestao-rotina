@@ -149,7 +149,7 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   await go('agenda');
   const agTxt = await p.textContent('.timeline');
   check(agTxt.includes('Ligar para fornecedor') && agTxt.includes('16:30') && agTxt.includes('Enviar orçamento') === false, 'Agenda de hoje mostra a tarefa com horário (16:15–16:30)');
-  check(agTxt.includes('Organizar o almoxarifado') && agTxt.includes('Sem') && agTxt.includes('Relatório atrasado') && agTxt.includes('Era10/11'), 'Agenda de hoje mostra a tarefa sem data e a atrasada');
+  check(!agTxt.includes('Organizar o almoxarifado') && (await p.textContent('.calx-semdata')).includes('tarefa sem data') && agTxt.includes('Relatório atrasado') && agTxt.includes('Era10/11'), 'Agenda de hoje mostra a atrasada; a sem data fica numa linha só');
   check((await p.textContent('.ag-head')).includes('tarefas a fazer'), 'resumo do dia conta as tarefas a fazer');
   await p.screenshot({ path: OUT + '/captura-agenda-tarefas.png', fullPage: true });
   // Imprevisto em andamento vem antes de tudo: com ele aberto, a tarefa não começa
@@ -166,11 +166,11 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   check(!(await p.textContent('.timeline')).includes('Relatório atrasado'), 'tarefa atrasada concluída sai de hoje');
   await go('dashboard');
   const calTxt = await p.textContent('.calx-day');
-  check(calTxt.includes('Ligar para fornecedor') && calTxt.includes('Organizar o almoxarifado') && calTxt.includes('sem data'), 'Calendário de hoje mostra as mesmas tarefas');
-  check(await p.locator('.calx-it:has-text("Organizar o almoxarifado") [data-act=tkSet][data-s=andamento]').count() === 1, 'Calendário tem o ▶ para começar');
-  await p.tap('.calx-it:has-text("Organizar o almoxarifado") [data-act=tkSet]'); await W();
-  await p.tap('.calx-it:has-text("Organizar o almoxarifado") [data-act=tkSet][data-s=concluida]'); await W();
-  check((await st()).tasks.find(x => x.title === 'Organizar o almoxarifado').status === 'concluida' && await p.locator(`${M}`).count() === 0, '✓ no Calendário conclui sem abrir o formulário');
+  check(calTxt.includes('Ligar para fornecedor') && !calTxt.includes('Organizar o almoxarifado') && calTxt.includes('1 tarefa sem data'), 'Calendário de hoje mostra as mesmas tarefas (sem data só na linha de resumo)');
+  check(await p.locator('.calx-it:has-text("Ligar para fornecedor") [data-act=tkSet][data-s=andamento]').count() === 1, 'Calendário tem o ▶ para começar');
+  await p.tap('.calx-it:has-text("Ligar para fornecedor") [data-act=tkSet]'); await W();
+  await p.tap('.calx-it:has-text("Ligar para fornecedor") [data-act=tkSet][data-s=concluida]'); await W();
+  check((await st()).tasks.find(x => x.title.includes('Ligar para fornecedor')).status === 'concluida' && await p.locator(`${M}`).count() === 0, '✓ no Calendário conclui sem abrir o formulário');
   await go('agenda');
   check(await p.locator('[data-act=agBreak]').count() === 0, 'intervalo fixo: sem botão de intervalo');
   await p.evaluate(() => { S.settings.breakMode = 'flexivel'; S.days = {}; commit(); App.render(); });

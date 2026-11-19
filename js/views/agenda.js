@@ -72,7 +72,7 @@ Views.agenda = {
     }
     const nAtr = semHoraL.filter(i => i.semData === 'atrasada').length;
     const listaSem = semHoraL.length ? `<div class="ag-semhora"><div class="ag-semhora-h">${U.plural(semHoraL.length, 'item sem horário', 'itens sem horário')}${nAtr ? ` · <span class="c-red">${U.plural(nAtr, 'atrasado', 'atrasados')}</span>` : ''}</div>${semHoraL.map(item).join('')}</div>` : '';
-    const list = [listaSem, ...partes].filter(Boolean);
+    const list = [listaSem, ...partes, Cal.semDataLinha(k)].filter(Boolean);
     const breakOk = (S.settings.breakMode || 'fixo') === 'flexivel' && k >= t && !blocks.some(b => D.isBreak(b) && b.status !== 'cancelada');
     const summary = !blocks.length ? (D.isWorkday(k) ? 'Nenhuma atividade na rotina deste dia' : 'Dia de folga')
       : `${prog.done} de ${U.plural(prog.total, 'atividade')} concluída${prog.done === 1 ? '' : 's'}${late.length ? ` · <span class="c-red">${late.length} atrasada${late.length > 1 ? 's' : ''}</span>` : ''}`

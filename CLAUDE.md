@@ -46,8 +46,9 @@ e diga o que mudou e como testar no celular.
   (o `Tasks.form` continua para editar; "+ Adicionar" das colunas do computador também abre o `Capture`).
 - **Tarefa e agenda são uma coisa só (pedido do usuário, v1.1.23)**: no "+" a **Tarefa** é o padrão, já no dia escolhido; o antigo "Na agenda" virou
   tarefa com `dueDate` + `dueTime` + `dur` (minutos, opcional; `Cal.fimTarefa`). Não criar bloco em `S.days` a partir do "+" nem do relatório/áudio (`Gravador.aplicar`
-  e `IA.itensNorm` convertem `tipo: 'agenda'` em tarefa). `Cal.itemsOn(hoje)` também traz as tarefas abertas **sem data** e as **atrasadas** (`semData`), para tudo aparecer
-  no Calendário e na Agenda; nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
+  e `IA.itensNorm` convertem `tipo: 'agenda'` em tarefa). `Cal.itemsOn(hoje)` também traz as tarefas **atrasadas** (`semData: 'atrasada'`). As **sem data não entram mais**
+  (pedido do usuário: poluíam o dia): viram uma linha só, `Cal.semDataLinha` (`.calx-semdata`, "N tarefas sem data"), no dia de hoje do Calendário e da Agenda,
+  que abre Tarefas filtrada em Sem data (`tkSemData`); nas duas listas a tarefa tem ✓/↶ (`Cal.check` → `tkSet`). "Intervalo agora" (flexível) fica no topo da Agenda (`.ag-btns`).
   Blocos da rotina (`S.days`) continuam: vêm da rotina padrão e o `Actions.agNew` segue existindo (formulário completo), mas sem botão no "+".
 - **Dia e horário obrigatórios na tarefa** (pedido do usuário: toda tarefa entra na agenda): no "+" não há mais "Sem data", o horário é exigido ao salvar e
   a duração padrão é 30 min; `Agenda.livres(dia, dur)` sugere até 6 horários (livres de tarefas, compromissos, intervalo e horário fixo; primeiro os sem rotina,

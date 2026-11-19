@@ -142,6 +142,20 @@ const check = (c, m) => { if (!c) throw new Error('FALHOU: ' + m); console.log('
   }); await W(400);
   check(await p.locator('.tk-grp.g-rapidas + .task .tk-title', { hasText: 'Rápida média' }).count() === 1 && await p.locator('.tk-grp.g-rapidas ~ .task', { hasText: 'Rápida urgente' }).count() === 0, 'Rápidas (até 15 min) juntas; urgente/alta continua entre as importantes');
   check(await p.locator('.tk-foco .fc-it', { hasText: 'Grande alta' }).locator('.tk-grande').count() === 1 && await p.locator('.task', { hasText: 'Longa média' }).locator('.tk-grande').count() === 0, '"tarefa grande" só nas de 1 h ou mais com prioridade alta/urgente');
+  // Tarefas sem data fora do calendário (pedido do usuário: poluíam o dia) → uma linha só
+  await p.evaluate(() => {
+    const t = U.today(); S.tasks = [];
+    ['Sem data 1', 'Sem data 2', 'Sem data 3'].forEach((title, n) => S.tasks.push({ id: 'sd' + n, title, priority: 'media', status: 'pendente', category: 'administrativo', dueDate: '', dueTime: '', createdAt: '' }));
+    S.tasks.push({ id: 'cd1', title: 'Com data', priority: 'media', status: 'pendente', category: 'administrativo', dueDate: t, dueTime: '15:00', dur: 30, createdAt: '' });
+    S.tasks.push({ id: 'at1', title: 'Atrasada de ontem', priority: 'media', status: 'pendente', category: 'administrativo', dueDate: U.addDays(t, -1), dueTime: '09:00', dur: 30, createdAt: '' });
+    commit(); location.hash = '#dashboard';
+  }); await W(400);
+  check(await p.locator('.calx-day .calx-it', { hasText: 'Sem data' }).count() === 0 && await p.locator('.calx-day .calx-it', { hasText: 'Com data' }).count() === 1 && await p.locator('.calx-day .calx-it', { hasText: 'Atrasada de ontem' }).count() === 1, 'Calendário: tarefas sem data saem da lista do dia (as com data e as atrasadas ficam)');
+  check((await p.textContent('.calx-day .calx-semdata')).includes('3 tarefas sem data'), '…e viram uma linha só');
+  await p.tap('.calx-day .calx-semdata'); await W(400);
+  check(await p.evaluate(() => location.hash) === '#tarefas' && await p.locator('.task-list .task').count() === 3, 'a linha abre Tarefas só com as sem data');
+  await p.evaluate(() => { App.ui.agendaDate = U.today(); location.hash = '#agenda'; }); await W(400);
+  check(await p.locator('.blk-it', { hasText: 'Sem data' }).count() === 0 && await p.locator('.calx-semdata').count() === 1, 'na Agenda do dia também: só a linha');
   check(!errs.length, 'sem erros' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close();
 })().catch(e => { console.error(e.message); process.exit(1); });

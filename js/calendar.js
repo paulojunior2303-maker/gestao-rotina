@@ -19,7 +19,8 @@ const Cal = {
   /* Atividades da rotina (ainda por fazer) que batem com um horário ocupado */
   batem(k, o) { return D.dayBlocks(k).filter(b => !D.isBreak(b) && !D.blockDone(b) && b.status !== 'cancelada' && U.toMin(b.start) < U.toMin(o.end) && U.toMin(b.end) > U.toMin(o.start)); },
   /* Tudo o que acontece num dia (sem as atividades da rotina, que ficam na Agenda).
-     Hoje também mostra as tarefas abertas sem data e as atrasadas, para nada ficar esquecido fora do calendário. */
+     Hoje também mostra as atrasadas, para nada ficar esquecido. As tarefas SEM DATA não entram (pedido do usuário: poluíam o dia);
+     elas viram uma linha só no fim da lista do dia de hoje (Cal.semDataLinha), que leva para Tarefas → Sem data. */
   itemsOn(k) {
     const out = [];
     // Gravações (reunião/feedback gravado): a reunião ligada a ela não aparece de novo
@@ -29,7 +30,6 @@ const Cal = {
     S.tasks.filter(x => x.dueDate === k && x.status !== 'cancelada').forEach(x => tk(x));
     if (k === U.today()) {
       S.tasks.filter(x => OPEN(x.status) && x.dueDate && x.dueDate < k).forEach(x => tk(x, { semData: 'atrasada', era: U.fmtShort(x.dueDate), sub: `Tarefa atrasada · era para ${U.fmtShort(x.dueDate)}` }));
-      S.tasks.filter(x => OPEN(x.status) && !x.dueDate).forEach(x => tk(x, { semData: 'sem', sub: 'Tarefa sem data' }));
     }
     S.occurrences.filter(o => o.dueDate === k && o.status !== 'cancelada').forEach(o => out.push({ type: 'imprevisto', label: o.title, time: o.dueTime, done: o.status === 'concluida', late: D.occLate(o), id: o.id, demo: o.demo, act: 'occEdit' }));
     return out.sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
@@ -105,6 +105,12 @@ const Cal = {
     return x ? (x.status === 'andamento' ? Tasks.pausaBtn(x) : '') + Tasks.botao(x, i.late) : '';
   },
 
+  /* Uma linha só com as tarefas sem data (no dia de hoje do Calendário e na Agenda de hoje) */
+  semDataLinha(k) {
+    if (k !== U.today()) return '';
+    const n = S.tasks.filter(x => OPEN(x.status) && !x.dueDate).length;
+    return n ? `<button class="calx-semdata" data-act="tkSemData">${U.icon('calendar', 16)}<span><strong>${U.plural(n, 'tarefa sem data', 'tarefas sem data')}</strong><small>Fora do calendário. Toque para dar dia e horário.</small></span>${U.icon('right', 15)}</button>` : '';
+  },
   /* Lista do dia escolhido */
   day(id) {
     const s = this.st(id), k = s.sel, t = U.today();
@@ -125,6 +131,7 @@ const Cal = {
           <span class="calx-it-main"><span class="calx-it-title">${U.esc(i.label)}${H.demo(i)}</span><small>${this.sub(i)}</small></span>
           ${i.task ? this.check(i) : U.icon('right', 15)}</div>`).join('')}</div>`
         : agora ? '' : `<p class="calx-empty muted small">${D.isWorkday(k) ? 'Nada marcado para este dia.' : 'Dia livre. Nada marcado.'}</p>`}
+      ${this.semDataLinha(k)}
       <button class="calx-agenda" data-act="goAgenda" data-d="${k}">
         ${U.icon('clock', 16)}<span><strong>Agenda do dia</strong><small class="muted">${ag.length ? `${U.plural(prog.total, 'atividade')}${prog.pct !== null ? ` · ${prog.pct}% concluído` : ''}` : D.isWorkday(k) ? 'Sem atividades' : 'Dia de folga'}</small></span>
         ${ag.length && prog.pct !== null ? H.bar(prog.pct) : ''}${U.icon('right', 15)}
